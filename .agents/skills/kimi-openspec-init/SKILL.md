@@ -55,6 +55,130 @@ If any prerequisite is missing, stop and inform user to complete initialization 
 
 ---
 
+## Project Target Analysis
+
+### Understanding the Project Target Document
+
+Read `doc/prompt/project_target.md` to extract the following key information:
+
+#### 1. Core Domain Objects (域对象)
+
+**Extract entities from project_target.md and create this table:**
+
+| 实体 | 英文名称 | 存储位置 | 职责描述 | 关系 |
+|------|---------|---------|----------|------|
+| **[Entity 1]** | `[EnglishName]` | [DB/File] | [Description] | [Relationship] |
+| **[Entity 2]** | `[EnglishName]` | [DB/File] | [Description] | [Relationship] |
+| **[Entity 3]** | `[EnglishName]` | [DB/File] | [Description] | [Relationship] |
+| **[Entity 4]** | `[EnglishName]` | [DB/File] | [Description] | [Relationship] |
+
+**Create ER Diagram:**
+```
+[Entity1] ||--o{ [Entity3] : "relationship"
+[Entity2] ||--o{ [Entity3] : "relationship"
+[Entity4] ||--|{ [Entity1] : "contains"
+```
+
+#### 2. User Stories (用户故事)
+
+**Extract user stories from project_target.md:**
+
+| Story | Actor | Action | Value | Related Feature |
+|-------|-------|--------|-------|-----------------|
+| **Story 1** | [Actor] | [Action] | [Value] | [Feature] |
+| **Story 2** | [Actor] | [Action] | [Value] | [Feature] |
+| **Story 3** | [Actor] | [Action] | [Value] | [Feature] |
+
+#### 3. Technical Stack Requirements
+
+**Extract from project_target.md:**
+- Frontend: [Framework + Language + Build Tool]
+- Backend: [Framework + Language + Database]
+- Package Manager: [npm/pnpm/yarn]
+- File Storage: [Location and formats]
+- Special Features: [Any special libraries]
+
+---
+
+## Project-Level Specification Files
+
+### Document Responsibilities
+
+Three project-level specification files must be created with clear responsibilities:
+
+| File | Location | Responsibility | Target Reader | When to Read |
+|------|----------|----------------|---------------|--------------|
+| **AGENTS.md** | Project root | Project overview, quick start guide, document navigation | AI Agent first contact | Always first |
+| **constitution.md** | `openspec/constitution.md` | Project constitution: principles, domain model, decisions, workflow | Agents needing architecture context | First time setup |
+| **project-rule/SKILL.md** | `.agents/skills/project-rule/SKILL.md` | Code generation rules: naming conventions, code standards, quality gates | Agents writing code | Before every coding session |
+
+### Content Distribution Guidelines
+
+**AGENTS.md** should contain:
+- Project name and brief description
+- Quick navigation to other documents
+- OpenSpec Understanding Constraint (single source of truth)
+- Core domain objects (summary table only)
+- Tech stack overview
+- Quick start checklist
+
+**constitution.md** should contain:
+- Project mission and core goals
+- Core principles (data ownership, separation of concerns)
+- **Domain Model** (detailed ER diagram, field definitions, naming conventions)
+- NestJS architecture principles
+- Technical constraints and decisions
+- Development workflow (OpenSpec)
+- Quality gates
+
+**project-rule/SKILL.md** should contain:
+- Pre-coding checklist (check active changes)
+- Tech stack specifications (versions, requirements)
+- TypeScript strict mode rules
+- React component rules
+- API design conventions
+- Naming conventions (files, database, OpenSpec changes)
+- Project directory structure
+- OpenSpec integration guidelines
+- Pre-completion mandatory checklist
+
+**Key Rule**: AGENTS.md contains the **OpenSpec Understanding Constraint** (single source of truth). Other documents reference it, do not duplicate.
+
+### Cross-Reference Requirements
+
+All three files must maintain bidirectional references:
+
+```
+AGENTS.md
+  ├── references → constitution.md (for domain model & principles)
+  ├── references → project-rule/SKILL.md (for coding standards)
+  └── references → project_target.md (for requirements)
+
+constitution.md
+  ├── references → AGENTS.md (OpenSpec constraint)
+  ├── references → project-rule/SKILL.md (code standards)
+  └── references → project_target.md (requirements source)
+
+project-rule/SKILL.md
+  ├── references → AGENTS.md (OpenSpec constraint)
+  ├── references → constitution.md (architecture decisions)
+  └── references → project_target.md (domain objects)
+```
+
+### Domain Model Placement
+
+**Recommended distribution:**
+
+| Domain Model Element | AGENTS.md | constitution.md | project-rule |
+|---------------------|-----------|-----------------|--------------|
+| Entity names list | ✅ Summary table | ✅ Detailed table | ❌ |
+| ER diagram | ❌ Link only | ✅ Full Mermaid | ❌ |
+| Field definitions | ❌ | ✅ Complete specs | ❌ |
+| Naming conventions | ❌ | ✅ DB naming rules | ✅ Code naming rules |
+| Relationship rules | ❌ | ✅ Business rules | ❌ |
+
+---
+
 ## Phase 1: OpenSpec Concept Education
 
 ### Core Concepts
@@ -181,6 +305,19 @@ Create comprehensive project overview:
 - [Feature 1 from project_target.md]
 - [Feature 2 from project_target.md]
 - [Feature 3 from project_target.md]
+
+---
+
+## 核心域模型
+
+| 实体 | 存储 | 说明 |
+|------|------|------|
+| **[Entity 1]** | [Storage] | [Brief description] |
+| **[Entity 2]** | [Storage] | [Brief description] |
+| **[Entity 3]** | [Storage] | [Brief description] |
+| **[Entity 4]** | [Storage] | [Brief description] |
+
+**详细实体关系（ER图）见**：[openspec/constitution.md](openspec/constitution.md)
 
 ---
 
@@ -373,7 +510,56 @@ Create project constitution (principles + workflow merged):
 - 技术: [From project_target.md]
 - 约束: 清晰的数据边界
 
-### 3. Extensibility
+### 3. Domain Model (域模型)
+
+**Extract from project_target.md:**
+
+**Core Entities**
+
+| 实体 | 英文名称 | 存储位置 | 职责描述 |
+|------|---------|---------|----------|
+| **[Entity 1]** | `[EnglishName]` | [DB/File] | [Description] |
+| **[Entity 2]** | `[EnglishName]` | [DB/File] | [Description] |
+| **[Entity 3]** | `[EnglishName]` | [DB/File] | [Description] |
+| **[Entity 4]** | `[EnglishName]` | [DB/File] | [Description] |
+
+**Entity Relationships (ER Diagram)**
+
+```mermaid
+erDiagram
+    ENTITY1 ||--o{ ENTITY3 : "relationship"
+    ENTITY2 ||--o{ ENTITY3 : "relationship"
+    ENTITY4 ||--|{ ENTITY1 : "contains"
+```
+
+**Field Definitions**
+
+| 实体 | 关键字段 | 说明 |
+|------|---------|------|
+| [Entity 1] | `id`, `field1`, `field2` | [Description] |
+| [Entity 2] | `id`, `field1`, `field2` | [Description] |
+| [Entity 3] | `id`, `foreignKey1`, `field2` | [Description] |
+| [Entity 4] | `id`, `field1` | [Description] |
+
+**Naming Conventions**
+- 数据库表名：小写蛇形复数（`entities`）
+- Prisma 模型名：PascalCase 单数（`Entity`）
+- 外键命名：`[table]_id`
+
+### 4. User Stories (用户故事)
+
+**Extract from project_target.md:**
+
+**Story 1**: [Actor] [Action] [Value]
+- Implementation: [Related changes]
+
+**Story 2**: [Actor] [Action] [Value]
+- Implementation: [Related changes]
+
+**Story 3**: [Actor] [Action] [Value]
+- Implementation: [Related changes]
+
+### 5. Extensibility
 
 [Define extensibility principles]
 
@@ -683,6 +869,61 @@ openspec list --json
 
 ---
 
+## 域对象实现规范
+
+### 命名映射
+
+**从域对象到代码实现：**
+
+Create a mapping table from domain objects in project_target.md to code:
+
+| 域对象（项目目标） | Prisma 模型 | 数据库表 | TypeScript 接口 | 前端组件 |
+|-------------------|------------|---------|----------------|---------|
+| [实体1] | [Entity1] | [entity1s] | I[Entity1] | [Entity1]Card, [Entity1]List |
+| [实体2] | [Entity2] | [entity2s] | I[Entity2] | [Entity2]Form, [Entity2]Detail |
+| [实体3] | [Entity3] | [entity3s] | I[Entity3] | [Entity3]Panel |
+| [实体4] | [Entity4] | [entity4s] | I[Entity4] | [Entity4]Manager |
+
+**Naming Convention Rules:**
+- Domain Object (Chinese) → PascalCase English
+- Prisma Model → PascalCase Singular (e.g., `User`, `Order`)
+- Database Table → snake_case Plural (e.g., `users`, `orders`)
+- TypeScript Interface → I + PascalCase (e.g., `IUser`, `IOrder`)
+- API Endpoint → kebab-case Plural (e.g., `/users`, `/orders`)
+
+### 关系实现
+
+**一对多关系：**
+```typescript
+// Prisma schema example - replace [Entity1], [Entity2] with actual entity names
+model [Entity1] {
+  id          String      @id @default(uuid())
+  [entity2s]  [Entity2][] // One-to-many relation
+}
+
+model [Entity2] {
+  id          String   @id @default(uuid())
+  [entity1Id] String
+  [entity1]   [Entity1] @relation(fields: [[entity1Id], references: [id])
+  @@index([[entity1Id]]) // Always add index on foreign keys
+}
+```
+
+**多对多关系：**
+- 显式创建关联表
+- 关联表命名：`[entity1]_[entity2]s`（如 `user_roles`）
+
+### 变更时域模型检查
+
+当创建 Change 涉及域对象时，必须：
+
+1. **读取 constitution.md 域模型章节** - 确认实体定义和关系
+2. **检查现有 specs** - 确认是否有相关能力规格
+3. **保持命名一致** - 使用项目目标中的英文名称
+4. **更新关系** - 如果修改关系，同步更新所有相关实体
+
+---
+
 ## 项目目录结构
 
 ```
@@ -734,6 +975,57 @@ project-root/
 2. 参考 `design.md` 的技术决策
 3. 完成任务后勾选
 4. 如有偏差更新工件
+
+---
+
+## 域模型变更流程
+
+当需要新增或修改域对象时，按以下流程执行：
+
+### Step 1: 更新项目级规范（必须）
+
+1. **更新 constitution.md**
+   - 在「域模型」章节添加/修改实体定义
+   - 更新 ER 图展示新关系
+   - 更新字段定义表
+
+2. **同步 AGENTS.md**
+   - 在「核心域模型」表格添加新实体（简要描述）
+
+3. **更新 project_target.md（如需要）**
+   - 同步域对象定义到项目目标文档
+
+### Step 2: 创建数据库变更
+
+```bash
+openspec new change add-[entity]-model
+```
+
+**Artifacts 必须包含：**
+- **proposal.md**: 说明新增域对象的原因和影响
+- **specs/database-access/spec.md**: 定义数据库模型规格
+- **design.md**: 描述与其他实体的关系
+- **tasks.md**: 包含 Prisma schema 更新、迁移创建、索引添加
+
+### Step 3: 更新相关 Change
+
+如果已有 Change 涉及相关域对象，检查是否需要更新：
+- 检查 Change 的 specs 是否与新的域模型一致
+- 如有冲突，更新 Change 的 proposal 和 specs
+
+### Step 4: 验证一致性
+
+**必须验证：**
+- [ ] Prisma 模型名与域对象英文名称一致
+- [ ] 数据库表名符合命名规范（snake_case 复数）
+- [ ] 外键关系与 ER 图一致
+- [ ] TypeScript 接口名与域对象一致
+
+### ⚠️ 禁止事项
+
+- **禁止**在 Change specs 中定义与项目级规范冲突的域模型
+- **禁止**直接修改数据库结构而不更新 constitution.md
+- **禁止**使用与项目目标不同的英文命名
 
 ---
 
@@ -833,9 +1125,17 @@ Check for consistency across three files:
 | Aspect | AGENTS.md | constitution.md | project-rule/SKILL.md |
 |--------|-----------|-----------------|----------------------|
 | Project Name | ✅ | ✅ | ✅ |
+| **Domain Objects** | ✅ Summary table | ✅ Detailed ER + fields | ✅ Implementation mapping |
+| **User Stories** | ❌ | ✅ From project_target | ❌ |
 | Tech Stack | ✅ Listed | ✅ Referenced | ✅ Detailed |
 | OpenSpec Constraint | ✅ **Single Source** | ✅ References AGENTS | ✅ References AGENTS |
 | Constraints | ✅ High-level | ✅ Process | ✅ Technical |
+
+**Domain Model Verification:**
+- [ ] All entities from project_target.md are covered
+- [ ] Entity names are consistent (中文名 ↔ 英文名)
+- [ ] Relationships match project_target.md descriptions
+- [ ] Field definitions are complete
 
 **CRITICAL**: Ensure NO duplicate OpenSpec constraint sections in constitution.md or project-rule. They MUST reference AGENTS.md.
 
@@ -855,22 +1155,27 @@ Verify no conflicts:
 
 Initialization is complete when:
 
-1. ✅ 10 OpenSpec skills copied to `.agents/skills/`
+1. ✅ OpenSpec skills copied to `.agents/skills/`
 2. ✅ AGENTS.md created with:
    - Project overview
+   - **Core Domain Objects** (summary table from project_target.md)
    - **OpenSpec Understanding Constraint** (single source)
    - Document navigation table
    - Quick start guide
 3. ✅ openspec/constitution.md created with:
    - Project constitution (principles)
+   - **Domain Model** (detailed ER diagram, field definitions from project_target.md)
+   - **User Stories** (from project_target.md)
    - Development workflow (merged)
    - **Reference to AGENTS.md for OpenSpec constraint**
 4. ✅ project-rule/SKILL.md created with:
    - Code generation rules
+   - **Domain Object Implementation Mapping** (domain → code naming)
    - **Reference to AGENTS.md for OpenSpec constraint**
 5. ✅ All three files cross-reference correctly
-6. ✅ No duplicate OpenSpec constraint sections
-7. ✅ User can successfully run `openspec-new-change test-change`
+6. ✅ Domain objects consistent across all files (match project_target.md)
+7. ✅ No duplicate OpenSpec constraint sections
+8. ✅ User can successfully run `openspec-new-change test-change`
 
 ---
 

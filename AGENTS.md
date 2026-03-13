@@ -41,6 +41,19 @@
 
 ---
 
+## 核心域模型
+
+| 实体 | 英文 | 存储 | 关键说明 |
+|------|------|------|----------|
+| **用户** | `User` | PostgreSQL | 学生/教师/管理员，包含认证信息 |
+| **知识点** | `KnowledgePoint` | PostgreSQL | 从 xlsx/csv 解析的层级知识点结构 |
+| **学习记录** | `LearningRecord` | PostgreSQL | 用户对知识点的学习反馈（掌握程度 A-E）|
+| **教材** | `Textbook` | 文件 + DB | 对应 iksm/ 目录下的文件对 |
+
+**详细定义见**：[openspec/constitution.md](openspec/constitution.md) - 域模型章节
+
+---
+
 ## 技术栈概览
 
 | 层级 | 技术 | 版本/说明 |

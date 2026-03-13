@@ -42,7 +42,41 @@
 - 技术: PostgreSQL 14+ (用户数据) + 文件系统 (知识库)
 - 约束: 清晰的数据边界
 
-### 3. NestJS 架构原则
+### 3. 域模型（Domain Model）
+
+**核心实体定义**
+
+| 实体 | 英文名称 | 职责 | 存储位置 |
+|------|---------|------|----------|
+| **用户** | `User` | 系统使用者，支持学生/教师/管理员三种角色 | PostgreSQL |
+| **知识点** | `KnowledgePoint` | 教材中的知识点，从文件解析生成 | PostgreSQL |
+| **学习记录** | `LearningRecord` | 用户对知识点的学习反馈（时间、掌握程度） | PostgreSQL |
+| **教材** | `Textbook` | 知识点的集合，对应一个 xlsx/csv + md 文件对 | 文件系统 + 元数据在 PostgreSQL |
+
+**实体关系（ER）**
+
+```mermaid
+erDiagram
+    User ||--o{ LearningRecord : "creates"
+    KnowledgePoint ||--o{ LearningRecord : "recorded in"
+    Textbook ||--|{ KnowledgePoint : "contains"
+```
+
+**关键字段约定**
+
+| 实体 | 关键字段 | 说明 |
+|------|---------|------|
+| User | `id`, `email`, `passwordHash`, `name`, `role` (STUDENT/TEACHER/ADMIN), `studentInfo` (JSON), `createdAt` | 学生信息包含学号、班级 |
+| KnowledgePoint | `id`, `code` (如 1.1.1), `level1`, `level2`, `level3`, `definition`, `characteristics`, `importanceLevel` (A/B/C), `textbookId`, `contentRef` (关联 md 文件位置) | 层级结构支持树形展示 |
+| LearningRecord | `id`, `userId`, `knowledgePointId`, `startTime`, `durationMinutes`, `masteryLevel` (A/B/C/D/E), `notes`, `createdAt` | 不可更新，仅可创建 |
+| Textbook | `id`, `name`, `fileName` (如 math01), `frameworkPath` (xlsx/csv), `contentPath` (md), `lastModifiedAt` | 文件变化检测依据 |
+
+**命名约束**
+- 数据库表名：小写蛇形复数（`users`, `knowledge_points`, `learning_records`）
+- Prisma 模型名：PascalCase 单数（`User`, `KnowledgePoint`）
+- 外键命名：`[table]_id`（如 `user_id`, `knowledge_point_id`）
+
+### 4. NestJS 架构原则
 
 **模块组织 (Modularity)**
 - 按业务领域划分模块（Domain-Driven Design）
@@ -75,7 +109,7 @@ PostgreSQL          # 数据持久化
 | Pipe | 数据验证/转换 | `@UsePipes()` |
 | DTO | 数据传输对象 | 类 + 验证装饰器 |
 
-### 4. 可扩展性
+### 5. 可扩展性
 
 - 知识库通过文件添加即可扩展新教材
 - 支持多种知识点框架格式（.xlsx, .csv）
