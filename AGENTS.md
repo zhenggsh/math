@@ -58,8 +58,8 @@
 
 | 层级 | 技术 | 版本/说明 |
 |------|------|----------|
-| 前端 | React + TypeScript + Vite | React 18+, TypeScript 5+ (严格模式) |
-| 后端 | NestJS + Node.js | TypeScript 严格模式 |
+| 前端 | React + TypeScript + Vite + Vitest | React 18+, TypeScript 5+ (严格模式), 测试框架 Vitest |
+| 后端 | NestJS + Node.js + Jest | TypeScript 严格模式, 测试框架 Jest |
 | ORM | Prisma | 数据库访问和迁移 |
 | 数据库 | PostgreSQL | 14+ |
 | 包管理 | pnpm | 8+ (必须) |
@@ -68,9 +68,11 @@
 
 | 功能 | 技术方案 |
 |------|----------|
+| UI/UX 设计 | Ant Design 设计系统 |
 | 数学公式展示 | LaTeX (KaTeX/MathJax) |
 | 图表展示 | Mermaid.js |
 | 数据分析图表 | ECharts |
+| 单元测试 | Vitest (前端) / Jest (后端) |
 | API 设计 | RESTful 规范 |
 | 部署方式 | 前后端分离，独立部署 |
 
@@ -287,6 +289,8 @@ RESTful 设计:
 - [ ] 无未使用变量/导入
 - [ ] 所有函数有返回类型
 - [ ] 所有组件有 Props 接口
+- [ ] 单元测试覆盖率 ≥ 80%（Vitest 前端 / Jest 后端）
+- [ ] ESLint + Prettier 代码风格检查通过
 
 ### OpenSpec 检查清单
 

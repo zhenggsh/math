@@ -1,0 +1,109 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 用户角色枚举
+enum Role {
+  STUDENT
+  TEACHER
+  ADMIN
+}
+
+// 掌握程度枚举
+enum MasteryLevel {
+  A
+  B
+  C
+  D
+  E
+}
+
+// 重要性级别枚举
+enum ImportanceLevel {
+  A
+  B
+  C
+}
+
+// 用户模型
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  passwordHash  String    @map("password_hash")
+  name          String
+  role          Role      @default(STUDENT)
+  studentInfo   Json?     @map("student_info")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  // 关系
+  learningRecords LearningRecord[]
+
+  @@map("users")
+}
+
+// 教材模型
+model Textbook {
+  id              String   @id @default(uuid())
+  name            String
+  fileName        String   @unique @map("file_name")
+  frameworkPath   String?  @map("framework_path")
+  contentPath     String?  @map("content_path")
+  lastModifiedAt  DateTime @default(now()) @map("last_modified_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  // 关系
+  knowledgePoints KnowledgePoint[]
+
+  @@map("textbooks")
+}
+
+// 知识点模型
+model KnowledgePoint {
+  id                String          @id @default(uuid())
+  code              String          @unique
+  level1            String
+  level2            String?
+  level3            String?
+  definition        String?
+  characteristics   String?
+  importanceLevel   ImportanceLevel @default(C) @map("importance_level")
+  contentRef        String?         @map("content_ref")
+  createdAt         DateTime        @default(now()) @map("created_at")
+  updatedAt         DateTime        @updatedAt @map("updated_at")
+
+  // 外键
+  textbookId        String          @map("textbook_id")
+
+  // 关系
+  textbook          Textbook        @relation(fields: [textbookId], references: [id], onDelete: Cascade)
+  learningRecords   LearningRecord[]
+
+  @@map("knowledge_points")
+}
+
+// 学习记录模型
+model LearningRecord {
+  id                String       @id @default(uuid())
+  startTime         DateTime     @map("start_time")
+  durationMinutes   Int          @map("duration_minutes")
+  masteryLevel      MasteryLevel @map("mastery_level")
+  notes             String?
+  createdAt         DateTime     @default(now()) @map("created_at")
+
+  // 外键
+  userId            String       @map("user_id")
+  knowledgePointId  String       @map("knowledge_point_id")
+
+  // 关系
+  user              User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  knowledgePoint    KnowledgePoint @relation(fields: [knowledgePointId], references: [id], onDelete: Cascade)
+
+  @@map("learning_records")
+}

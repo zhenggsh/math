@@ -73,8 +73,8 @@
 
 ## **6.技术栈与架构**
 ### 技术栈选择
-1. 前端技术要求使用React+TypeScript+Vite；
-2. 后端技术要求NestJS+TypeScript
+1. 前端技术要求使用React+TypeScript+Vite+Vitest；
+2. 后端技术要求NestJS+TypeScript+Jest
 3. 数据库PostgreSql+Prisma;
 4. 其它：OpenSpec、ECharts、Mermaid
 
@@ -90,5 +90,6 @@
 
 
 ## **7.非功能要求**
-- **可维护性**：代码规范、具备单元测试能力
-- **易用性**： UI/UX风格优秀，交互便捷
+- **UI/UX风格**： 采用 Ant Design 设计系统，具备一致性，交互便捷
+- **单元测试**: 实现基于Vitest/Jest的前后台单元测试
+- **代码风格**: 代码风格由 ESLint + Prettier 统一

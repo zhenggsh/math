@@ -1,0 +1,20 @@
+{
+  "name": "mathtong",
+  "version": "1.0.0",
+  "description": "数学通 - 高中数学知识点学习系统",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --filter web dev",
+    "dev:server": "pnpm --filter server start:dev",
+    "build": "pnpm --filter web build && pnpm --filter server build",
+    "lint": "pnpm --filter web lint && pnpm --filter server lint",
+    "lint:fix": "pnpm --filter web lint:fix && pnpm --filter server lint",
+    "format": "pnpm --filter web format && pnpm --filter server format",
+    "test": "pnpm --filter web test && pnpm --filter server test",
+    "typecheck": "pnpm --filter web tsc --noEmit && pnpm --filter server tsc --noEmit"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  }
+}

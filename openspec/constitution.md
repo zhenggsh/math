@@ -109,7 +109,46 @@ PostgreSQL          # 数据持久化
 | Pipe | 数据验证/转换 | `@UsePipes()` |
 | DTO | 数据传输对象 | 类 + 验证装饰器 |
 
-### 5. 可扩展性
+### 5. UI 设计规范（Ant Design）
+
+**设计系统概述**
+- 采用 Ant Design 作为基础设计系统
+- 保持企业级应用的专业性和一致性
+- 支持主题定制（学术蓝主色 #1890FF）
+
+**色彩系统**
+| 色彩类型 | 色值 | 用途 |
+|---------|------|------|
+| 主色 | #1890FF | 按钮、链接、重点标记 |
+| 成功 | #52C41A | 掌握程度 A、成功状态 |
+| 警告 | #FAAD14 | 掌握程度 C、警告状态 |
+| 错误 | #F5222D | 掌握程度 E、错误状态 |
+| 掌握程度 A | #52C41A | 优秀 |
+| 掌握程度 B | #73D13D | 良好 |
+| 掌握程度 C | #FAAD14 | 一般 |
+| 掌握程度 D | #FA8C16 | 较差 |
+| 掌握程度 E | #F5222D | 很差 |
+| 重要性 A | #CF1322 | 必须掌握 |
+| 重要性 B | #FA8C16 | 重要 |
+| 重要性 C | #8C8C8C | 补充 |
+
+**字体系统**
+- 中文："PingFang SC", "Microsoft YaHei", sans-serif
+- 英文/数字："Inter", "SF Mono"（代码）
+- 正文：14px，行高 1.5
+- 标题：按层级递增（16/20/24/30px）
+
+**布局规范**
+- 基于 8px 栅格系统（4/8/16/24/32/48px）
+- 多栏式布局：左侧 280px（可折叠），中间自适应（600-900px），右侧 320px
+- 响应式断点：768px（平板）、1024px（桌面）、1440px（宽屏）
+
+**组件使用原则**
+- 优先使用 Ant Design 官方组件
+- 自定义组件需继承 Ant Design 设计令牌
+- 保持组件风格一致（圆角、阴影、边框）
+
+### 6. 可扩展性
 
 - 知识库通过文件添加即可扩展新教材
 - 支持多种知识点框架格式（.xlsx, .csv）
@@ -123,8 +162,8 @@ PostgreSQL          # 数据持久化
 
 | 层级 | 技术 | 版本要求 | 备注 |
 |------|------|----------|------|
-| 前端 | React + TypeScript + Vite | React 18+, TS 5+ | 严格模式 |
-| 后端 | NestJS + Node.js | Node 18+ | TypeScript 严格模式，模块化架构 |
+| 前端 | React + TypeScript + Vite + Vitest | React 18+, TS 5+ | 严格模式，单元测试 Vitest |
+| 后端 | NestJS + Node.js + Jest | Node 18+ | TypeScript 严格模式，模块化架构，单元测试 Jest |
 | ORM | Prisma | 5+ | 数据库访问和迁移 |
 | 数据库 | PostgreSQL | 14+ | 用户数据存储 |
 | 包管理 | pnpm | 8+ | 必须 |
@@ -133,9 +172,11 @@ PostgreSQL          # 数据持久化
 
 | 功能 | 技术方案 |
 |------|----------|
+| UI/UX 设计 | Ant Design 设计系统 |
 | 数学公式展示 | LaTeX (KaTeX/MathJax) |
 | 图表展示 | Mermaid.js |
 | 数据分析图表 | ECharts |
+| 单元测试 | Vitest (前端) / Jest (后端) |
 
 ### Project Structure
 
@@ -186,6 +227,12 @@ project-root/
 - 工具函数: camelCase
 - 常量: UPPER_SNAKE_CASE
 - 数据库表: snake_case, 复数
+
+**代码风格**
+- ESLint + Prettier 统一代码风格
+- 前端: ESLint 配置继承 @typescript-eslint/recommended-type-checked
+- 后端: ESLint 配置继承 @typescript-eslint/recommended
+- Prettier 配置: 2空格缩进, 单引号, 尾随逗号
 
 ---
 
@@ -291,6 +338,8 @@ openspec archive <name>
 **实施后**:
 - [ ] 无 `console.log` / `debugger`
 - [ ] 无未使用变量/导入
+- [ ] 单元测试覆盖率 ≥ 80%（Vitest 前端 / Jest 后端）
+- [ ] ESLint + Prettier 代码风格检查通过
 
 ### OpenSpec Checklist
 

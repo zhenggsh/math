@@ -43,6 +43,7 @@ openspec list --json
 | React | 18+ | 函数组件 + Hooks |
 | TypeScript | 5+ | Strict 模式 |
 | Vite | 5+ | 构建工具 |
+| Vitest | 1+ | 单元测试框架，覆盖率 ≥ 80% |
 
 ### 后端
 
@@ -51,11 +52,15 @@ openspec list --json
 | NestJS | 10+ | 模块化架构，依赖注入 |
 | TypeScript | 5+ | Strict 模式 |
 | Prisma | 5+ | ORM |
+| Jest | 29+ | 单元测试框架，覆盖率 ≥ 80% |
 
 ### 开发工具
 
 - **包管理**: pnpm 8+（必须）
 - **NestJS CLI**: 推荐使用 `@nestjs/cli` 创建模块和控制器
+- **UI/UX 设计**: Ant Design 设计系统，保持界面一致性和专业感
+- **测试**: Vitest（前端）/ Jest（后端），覆盖率 ≥ 80%
+- **代码风格**: ESLint + Prettier 统一代码风格，提交前必须检查通过
 
 ---
 
@@ -232,6 +237,115 @@ server/
 
 ---
 
+## Ant Design 组件规范
+
+### 组件引入
+
+**推荐方式**：按需引入
+```typescript
+// ✅ 正确 - 按需引入
+import { Button, Table, Tree } from 'antd';
+import type { ButtonProps } from 'antd';
+
+// ❌ 错误 - 全量引入
+import Antd from 'antd';
+```
+
+**图标引入**
+```typescript
+import { UserOutlined, FileOutlined } from '@ant-design/icons';
+```
+
+### 主题定制
+
+**ConfigProvider 配置**
+```typescript
+import { ConfigProvider } from 'antd';
+
+const theme = {
+  token: {
+    colorPrimary: '#1890FF',      // 主色
+    colorSuccess: '#52C41A',      // 成功
+    colorWarning: '#FAAD14',      // 警告
+    colorError: '#F5222D',        // 错误
+    fontSize: 14,                 // 正文字号
+    borderRadius: 4,              // 圆角
+  },
+};
+
+<ConfigProvider theme={theme}>
+  <App />
+</ConfigProvider>
+```
+
+### 常用组件列表
+
+| 组件 | 用途 | 注意事项 |
+|------|------|----------|
+| **Tree** | 知识点树导航 | 使用 `virtual` 属性支持大数据量 |
+| **Table** | 数据列表展示 | 使用 `scroll` 处理横向溢出 |
+| **Form** | 学习反馈表单 | 配合 `useForm` 进行验证 |
+| **Button** | 操作按钮 | 主操作用 `type="primary"` |
+| **Modal** | 弹窗对话框 | 注意 `destroyOnClose` 重置状态 |
+| **Drawer** | 侧滑面板 | 右侧 AI 侧栏可用 |
+| **Tabs** | 标签页切换 | 移动端适配时使用 |
+| **Progress** | 学习进度 | 配合掌握程度颜色 |
+| **Tag** | 标签展示 | 重要性 A/B/C 标签 |
+| **Rate** | 掌握程度评分 | 自定义为 5 级（A-E）|
+
+### 组件使用最佳实践
+
+**表单组件**
+```typescript
+// ✅ 正确 - 使用 Form 组件管理状态
+<Form form={form} onFinish={handleSubmit}>
+  <Form.Item name="mastery" rules={[{ required: true }]}>
+    <Select options={masteryOptions} />
+  </Form.Item>
+</Form>
+```
+
+**表格组件**
+```typescript
+// ✅ 正确 - 定义列配置类型
+const columns: ColumnsType<KnowledgePoint> = [
+  { title: '编号', dataIndex: 'code' },
+  { title: '名称', dataIndex: 'name' },
+];
+```
+
+**树形组件**
+```typescript
+// ✅ 正确 - 大数据量使用虚拟滚动
+<Tree
+  treeData={treeData}
+  height={600}
+  virtual
+  onSelect={handleSelect}
+/>
+```
+
+### 样式覆盖规范
+
+**推荐方式**：使用 CSS Modules 或 Styled Components
+```typescript
+// ✅ 正确 - CSS Modules
+import styles from './Component.module.css';
+
+// ❌ 错误 - 直接修改全局样式
+.ant-button { ... }
+```
+
+**主题变量覆盖**
+```css
+/* 在全局样式文件中 */
+:root {
+  --ant-primary-color: #1890FF;
+}
+```
+
+---
+
 ## 特色功能规范
 
 ### LaTeX 数学公式
@@ -289,6 +403,8 @@ server/
 - [ ] 无未使用导入或变量
 - [ ] 所有函数有返回类型
 - [ ] 所有组件有 Props 接口
+- [ ] 单元测试覆盖率 ≥ 80%（Vitest 前端 / Jest 后端）
+- [ ] ESLint + Prettier 代码风格检查通过（`pnpm lint` 无错误）
 
 ### OpenSpec（如适用）
 
@@ -306,6 +422,10 @@ server/
 | 创建变更 | `openspec new change <name>` |
 | 归档变更 | `openspec archive <name>` |
 | 类型检查 | `tsc --noEmit` |
+| 运行测试 | `vitest` (前端) / `jest` (后端) |
+| 测试覆盖率 | `vitest --coverage` / `jest --coverage` |
+| 代码检查 | `pnpm lint` (ESLint) |
+| 代码格式化 | `pnpm format` (Prettier) |
 
 ---
 
