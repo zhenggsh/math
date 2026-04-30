@@ -32,9 +32,9 @@
    - 限制返回数量
 
 **验收标准**:
-- [ ] 所有方法有完整的类型定义
-- [ ] 单元测试覆盖率 > 80%
-- [ ] 无 `any` 类型使用
+- [x] 所有方法有完整的类型定义
+- [x] 单元测试覆盖率 > 80%
+- [x] 无 `any` 类型使用
 
 **预计耗时**: 2 小时
 
@@ -61,10 +61,10 @@
 - `RandomQueryDto`
 
 **验收标准**:
-- [ ] 所有接口返回统一响应格式
-- [ ] 参数校验错误返回 400
-- [ ] 未认证返回 401
-- [ ] Swagger 文档可正常显示
+- [x] 所有接口返回统一响应格式
+- [x] 参数校验错误返回 400
+- [x] 未认证返回 401
+- [x] Swagger 文档可正常显示
 
 **预计耗时**: 1.5 小时
 
@@ -85,8 +85,8 @@
 4. 生成并执行迁移
 
 **验收标准**:
-- [ ] 迁移成功执行
-- [ ] 查询性能测试通过（< 300ms）
+- [x] 迁移成功执行
+- [x] 查询性能测试通过（< 300ms）
 
 **预计耗时**: 0.5 小时
 
@@ -124,9 +124,9 @@ interface LearningModeSelectorProps {
 ```
 
 **验收标准**:
-- [ ] 组件有 Props 接口定义
-- [ ] 三种模式切换正常
-- [ ] 样式符合 Ant Design 设计规范
+- [x] 组件有 Props 接口定义
+- [x] 三种模式切换正常
+- [x] 样式符合 Ant Design 设计规范
 
 **预计耗时**: 1.5 小时
 
@@ -155,9 +155,9 @@ interface LearningModeSelectorProps {
 - 加载状态、错误状态处理
 
 **验收标准**:
-- [ ] 列表显示正确
-- [ ] E/D/C 级别有不同颜色标识
-- [ ] 空状态友好提示
+- [x] 列表显示正确
+- [x] E/D/C 级别有不同颜色标识
+- [x] 空状态友好提示
 
 **预计耗时**: 2 小时
 
@@ -185,9 +185,9 @@ interface ImportanceViewProps {
 ```
 
 **验收标准**:
-- [ ] Tab 切换正常
-- [ ] 各级别列表显示正确
-- [ ] 排除已掌握功能正常
+- [x] Tab 切换正常
+- [x] 各级别列表显示正确
+- [x] 排除已掌握功能正常
 
 **预计耗时**: 1.5 小时
 
@@ -212,9 +212,9 @@ interface ImportanceViewProps {
 - 避免短时间内重复随机到相同知识点
 
 **验收标准**:
-- [ ] 数量选择正常
-- [ ] 换一批功能正常
-- [ ] 卡片网格布局美观
+- [x] 数量选择正常
+- [x] 换一批功能正常
+- [x] 卡片网格布局美观
 
 **预计耗时**: 1.5 小时
 
@@ -243,9 +243,9 @@ interface ImportanceViewProps {
 ```
 
 **验收标准**:
-- [ ] 模式切换流畅
-- [ ] 各视图显示正常
-- [ ] 页面布局响应式
+- [x] 模式切换流畅
+- [x] 各视图显示正常
+- [x] 页面布局响应式
 
 **预计耗时**: 1 小时
 
@@ -274,8 +274,8 @@ interface ImportanceViewProps {
    - count 边界值
 
 **验收标准**:
-- [ ] 测试覆盖率 > 80%
-- [ ] 所有测试通过
+- [x] 测试覆盖率 > 80%
+- [x] 所有测试通过
 
 **预计耗时**: 1.5 小时
 
@@ -300,8 +300,8 @@ interface ImportanceViewProps {
    - 点击事件
 
 **验收标准**:
-- [ ] 使用 Vitest + React Testing Library
-- [ ] 所有测试通过
+- [x] 使用 Vitest + React Testing Library
+- [x] 所有测试通过
 
 **预计耗时**: 1.5 小时
 
@@ -309,10 +309,10 @@ interface ImportanceViewProps {
 
 ## 执行前检查清单
 
-- [ ] 已阅读 `project-rule/SKILL.md` 了解代码规范
-- [ ] 前置变更 `implement-learning-record` 已完成
-- [ ] 数据库 `learning_records` 表有数据
-- [ ] 已创建功能分支 `feature/implement-smart-learning-modes`
+- [x] 已阅读 `project-rule/SKILL.md` 了解代码规范
+- [x] 前置变更 `implement-learning-record` 已完成
+- [x] 数据库 `learning_records` 表有数据
+- [x] 已创建功能分支 `feature/implement-smart-learning-modes`
 
 ## 执行过程注意事项
 
@@ -336,25 +336,25 @@ interface ImportanceViewProps {
 ## 执行后检查清单
 
 ### 代码质量
-- [ ] `tsc --noEmit` 无错误（前后端）
-- [ ] 无 `any` 类型（有注释的例外允许）
-- [ ] 无 `console.log` / `debugger` 语句
-- [ ] ESLint + Prettier 检查通过
+- [x] `tsc --noEmit` 无错误（前后端）
+- [x] 无 `any` 类型（有注释的例外允许）
+- [x] 无 `console.log` / `debugger` 语句
+- [x] ESLint + Prettier 检查通过
 
 ### 测试
-- [ ] 后端单元测试覆盖率 ≥ 80%
-- [ ] 前端组件测试通过
-- [ ] 手动测试三种学习模式
+- [x] 后端单元测试覆盖率 ≥ 80%
+- [x] 前端组件测试通过
+- [x] 手动测试三种学习模式
 
 ### API 验证
-- [ ] `/api/smart-learning/weak-points` 返回正确
-- [ ] `/api/smart-learning/by-importance` 返回正确
-- [ ] `/api/smart-learning/random` 返回正确
+- [x] `/api/smart-learning/weak-points` 返回正确
+- [x] `/api/smart-learning/by-importance` 返回正确
+- [x] `/api/smart-learning/random` 返回正确
 
 ### 界面验证
-- [ ] 模式选择器样式正确
-- [ ] 模式切换流畅
-- [ ] 响应式布局正常
+- [x] 模式选择器样式正确
+- [x] 模式切换流畅
+- [x] 响应式布局正常
 
 ---
 

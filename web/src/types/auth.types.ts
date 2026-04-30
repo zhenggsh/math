@@ -36,3 +36,6 @@ export interface AuthContextType {
   register: (data: RegisterRequest) => Promise<void>
   logout: () => void
 }
+
+// 为了兼容 Vite 的类型导入，额外导出类型别名
+export type { User, AuthResponse, LoginRequest, RegisterRequest, AuthContextType }

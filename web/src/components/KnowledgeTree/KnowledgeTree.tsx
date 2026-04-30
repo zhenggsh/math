@@ -1,0 +1,121 @@
+import React, { useState, useCallback, useEffect } from 'react'
+import { Segmented, Spin, Empty } from 'antd'
+import { PartitionOutlined, ApartmentOutlined } from '@ant-design/icons'
+import { TreeView } from './TreeView'
+import { MindMapView } from './MindMapView'
+import type { KnowledgeTreeProps, ViewMode, KnowledgeTreeNode } from './types'
+import styles from './KnowledgeTree.module.css'
+
+const STORAGE_KEY = 'mathtong:knowledge-tree:view-mode'
+
+/**
+ * 知识树主组件
+ * 集成树图和思维导图两种视图模式
+ */
+export const KnowledgeTree: React.FC<KnowledgeTreeProps> = ({
+  data,
+  selectedKey,
+  viewMode: controlledViewMode,
+  loading = false,
+  onSelect,
+  onViewModeChange,
+  onExpand,
+  expandedKeys,
+  defaultExpandedKeys,
+}) => {
+  const [internalViewMode, setInternalViewMode] = useState<ViewMode>(() => {
+    // 从 localStorage 恢复视图模式
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(STORAGE_KEY)
+      if (saved === 'tree' || saved === 'mindmap') {
+        return saved
+      }
+    }
+    return 'tree'
+  })
+
+  const viewMode = controlledViewMode !== undefined ? controlledViewMode : internalViewMode
+
+  // 保存视图模式到 localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined' && controlledViewMode === undefined) {
+      localStorage.setItem(STORAGE_KEY, viewMode)
+    }
+  }, [viewMode, controlledViewMode])
+
+  // 处理视图模式切换
+  const handleViewModeChange = useCallback(
+    (value: ViewMode) => {
+      if (controlledViewMode === undefined) {
+        setInternalViewMode(value)
+      }
+      onViewModeChange?.(value)
+    },
+    [controlledViewMode, onViewModeChange]
+  )
+
+  // 处理节点选择
+  const handleSelect = useCallback(
+    (node: KnowledgeTreeNode) => {
+      onSelect?.(node)
+    },
+    [onSelect]
+  )
+
+  // 视图选项
+  const viewOptions = [
+    { value: 'tree' as ViewMode, label: 'Tree View', icon: <PartitionOutlined /> },
+    { value: 'mindmap' as ViewMode, label: 'Mind Map', icon: <ApartmentOutlined /> },
+  ]
+
+  if (loading) {
+    return (
+      <div className={styles.loadingContainer}>
+        <Spin size="large" tip="Loading knowledge tree..." />
+      </div>
+    )
+  }
+
+  if (data.length === 0) {
+    return (
+      <div className={styles.emptyContainer}>
+        <Empty description="No knowledge points available" />
+      </div>
+    )
+  }
+
+  return (
+    <div className={styles.knowledgeTree}>
+      <div className={styles.header}>
+        <Segmented
+          options={viewOptions}
+          value={viewMode}
+          onChange={value => handleViewModeChange(value)}
+          className={styles.viewModeSwitch}
+        />
+      </div>
+      <div className={styles.content}>
+        {viewMode === 'tree' ? (
+          <TreeView
+            data={data}
+            selectedKey={selectedKey}
+            expandedKeys={expandedKeys}
+            defaultExpandedKeys={defaultExpandedKeys}
+            loading={loading}
+            onSelect={handleSelect}
+            onExpand={onExpand}
+          />
+        ) : (
+          <MindMapView
+            data={data}
+            selectedKey={selectedKey}
+            loading={false}
+            onSelect={handleSelect}
+          />
+        )}
+      </div>
+    </div>
+  )
+}
+
+export default KnowledgeTree

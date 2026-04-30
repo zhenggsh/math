@@ -1,0 +1,28 @@
+.multiPaneLayout {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background-color: #f5f5f5;
+}
+
+.knowledgeTreeContainer {
+  width: 100%;
+  height: 100%;
+  background-color: #fff;
+  border-right: 1px solid #f0f0f0;
+  overflow: auto;
+}
+
+.markdownContainer {
+  width: 100%;
+  height: 100%;
+  background-color: #fff;
+  overflow: auto;
+}
+
+/* 响应式：移动端隐藏右侧面板 */
+@media (max-width: 768px) {
+  .multiPaneLayout :global(.sash-vertical:nth-of-type(2)) {
+    display: none;
+  }
+}

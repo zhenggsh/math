@@ -1,0 +1,197 @@
+.markdownPreview {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background-color: #fff;
+  overflow: hidden;
+}
+
+.toolbar {
+  display: flex;
+  justify-content: flex-end;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f0f0f0;
+  background-color: #fafafa;
+}
+
+.viewSwitch {
+  background-color: #f0f0f0;
+}
+
+.content {
+  flex: 1;
+  overflow: auto;
+  padding: 24px;
+}
+
+.rawContent {
+  margin: 0;
+  padding: 16px;
+  background-color: #f6f8fa;
+  border-radius: 6px;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.rawContent code {
+  font-family: inherit;
+  background: none;
+  padding: 0;
+}
+
+.renderedContent {
+  font-size: 15px;
+  line-height: 1.8;
+  color: #262626;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+/* 标题样式 */
+.renderedContent h1 {
+  font-size: 28px;
+  font-weight: 600;
+  margin: 32px 0 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.renderedContent h2 {
+  font-size: 24px;
+  font-weight: 600;
+  margin: 28px 0 14px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.renderedContent h3 {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 24px 0 12px;
+}
+
+.renderedContent h4,
+.renderedContent h5,
+.renderedContent h6 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 20px 0 10px;
+}
+
+/* 段落和列表 */
+.renderedContent p {
+  margin: 12px 0;
+}
+
+.renderedContent ul,
+.renderedContent ol {
+  margin: 12px 0;
+  padding-left: 24px;
+}
+
+.renderedContent li {
+  margin: 6px 0;
+}
+
+/* 代码块样式 */
+.codeBlock {
+  margin: 16px 0;
+  padding: 16px;
+  background-color: #f6f8fa;
+  border-radius: 6px;
+  overflow: auto;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.codeBlock code {
+  background: none;
+  padding: 0;
+  font-family: inherit;
+}
+
+/* 行内代码 */
+.renderedContent code {
+  background-color: #f0f0f0;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 0.9em;
+}
+
+/* 引用块 */
+.renderedContent blockquote {
+  margin: 16px 0;
+  padding: 12px 16px;
+  background-color: #f6f8fa;
+  border-left: 4px solid #1890ff;
+  border-radius: 0 4px 4px 0;
+}
+
+.renderedContent blockquote p {
+  margin: 0;
+}
+
+/* 表格样式 */
+.renderedContent table {
+  width: 100%;
+  margin: 16px 0;
+  border-collapse: collapse;
+}
+
+.renderedContent th,
+.renderedContent td {
+  padding: 12px 16px;
+  border: 1px solid #e8e8e8;
+  text-align: left;
+}
+
+.renderedContent th {
+  background-color: #fafafa;
+  font-weight: 600;
+}
+
+.renderedContent tr:nth-child(even) {
+  background-color: #fafafa;
+}
+
+/* 链接样式 */
+.renderedContent a {
+  color: #1890ff;
+  text-decoration: none;
+}
+
+.renderedContent a:hover {
+  text-decoration: underline;
+}
+
+/* 分隔线 */
+.renderedContent hr {
+  margin: 24px 0;
+  border: none;
+  border-top: 1px solid #e8e8e8;
+}
+
+/* 图片 */
+.renderedContent img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+}
+
+/* KaTeX 公式样式覆盖 */
+.renderedContent :global(.katex) {
+  font-size: 1.1em;
+}
+
+.renderedContent :global(.katex-display) {
+  margin: 16px 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+}

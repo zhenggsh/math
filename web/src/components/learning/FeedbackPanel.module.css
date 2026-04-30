@@ -1,0 +1,49 @@
+.feedbackPanel {
+  padding: 16px;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.timerSection {
+  margin-bottom: 16px;
+}
+
+.formCard {
+  background: #fafafa;
+  margin-bottom: 16px;
+}
+
+.sectionTitle {
+  margin-bottom: 16px !important;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.feedbackForm {
+  max-width: 100%;
+}
+
+.submitButtonWrapper {
+  margin-bottom: 0;
+  margin-top: 24px;
+}
+
+.historySection {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.historySection :global(.ant-list) {
+  flex: 1;
+  overflow-y: auto;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .feedbackPanel {
+    padding: 12px;
+  }
+}

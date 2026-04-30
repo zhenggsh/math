@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { LoginRequest, RegisterRequest, AuthResponse, User } from '../types/auth.types'
+import type { LoginRequest, RegisterRequest, AuthResponse, User } from '../types/auth.types'
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
 

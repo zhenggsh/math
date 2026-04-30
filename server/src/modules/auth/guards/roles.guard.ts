@@ -1,12 +1,17 @@
-import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common'
-import { Reflector } from '@nestjs/core'
-import { Role } from '@prisma/client'
-import { ROLES_KEY } from '../decorators/roles.decorator'
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+} from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
+import { Role } from '@prisma/client';
+import { ROLES_KEY } from '../decorators/roles.decorator';
 
 interface RequestWithUser {
   user?: {
-    role: Role
-  }
+    role: Role;
+  };
 }
 
 @Injectable()
@@ -16,32 +21,36 @@ export class RolesGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const requiredRoles = this.reflector.getAllAndOverride<Role[]>(ROLES_KEY, [
       context.getHandler(),
-      context.getClass()
-    ])
+      context.getClass(),
+    ]);
 
     if (!requiredRoles) {
-      return true
+      return true;
     }
 
-    const request = context.switchToHttp().getRequest<RequestWithUser>()
-    const user = request.user
-    
+    const request = context.switchToHttp().getRequest<RequestWithUser>();
+    const user = request.user;
+
     if (!user) {
-      throw new ForbiddenException('未登录')
+      throw new ForbiddenException('未登录');
     }
 
-    const userRole = user.role
-    const hasPermission = requiredRoles.some(role => {
-      if (userRole === Role.ADMIN) return true
-      if (userRole === Role.TEACHER && (role === Role.TEACHER || role === Role.STUDENT)) return true
-      if (userRole === Role.STUDENT && role === Role.STUDENT) return true
-      return userRole === role
-    })
+    const userRole = user.role;
+    const hasPermission = requiredRoles.some((role) => {
+      if (userRole === Role.ADMIN) return true;
+      if (
+        userRole === Role.TEACHER &&
+        (role === Role.TEACHER || role === Role.STUDENT)
+      )
+        return true;
+      if (userRole === Role.STUDENT && role === Role.STUDENT) return true;
+      return userRole === role;
+    });
 
     if (!hasPermission) {
-      throw new ForbiddenException('权限不足')
+      throw new ForbiddenException('权限不足');
     }
 
-    return true
+    return true;
   }
 }

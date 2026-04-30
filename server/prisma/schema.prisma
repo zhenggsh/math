@@ -52,9 +52,10 @@ model Textbook {
   id              String   @id @default(uuid())
   name            String
   fileName        String   @unique @map("file_name")
-  frameworkPath   String?  @map("framework_path")
+  frameworkPath   String   @map("framework_path")
+  frameworkType   String   @map("framework_type") // xlsx | csv
   contentPath     String?  @map("content_path")
-  lastModifiedAt  DateTime @default(now()) @map("last_modified_at")
+  lastModifiedAt  DateTime @map("last_modified_at")
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
@@ -85,6 +86,8 @@ model KnowledgePoint {
   textbook          Textbook        @relation(fields: [textbookId], references: [id], onDelete: Cascade)
   learningRecords   LearningRecord[]
 
+  // 索引优化（智能学习模式）
+  @@index([importanceLevel], name: "idx_knowledge_point_importance")
   @@map("knowledge_points")
 }
 
@@ -105,5 +108,8 @@ model LearningRecord {
   user              User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   knowledgePoint    KnowledgePoint @relation(fields: [knowledgePointId], references: [id], onDelete: Cascade)
 
+  // 索引优化（智能学习模式）
+  @@index([userId, masteryLevel], name: "idx_learning_record_user_proficiency")
+  @@index([userId, startTime], name: "idx_learning_record_user_date")
   @@map("learning_records")
 }

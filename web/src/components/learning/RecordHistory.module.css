@@ -1,0 +1,69 @@
+.loadingContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+}
+
+.emptyState {
+  padding: 40px 20px;
+}
+
+.recordList {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.recordItem {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.recordItem:last-child {
+  border-bottom: none;
+}
+
+.recordHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.recordInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.recordTime {
+  font-size: 12px;
+}
+
+.masteryTag {
+  font-weight: 500;
+}
+
+.duration {
+  font-size: 13px;
+  color: #666;
+}
+
+.notesSection {
+  background: #f5f5f5;
+  padding: 8px 12px;
+  border-radius: 4px;
+  margin-top: 4px;
+}
+
+.notes {
+  margin-bottom: 0;
+  color: #666;
+  font-size: 13px;
+}
+
+.expandButton {
+  padding: 0;
+  margin-top: 4px;
+  font-size: 12px;
+}

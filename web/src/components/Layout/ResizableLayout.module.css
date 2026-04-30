@@ -1,0 +1,61 @@
+.resizableLayout {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.panel {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+}
+
+/* 自定义 Allotment 分隔条样式 */
+.resizableLayout :global(.sash) {
+  background-color: var(--border-color, #f0f0f0);
+  transition: background-color 0.2s;
+}
+
+.resizableLayout :global(.sash:hover) {
+  background-color: var(--primary-color, #1890ff);
+}
+
+.resizableLayout :global(.sash-dragging) {
+  background-color: var(--primary-color, #1890ff);
+}
+
+/* 垂直分隔条 */
+.resizableLayout :global(.sash-vertical) {
+  width: 4px;
+  cursor: col-resize;
+}
+
+/* 水平分隔条 */
+.resizableLayout :global(.sash-horizontal) {
+  height: 4px;
+  cursor: row-resize;
+}
+
+/* 分隔条图标 */
+.resizableLayout :global(.sash:after) {
+  content: '';
+  position: absolute;
+  background-color: rgba(0, 0, 0, 0.15);
+  border-radius: 2px;
+}
+
+.resizableLayout :global(.sash-vertical:after) {
+  width: 2px;
+  height: 24px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.resizableLayout :global(.sash-horizontal:after) {
+  width: 24px;
+  height: 2px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}

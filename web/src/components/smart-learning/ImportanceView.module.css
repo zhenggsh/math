@@ -1,0 +1,115 @@
+.container {
+  padding: 16px;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+}
+
+.filterBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.levelCard {
+  flex: 1;
+  margin-right: 16px;
+}
+
+.levelInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.levelBadge {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.levelLabel {
+  font-weight: 600;
+  font-size: 16px;
+  color: #262626;
+}
+
+.levelDesc {
+  font-size: 13px;
+  color: #8c8c8c;
+}
+
+.switch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #595959;
+}
+
+.tabs {
+  background: #fff;
+  border-radius: 8px;
+  padding: 0 16px;
+}
+
+.tabLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.list {
+  padding: 8px 0;
+}
+
+.listItem {
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.listItem:hover {
+  background-color: #f5f5f5;
+}
+
+.title {
+  font-weight: 500;
+  color: #262626;
+}
+
+.description {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.code {
+  font-size: 12px;
+  color: #8c8c8c;
+  font-family: monospace;
+}
+
+.def {
+  font-size: 13px;
+  color: #595959;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 400px;
+}

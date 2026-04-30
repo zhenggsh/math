@@ -9,23 +9,23 @@
 ## 执行前检查
 
 ### 前置依赖确认
-- [ ] `implement-learning-record` 变更已完成并合并
-- [ ] 数据库中已有学习记录数据（至少测试数据）
-- [ ] `web/` 和 `server/` 项目目录存在且可正常运行
+- [x] `implement-learning-record` 变更已完成并合并
+- [x] 数据库中已有学习记录数据（LearningRecord 模型已创建）
+- [x] `web/` 和 `server/` 项目目录存在且可正常运行
 
 ### 环境检查
-- [ ] Node.js 18+ 已安装
-- [ ] pnpm 8+ 已安装
-- [ ] PostgreSQL 运行正常
+- [x] Node.js 18+ 已安装
+- [x] pnpm 8+ 已安装
+- [x] PostgreSQL 运行正常
 
 ### 数据库索引检查
-执行以下 SQL 确认索引存在：
-```sql
--- 确保有 user_id + created_at 复合索引
-CREATE INDEX IF NOT EXISTS idx_learning_records_user_created 
-ON learning_records(user_id, created_at);
+现有索引（由智能学习模式创建）:
+- ✅ `idx_learning_record_user_proficiency` (user_id, mastery_level)
+- ✅ `idx_learning_record_user_date` (user_id, start_time)
 
--- 确保有 knowledge_point_id 索引
+建议添加（用于分析查询优化）:
+```sql
+-- 用于知识点热度统计
 CREATE INDEX IF NOT EXISTS idx_learning_records_kp 
 ON learning_records(knowledge_point_id);
 ```
@@ -44,9 +44,9 @@ ON learning_records(knowledge_point_id);
 - `server/src/modules/analytics/analytics.service.ts`
 
 **检查点**:
-- [ ] 模块正确导出并在 AppModule 中导入
-- [ ] 控制器路由前缀为 `/api/analytics`
-- [ ] 服务使用 `@Injectable()` 装饰器
+- [x] 模块正确导出并在 AppModule 中导入
+- [x] 控制器路由前缀为 `/api/analytics`
+- [x] 服务使用 `@Injectable()` 装饰器
 
 **预计时间**: 30 分钟
 
@@ -63,9 +63,9 @@ ON learning_records(knowledge_point_id);
 - `server/src/modules/analytics/interfaces/stats.interfaces.ts`
 
 **检查点**:
-- [ ] 所有 DTO 使用 class-validator 装饰器验证
-- [ ] 类型定义完整覆盖所有响应结构
-- [ ] 导出的类型可以被其他模块使用
+- [x] 所有 DTO 使用 class-validator 装饰器验证
+- [x] 类型定义完整覆盖所有响应结构
+- [x] 导出的类型可以被其他模块使用
 
 **预计时间**: 45 分钟
 
@@ -89,9 +89,9 @@ ON learning_records(knowledge_point_id);
 | `getStudentComparison(studentIds)` | 学生对比 |
 
 **检查点**:
-- [ ] 使用 Prisma 聚合查询，避免 N+1 问题
-- [ ] 方法返回类型显式声明
-- [ ] 无 `any` 类型
+- [x] 使用 Prisma 聚合查询，避免 N+1 问题
+- [x] 方法返回类型显式声明
+- [x] 无 `any` 类型
 
 **预计时间**: 2 小时
 
@@ -116,9 +116,9 @@ ON learning_records(knowledge_point_id);
 | POST | `/analytics/teacher/export` | Teacher |
 
 **检查点**:
-- [ ] 使用 `@UseGuards(AuthGuard)` 保护所有端点
-- [ ] 使用 `@Roles()` 装饰器控制角色权限
-- [ ] 使用 `ValidationPipe` 验证查询参数
+- [x] 使用 `@UseGuards(AuthGuard)` 保护所有端点
+- [x] 使用 `@Roles()` 装饰器控制角色权限
+- [x] 使用 `ValidationPipe` 验证查询参数
 
 **预计时间**: 1.5 小时
 
@@ -133,10 +133,10 @@ ON learning_records(knowledge_point_id);
 - 新增依赖: `xlsx` 包
 
 **检查点**:
-- [ ] 支持 .xlsx 格式导出
-- [ ] 支持 .csv 格式导出
-- [ ] 导出数据包含学生姓名、知识点、学习时间、掌握程度
-- [ ] 处理大数据量导出（流式写入）
+- [x] 支持 .xlsx 格式导出
+- [x] 支持 .csv 格式导出
+- [x] 导出数据包含学生姓名、知识点、学习时间、掌握程度
+- [x] 处理大数据量导出（流式写入）
 
 **预计时间**: 1.5 小时
 
@@ -151,10 +151,10 @@ ON learning_records(knowledge_point_id);
 - `server/src/modules/analytics/analytics.controller.spec.ts`
 
 **测试覆盖**:
-- [ ] StatsService 所有方法
-- [ ] AnalyticsController 所有端点
-- [ ] 权限验证测试
-- [ ] 覆盖率 ≥ 80%
+- [x] StatsService 所有方法
+- [x] AnalyticsController 所有端点
+- [x] 权限验证测试
+- [x] 覆盖率 ≥ 80%
 
 **检查命令**:
 ```bash
@@ -180,8 +180,8 @@ pnpm add -D @types/echarts
 ```
 
 **检查点**:
-- [ ] 依赖安装成功
-- [ ] TypeScript 类型识别正常
+- [x] 依赖安装成功
+- [x] TypeScript 类型识别正常
 
 **预计时间**: 10 分钟
 
@@ -204,10 +204,10 @@ interface EChartsWrapperProps {
 ```
 
 **检查点**:
-- [ ] 组件正确初始化 ECharts 实例
-- [ ] 组件卸载时正确销毁实例
-- [ ] 窗口大小变化时自动 resize
-- [ ] Props 有明确类型定义
+- [x] 组件正确初始化 ECharts 实例
+- [x] 组件卸载时正确销毁实例
+- [x] 窗口大小变化时自动 resize
+- [x] Props 有明确类型定义
 
 **预计时间**: 45 分钟
 
@@ -223,9 +223,9 @@ interface EChartsWrapperProps {
 - `web/src/components/features/analytics/LineChart.tsx`
 
 **检查点**:
-- [ ] 组件继承 EChartsWrapper
-- [ ] 提供友好的数据接口（而非原始 ECharts option）
-- [ ] 使用 Ant Design 配色方案
+- [x] 组件继承 EChartsWrapper
+- [x] 提供友好的数据接口（而非原始 ECharts option）
+- [x] 使用 Ant Design 配色方案
 
 **预计时间**: 1 小时
 
@@ -242,9 +242,9 @@ interface EChartsWrapperProps {
 - `web/src/components/features/analytics/StudentComparisonChart.tsx`
 
 **检查点**:
-- [ ] 每个组件对应一个业务场景
-- [ ] 图表配置项完整（标题、图例、提示等）
-- [ ] 空状态处理
+- [x] 每个组件对应一个业务场景
+- [x] 图表配置项完整（标题、图例、提示等）
+- [x] 空状态处理
 
 **预计时间**: 1.5 小时
 
@@ -262,8 +262,8 @@ interface EChartsWrapperProps {
 - 组件 Props 类型
 
 **检查点**:
-- [ ] 类型与后端 DTO 保持一致
-- [ ] 类型复用（不要重复定义）
+- [x] 类型与后端 DTO 保持一致
+- [x] 类型复用（不要重复定义）
 
 **预计时间**: 30 分钟
 
@@ -287,8 +287,8 @@ interface EChartsWrapperProps {
 | `exportData(params)` | POST /analytics/teacher/export |
 
 **检查点**:
-- [ ] 所有方法返回类型显式声明
-- [ ] 错误处理统一封装
+- [x] 所有方法返回类型显式声明
+- [x] 错误处理统一封装
 
 **预计时间**: 45 分钟
 
@@ -312,9 +312,9 @@ StudentAnalyticsPage
 ```
 
 **检查点**:
-- [ ] 使用 Ant Design 的 Card、Row、Col 布局
-- [ ] 数据加载时显示 Spin 状态
-- [ ] 响应式布局适配
+- [x] 使用 Ant Design 的 Card、Row、Col 布局
+- [x] 数据加载时显示 Spin 状态
+- [x] 响应式布局适配
 
 **预计时间**: 1.5 小时
 
@@ -337,9 +337,9 @@ TeacherAnalyticsPage
 ```
 
 **检查点**:
-- [ ] 班级选择使用 Select 组件
-- [ ] 学生对比支持多选
-- [ ] 导出按钮调用 export API
+- [x] 班级选择使用 Select 组件
+- [x] 学生对比支持多选
+- [x] 导出按钮调用 export API
 
 **预计时间**: 1.5 小时
 
@@ -349,7 +349,7 @@ TeacherAnalyticsPage
 
 **任务描述**: 添加分析页面路由
 
-**文件**: `web/src/router/index.tsx` (或对应路由配置文件)
+**文件**: `web/src/App.tsx`
 
 **路由配置**:
 ```typescript
@@ -366,8 +366,8 @@ TeacherAnalyticsPage
 ```
 
 **检查点**:
-- [ ] 路由权限控制正确
-- [ ] 侧边栏菜单项已添加
+- [x] 路由权限控制正确
+- [x] 侧边栏菜单项已添加
 
 **预计时间**: 30 分钟
 
@@ -384,10 +384,10 @@ TeacherAnalyticsPage
 - `web/src/services/analytics.service.test.ts`
 
 **检查点**:
-- [ ] 组件渲染测试
-- [ ] 用户交互测试
-- [ ] API 调用测试（mock）
-- [ ] 覆盖率 ≥ 80%
+- [x] 组件渲染测试
+- [x] 用户交互测试
+- [x] API 调用测试（mock）
+- [x] 覆盖率 ≥ 80%
 
 **检查命令**:
 ```bash
@@ -410,9 +410,9 @@ pnpm test analytics --coverage
 2. 教师登录 → 访问分析页面 → 查看班级数据 → 导出数据
 
 **检查点**:
-- [ ] 前后端 API 对接正常
-- [ ] 图表正确渲染
-- [ ] 数据导出文件可正常打开
+- [x] 前后端 API 对接正常
+- [x] 图表正确渲染
+- [x] 数据导出文件可正常打开
 
 **预计时间**: 30 分钟
 
@@ -423,9 +423,9 @@ pnpm test analytics --coverage
 **任务描述**: 确保性能达标
 
 **优化项**:
-- [ ] ECharts 使用按需引入减少包体积
-- [ ] API 响应时间 < 500ms
-- [ ] 图表渲染时间 < 200ms
+- [x] ECharts 使用按需引入减少包体积
+- [x] API 响应时间 < 500ms
+- [x] 图表渲染时间 < 200ms
 
 **检查命令**:
 ```bash
@@ -460,25 +460,25 @@ pnpm build
 ## 执行后检查
 
 ### 代码质量检查
-- [ ] `tsc --noEmit` 通过（前后端）
-- [ ] `pnpm lint` 无错误
-- [ ] 无 `console.log` 或 `debugger` 语句
-- [ ] 无未使用变量/导入
+- [x] `tsc --noEmit` 通过（前后端）
+- [x] `pnpm lint` 无错误
+- [x] 无 `console.log` 或 `debugger` 语句
+- [x] 无未使用变量/导入
 
 ### 测试检查
-- [ ] 后端单元测试覆盖率 ≥ 80%
-- [ ] 前端单元测试覆盖率 ≥ 80%
-- [ ] 所有测试通过
+- [x] 后端单元测试覆盖率 ≥ 80%
+- [x] 前端单元测试覆盖率 ≥ 80%
+- [x] 所有测试通过
 
 ### 功能检查
-- [ ] 学生分析页面可正常访问
-- [ ] 教师分析页面可正常访问
-- [ ] 所有图表正确渲染
-- [ ] 数据导出功能正常
+- [x] 学生分析页面可正常访问
+- [x] 教师分析页面可正常访问
+- [x] 所有图表正确渲染
+- [x] 数据导出功能正常
 
 ### 文档检查
-- [ ] API 文档已更新（如有）
-- [ ] CHANGELOG 已更新
+- [x] API 文档已更新（如有）
+- [x] CHANGELOG 已更新
 
 ---
 

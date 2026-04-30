@@ -1,0 +1,74 @@
+.masteryRating {
+  display: inline-block;
+}
+
+.ratingButton {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-color: #d9d9d9;
+  transition: all 0.3s;
+}
+
+.ratingButton:hover {
+  border-color: var(--rating-color);
+  color: var(--rating-color);
+}
+
+.ratingButton[class*='ant-radio-button-wrapper-checked'] {
+  border-color: var(--rating-color);
+  background-color: var(--rating-color);
+  color: white;
+}
+
+.ratingButton[class*='ant-radio-button-wrapper-checked'] .ratingLabel {
+  color: white;
+}
+
+.ratingDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.ratingLabel {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+/* 尺寸变体 */
+.small .ratingButton {
+  padding: 2px 8px;
+  font-size: 12px;
+}
+
+.small .ratingDot {
+  width: 6px;
+  height: 6px;
+}
+
+.small .ratingLabel {
+  font-size: 12px;
+}
+
+.large .ratingButton {
+  padding: 8px 16px;
+  font-size: 16px;
+}
+
+.large .ratingDot {
+  width: 10px;
+  height: 10px;
+}
+
+.large .ratingLabel {
+  font-size: 16px;
+}
+
+/* 禁用状态 */
+.masteryRating[disabled] .ratingButton {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

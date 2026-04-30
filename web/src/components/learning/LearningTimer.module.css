@@ -1,0 +1,19 @@
+.timerCard {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  color: white;
+}
+
+.timerCard :global(.ant-statistic-title) {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 14px;
+}
+
+.timerCard :global(.ant-statistic-content) {
+  color: white;
+}
+
+.timerCard :global(.ant-statistic-content-prefix) {
+  margin-right: 8px;
+  opacity: 0.9;
+}

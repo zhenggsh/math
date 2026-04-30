@@ -1,42 +1,38 @@
 import React, { createContext, useState, useEffect, useCallback } from 'react'
-import { AuthContextType, User, AuthResponse } from '../types/auth.types'
+import type { AuthContextType, User, AuthResponse, Role } from '../types/auth.types'
 import {
   login as loginApi,
   register as registerApi,
+  getProfile,
   getToken,
   setToken,
   removeToken,
 } from '../services/auth.service'
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  // 应用启动时恢复登录状态
+  // 应用启动时验证 token 并恢复登录状态
   useEffect(() => {
-    const initAuth = () => {
+    const initAuth = async () => {
       const token = getToken()
       if (token) {
-        // 这里可以调用 API 验证 Token 并获取用户信息
-        // 简化处理：从 JWT payload 解码（实际项目中建议调用 /auth/profile）
         try {
-          const payload = JSON.parse(atob(token.split('.')[1]))
-          setUser({
-            id: payload.sub,
-            email: payload.email,
-            name: payload.name || '',
-            role: payload.role,
-          })
+          const profile = await getProfile(token)
+          setUser(profile)
         } catch {
           removeToken()
+          setUser(null)
         }
       }
       setIsLoading(false)
     }
 
-    initAuth()
+    void initAuth()
   }, [])
 
   const login = useCallback(async (email: string, password: string) => {
@@ -46,7 +42,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [])
 
   const register = useCallback(
-    async (data: { email: string; password: string; name: string; role?: any }) => {
+    async (data: { email: string; password: string; name: string; role?: Role }) => {
       const response: AuthResponse = await registerApi(data)
       setToken(response.access_token)
       setUser(response.user)
