@@ -36,7 +36,7 @@ export const knowledgeApi = {
    * @param id 知识点ID
    */
   async getKnowledgePointDetail(id: string): Promise<KnowledgePointDetail> {
-    const response = await api.get(`/knowledge-points/${id}`);
+    const response = await api.get(`/textbooks/knowledge-points/${id}`);
     return response.data.data;
   },
 

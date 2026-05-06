@@ -89,7 +89,7 @@ const LearningPage: React.FC = () => {
         const tree = convertToTreeData(data)
         setTreeData(tree)
 
-        // 默认选中第一个节点
+        // 默认选中第一个节点（仅在初始加载时）
         if (tree.length > 0 && !selectedNode) {
           const firstNode = findFirstLeaf(tree[0])
           if (firstNode) {
@@ -102,7 +102,9 @@ const LearningPage: React.FC = () => {
         setLoading(false)
       }
     })()
-  }, [textbookId, selectedNode, handleSelectNode])
+    // 仅在 textbookId 变化时重新加载，点击节点时不触发
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [textbookId])
 
   // 面包屑路径
   const breadcrumbItems = useMemo(() => {

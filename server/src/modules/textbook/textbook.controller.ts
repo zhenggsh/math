@@ -239,6 +239,38 @@ export class TextbookController {
   }
 
   /**
+   * 获取知识点详情
+   */
+  @Get('knowledge-points/:knowledgePointId')
+  @Roles(Role.TEACHER, Role.ADMIN, Role.STUDENT)
+  async getKnowledgePointDetail(
+    @Param('knowledgePointId') knowledgePointId: string,
+  ): Promise<{
+    success: boolean;
+    data: {
+      id: string;
+      code: string;
+      level1: string;
+      level2: string | null;
+      level3: string | null;
+      definition: string | null;
+      characteristics: string | null;
+      importanceLevel: string;
+      contentRef: string | null;
+      textbookId: string;
+      content: string;
+    };
+  }> {
+    const point = await this.textbookService.getKnowledgePointDetail(
+      knowledgePointId,
+    );
+    return {
+      success: true,
+      data: point,
+    };
+  }
+
+  /**
    * 删除教材
    */
   @Delete(':id')

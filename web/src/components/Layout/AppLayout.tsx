@@ -79,7 +79,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
               void navigate('/')
             }}
           >
-            数学通
+            知识通
           </div>
           <Menu
             mode="horizontal"

@@ -36,7 +36,7 @@ export const LoginPage: React.FC = () => {
     >
       <Card style={{ width: 400, padding: '24px' }}>
         <Title level={2} style={{ textAlign: 'center', marginBottom: 24 }}>
-          数学通 - 登录
+          知识通 - 登录
         </Title>
         <Form name="login" onFinish={onFinish} autoComplete="off" layout="vertical">
           <Form.Item

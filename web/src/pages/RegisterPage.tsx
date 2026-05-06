@@ -43,7 +43,7 @@ export const RegisterPage: React.FC = () => {
     >
       <Card style={{ width: 400, padding: '24px' }}>
         <Title level={2} style={{ textAlign: 'center', marginBottom: 24 }}>
-          数学通 - 注册
+          知识通 - 注册
         </Title>
         <Form name="register" onFinish={onFinish} autoComplete="off" layout="vertical">
           <Form.Item

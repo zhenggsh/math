@@ -79,14 +79,40 @@ export class TextbookParserService {
         continue;
       }
 
-      // 第一行作为表头
-      const headers = data[0] as unknown as string[];
-      const rows = data.slice(1);
+      // 找到第一个非空行作为表头（跳过开头的空行）
+      let headerRowIndex = 0;
+      while (headerRowIndex < data.length) {
+        const row = data[headerRowIndex] as unknown as string[];
+        if (
+          row.some(
+            (cell) =>
+              cell !== undefined &&
+              cell !== null &&
+              String(cell).trim() !== '',
+          )
+        ) {
+          break;
+        }
+        headerRowIndex++;
+      }
+
+      if (headerRowIndex >= data.length) {
+        continue;
+      }
+
+      const headers = data[headerRowIndex] as unknown as string[];
+      const rows = data.slice(headerRowIndex + 1);
 
       const records = rows.map((row) => {
         const record: Record<string, string> = {};
         headers.forEach((header: string, index: number) => {
-          record[String(header)] = String(row[index] || '');
+          if (
+            header !== undefined &&
+            header !== null &&
+            String(header).trim() !== ''
+          ) {
+            record[String(header).trim()] = String(row[index] || '');
+          }
         });
         return record;
       });
@@ -105,7 +131,8 @@ export class TextbookParserService {
 
   /**
    * 判断是否为合规的知识点框架
-   * 检查数据中是否存在符合 a.b.c 模式的知识点编号
+   * 检查数据中是否存在符合 a.b.c 模式的知识点编号，
+   * 或存在知识点层级列（一级/二级/三级知识点）
    */
   private isValidKnowledgeFramework(
     records: Record<string, string>[],
@@ -126,6 +153,18 @@ export class TextbookParserService {
       if (codePattern.test(code)) {
         return true;
       }
+    }
+
+    // 如果没有编号列，检查是否有知识点层级列（一级+三级知识点）
+    const hasLevel1 = records.some(
+      (r) => this.getFieldValue(r, ['一级知识点', '一级', 'level1']) !== '',
+    );
+    const hasLevel3 = records.some(
+      (r) => this.getFieldValue(r, ['三级知识点', '三级', 'level3']) !== '',
+    );
+
+    if (hasLevel1 && hasLevel3) {
+      return true;
     }
 
     return false;
@@ -157,11 +196,20 @@ export class TextbookParserService {
   private transformToKnowledgePoints(
     rawData: Record<string, string>[],
   ): RawKnowledgePoint[] {
+    // 用于继承空值和自动编号
+    let currentLevel1 = '';
+    let currentLevel2 = '';
+    let l1Idx = 0;
+    let l2Idx = 0;
+    let l3Idx = 0;
+    let prevL1 = '';
+    let prevL2 = '';
+
     return rawData.map((row, index) => {
       // 提取字段，支持多种可能的列名
-      const code = this.getFieldValue(row, ['知识点编号', '编号', 'code']);
-      const level1 = this.getFieldValue(row, ['一级知识点', '一级', 'level1']);
-      const level2 = this.getFieldValue(row, ['二级知识点', '二级', 'level2']);
+      let code = this.getFieldValue(row, ['知识点编号', '编号', 'code']);
+      let level1 = this.getFieldValue(row, ['一级知识点', '一级', 'level1']);
+      let level2 = this.getFieldValue(row, ['二级知识点', '二级', 'level2']);
       const level3 = this.getFieldValue(row, ['三级知识点', '三级', 'level3']);
       const definition = this.getFieldValue(row, ['定义', 'description']);
       const characteristics = this.getFieldValue(row, [
@@ -176,6 +224,44 @@ export class TextbookParserService {
         '级别',
         'importanceLevel',
       ]);
+
+      // 继承空的一级/二级知识点（Excel 中空白表示继承上一行）
+      if (level1) {
+        currentLevel1 = level1;
+        currentLevel2 = ''; // 一级变化时重置二级
+      } else {
+        level1 = currentLevel1;
+      }
+
+      if (level2) {
+        currentLevel2 = level2;
+      } else {
+        level2 = currentLevel2;
+      }
+
+      // 自动生成编号（当文件中没有编号列时）
+      if (!code) {
+        if (level1 !== prevL1) {
+          l1Idx++;
+          l2Idx = 0;
+          l3Idx = 0;
+          prevL1 = level1;
+          prevL2 = '';
+        }
+        if (level2 && level2 !== prevL2) {
+          l2Idx++;
+          l3Idx = 0;
+          prevL2 = level2;
+        }
+        l3Idx++;
+        if (level3) {
+          code = `${l1Idx}.${l2Idx}.${l3Idx}`;
+        } else if (level2) {
+          code = `${l1Idx}.${l2Idx}`;
+        } else {
+          code = `${l1Idx}`;
+        }
+      }
 
       // 验证必填字段
       if (!code) {

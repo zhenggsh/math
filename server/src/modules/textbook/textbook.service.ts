@@ -13,6 +13,7 @@ import {
   FrameworkType,
   RawKnowledgePoint,
 } from './types/textbook.types';
+import * as fs from 'fs';
 
 @Injectable()
 export class TextbookService {
@@ -57,11 +58,14 @@ export class TextbookService {
         await this.createTextbook(baseName, filePair);
         result.added.push(baseName);
       } else {
-        // 检查是否需要更新（比较最后修改时间）
+        // 检查是否需要更新（比较最后修改时间，或知识点数量为0时强制刷新）
         const dbModifiedAt = existing.lastModifiedAt.getTime();
         const fileModifiedAt = filePair.lastModifiedAt.getTime();
+        const kpCount = await this.prisma.knowledgePoint.count({
+          where: { textbookId: existing.id },
+        });
 
-        if (fileModifiedAt > dbModifiedAt) {
+        if (fileModifiedAt > dbModifiedAt || kpCount === 0) {
           await this.updateTextbook(existing.id, baseName, filePair);
           result.updated.push(baseName);
         }
@@ -345,6 +349,123 @@ export class TextbookService {
       contentRef: point.contentRef,
       textbookId: point.textbookId,
     }));
+  }
+
+  /**
+   * 获取知识点详情
+   */
+  async getKnowledgePointDetail(
+    knowledgePointId: string,
+  ): Promise<
+    {
+      id: string;
+      code: string;
+      level1: string;
+      level2: string | null;
+      level3: string | null;
+      definition: string | null;
+      characteristics: string | null;
+      importanceLevel: string;
+      contentRef: string | null;
+      textbookId: string;
+      content: string;
+    }
+  > {
+    const point = await this.prisma.knowledgePoint.findUnique({
+      where: { id: knowledgePointId },
+    });
+
+    if (!point) {
+      throw new NotFoundException(`知识点不存在: ${knowledgePointId}`);
+    }
+
+    // 尝试从关联的教材内容文件中读取 Markdown 内容
+    // 使用知识点编号（code）在 md 文件中定位对应内容块
+    let content = await this.readContentFromFile(point.code, point.textbookId);
+
+    // 如果文件内容为空，回退到 definition
+    if (!content && point.definition) {
+      content = point.definition;
+    }
+
+    return {
+      id: point.id,
+      code: point.code,
+      level1: point.level1,
+      level2: point.level2,
+      level3: point.level3,
+      definition: point.definition,
+      characteristics: point.characteristics,
+      importanceLevel: point.importanceLevel,
+      contentRef: point.contentRef,
+      textbookId: point.textbookId,
+      content,
+    };
+  }
+
+  /**
+   * 从教材内容文件中读取知识点内容
+   * 使用知识点编号（code）在 md 文件中匹配对应内容块
+   */
+  private async readContentFromFile(
+    code: string,
+    textbookId: string,
+  ): Promise<string> {
+    try {
+      const textbook = await this.prisma.textbook.findUnique({
+        where: { id: textbookId },
+      });
+
+      if (!textbook || !textbook.contentPath) {
+        return '';
+      }
+
+      const contentFilePath = this.fileService.getFilePath(textbook.contentPath);
+      if (!fs.existsSync(contentFilePath)) {
+        return '';
+      }
+
+      const fileContent = fs.readFileSync(contentFilePath, 'utf-8');
+
+      // 按知识点编号匹配内容块
+      // 支持格式：#### 知识点 1.1.1-1：标题
+      const lines = fileContent.split('\n');
+      let capturing = false;
+      let content = '';
+
+      for (const line of lines) {
+        // 检测知识点标题行：#### 知识点 {code}[:：]
+        const startMatch = line.match(
+          new RegExp(`^####\\s+知识点\\s+${this.escapeRegex(code)}\\s*[:：]`),
+        );
+        if (startMatch) {
+          capturing = true;
+          content = line + '\n';
+          continue;
+        }
+
+        // 检测结束标记：下一个知识点标题 或 --- 分隔符
+        if (capturing) {
+          const nextKpMatch = line.match(/^####\s+知识点\s+\d/);
+          const separatorMatch = line.match(/^---\s*$/);
+          if (nextKpMatch || separatorMatch) {
+            break;
+          }
+          content += line + '\n';
+        }
+      }
+
+      return content.trim();
+    } catch {
+      return '';
+    }
+  }
+
+  /**
+   * 转义正则表达式特殊字符
+   */
+  private escapeRegex(str: string): string {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 
   /**

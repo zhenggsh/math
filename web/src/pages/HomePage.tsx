@@ -51,9 +51,9 @@ export const HomePage: React.FC = () => {
   return (
     <div>
       <Card style={{ marginBottom: 24, textAlign: 'center', padding: '40px 0' }}>
-        <Title level={2}>欢迎使用数学通学习系统！</Title>
+        <Title level={2}>欢迎使用知识通学习系统！</Title>
         <Paragraph style={{ fontSize: 16, color: '#595959' }}>
-          数学通是面向高中学生的数学知识点学习系统，支持教材大纲展示、知识点学习、学习情况记录与分析。
+          知识通是面向知识点查看学习系统，支持教材大纲展示、知识点学习、学习情况记录与分析。
         </Paragraph>
         {!user && (
           <Space style={{ marginTop: 16 }}>

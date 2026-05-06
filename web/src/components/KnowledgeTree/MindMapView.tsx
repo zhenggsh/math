@@ -17,6 +17,27 @@ const LEVEL_GAP = 180
 const NODE_GAP = 20
 const MAX_DEPTH_DEFAULT = 3
 
+interface Connection {
+  parent: MindMapNodeLayout
+  child: MindMapNodeLayout
+}
+
+/**
+ * 收集所有父子连接关系
+ */
+const collectConnections = (layout: MindMapNodeLayout[]): Connection[] => {
+  const connections: Connection[] = []
+  for (const node of layout) {
+    if (node.children) {
+      for (const child of node.children) {
+        connections.push({ parent: node, child })
+        connections.push(...collectConnections([child]))
+      }
+    }
+  }
+  return connections
+}
+
 /**
  * 计算思维导图布局
  * 使用简单的水平层次布局
@@ -83,7 +104,8 @@ const MindMapNode: React.FC<{
   collapsedKeys: Set<string>
   onSelect: (node: KnowledgeTreeNode) => void
   onToggleCollapse: (key: string) => void
-}> = ({ layout, selectedKey, collapsedKeys, onSelect, onToggleCollapse }) => {
+  parentLayout?: MindMapNodeLayout
+}> = ({ layout, selectedKey, collapsedKeys, onSelect, onToggleCollapse, parentLayout }) => {
   const isSelected = layout.id === selectedKey
   const importanceColor = {
     A: '#ff4d4f',
@@ -95,20 +117,12 @@ const MindMapNode: React.FC<{
     layout.data.children && layout.data.children.length > 0 && layout.depth < MAX_DEPTH_DEFAULT
   const isCollapsed = collapsedKeys.has(layout.id)
 
-  return (
-    <g transform={`translate(${layout.x}, ${layout.y})`}>
-      {/* 连接线到父节点 */}
-      {layout.depth > 0 && (
-        <line
-          x1={-LEVEL_GAP + NODE_WIDTH}
-          y1={NODE_HEIGHT / 2}
-          x2={0}
-          y2={NODE_HEIGHT / 2}
-          stroke="#d9d9d9"
-          strokeWidth={2}
-        />
-      )}
+  // 使用相对坐标，避免父节点 <g> 的 transform 叠加
+  const relativeX = parentLayout ? layout.x - parentLayout.x : layout.x
+  const relativeY = parentLayout ? layout.y - parentLayout.y : layout.y
 
+  return (
+    <g transform={`translate(${relativeX}, ${relativeY})`}>
       {/* 节点矩形 */}
       <rect
         x={0}
@@ -173,6 +187,7 @@ const MindMapNode: React.FC<{
           collapsedKeys={collapsedKeys}
           onSelect={onSelect}
           onToggleCollapse={onToggleCollapse}
+          parentLayout={layout}
         />
       ))}
     </g>
@@ -304,6 +319,34 @@ export const MindMapView: React.FC<MindMapViewProps> = ({
           }}
         >
           <g>
+            {/* 先绘制所有连接线（在节点下方） */}
+            {collectConnections(layout).map(({ parent, child }, index) => (
+              <g key={`conn-${index}`}>
+                <path
+                  d={`M ${parent.x + NODE_WIDTH} ${parent.y + NODE_HEIGHT / 2} C ${parent.x + NODE_WIDTH + 50} ${parent.y + NODE_HEIGHT / 2}, ${child.x - 50} ${child.y + NODE_HEIGHT / 2}, ${child.x} ${child.y + NODE_HEIGHT / 2}`}
+                  fill="none"
+                  stroke="#1890ff"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  opacity={0.7}
+                />
+                {/* 父节点端连接点 */}
+                <circle
+                  cx={parent.x + NODE_WIDTH}
+                  cy={parent.y + NODE_HEIGHT / 2}
+                  r={3}
+                  fill="#1890ff"
+                />
+                {/* 子节点端连接点 */}
+                <circle
+                  cx={child.x}
+                  cy={child.y + NODE_HEIGHT / 2}
+                  r={3}
+                  fill="#1890ff"
+                />
+              </g>
+            ))}
+            {/* 再绘制节点 */}
             {layout.map(node => (
               <MindMapNode
                 key={node.id}
