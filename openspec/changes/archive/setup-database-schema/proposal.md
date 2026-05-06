@@ -1,6 +1,6 @@
 ## Why
 
-数学通项目需要存储用户数据、知识点数据和学习记录。根据 constitution.md 的域模型定义，需要建立 User、KnowledgePoint、LearningRecord、Textbook 四个核心实体。Prisma 作为 ORM 工具，提供类型安全的数据库访问和迁移管理能力。
+知识通项目需要存储用户数据、知识点数据和学习记录。根据 constitution.md 的域模型定义，需要建立 User、KnowledgePoint、LearningRecord、Textbook 四个核心实体。Prisma 作为 ORM 工具，提供类型安全的数据库访问和迁移管理能力。
 
 ## What Changes
 

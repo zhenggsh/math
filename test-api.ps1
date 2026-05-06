@@ -1,8 +1,8 @@
-# 数学通 API 测试脚本
+# 知识通 API 测试脚本
 
 $BASE_URL = "http://localhost:3000"
 
-Write-Host "===== 数学通教材管理 API 测试 =====" -ForegroundColor Green
+Write-Host "===== 知识通教材管理 API 测试 =====" -ForegroundColor Green
 
 # 1. 登录获取 Token
 Write-Host "`n[1/6] 登录获取 Token..." -ForegroundColor Cyan

@@ -1,4 +1,4 @@
-# 数学通 (Math Learning System) - Project Documentation
+# 知识通 (Math Learning System) - Project Documentation
 
 > **Agent 必读**: 本文档是项目总览和入口指南。开始工作前请先阅读 [.agents/skills/project-rule/SKILL.md](.agents/skills/project-rule/SKILL.md) 了解代码生成规则。
 > 
@@ -12,7 +12,7 @@
 
 ## 项目概述
 
-**数学通**是一个面向高中学生的数学知识点学习系统，支持教材大纲展示、知识点学习、学习情况记录与分析。
+**知识通**是一个面向高中学生的数学知识点学习系统，支持教材大纲展示、知识点学习、学习情况记录与分析。
 
 ### 核心功能
 

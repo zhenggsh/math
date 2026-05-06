@@ -21,7 +21,7 @@ async function bootstrap() {
   // 配置 Swagger API 文档
   const config = new DocumentBuilder()
     .setTitle('Math Learning System API')
-    .setDescription('数学通 - 数学学习系统 API 文档')
+    .setDescription('知识通 - 数学学习系统 API 文档')
     .setVersion('1.0.0')
     .addBearerAuth(
       {

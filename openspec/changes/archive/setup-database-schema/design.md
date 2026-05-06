@@ -1,6 +1,6 @@
 ## Context
 
-根据 constitution.md 的域模型定义，数学通项目需要四个核心实体：
+根据 constitution.md 的域模型定义，知识通项目需要四个核心实体：
 - **User**：系统使用者，支持学生/教师/管理员三种角色
 - **KnowledgePoint**：教材中的知识点，从文件解析生成
 - **LearningRecord**：用户对知识点的学习反馈

@@ -1,4 +1,4 @@
-# Project Constitution - 数学通 (Math Learning System)
+# Project Constitution - 知识通 (Math Learning System)
 
 > 项目宪法 - 定义基本原则、约束条件、决策框架和开发工作流
 > 
@@ -8,7 +8,7 @@
 
 ## Project Mission
 
-**数学通**是一个面向高中学生的数学知识点学习系统，支持教材大纲展示、知识点学习、学习情况记录与分析。
+**知识通**是一个面向高中学生的数学知识点学习系统，支持教材大纲展示、知识点学习、学习情况记录与分析。
 
 **核心目标**:
 1. 提供直观、灵活的知识点学习界面

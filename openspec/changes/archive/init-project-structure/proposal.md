@@ -1,6 +1,6 @@
 ## Why
 
-数学通项目需要一个标准化的项目基础架构，包括前端（React + TypeScript + Vite）和后端（NestJS + TypeScript）的初始配置。建立统一的代码规范工具链（ESLint + Prettier）和包管理（pnpm workspace）是确保代码质量和开发效率的基础。
+知识通项目需要一个标准化的项目基础架构，包括前端（React + TypeScript + Vite）和后端（NestJS + TypeScript）的初始配置。建立统一的代码规范工具链（ESLint + Prettier）和包管理（pnpm workspace）是确保代码质量和开发效率的基础。
 
 ## What Changes
 

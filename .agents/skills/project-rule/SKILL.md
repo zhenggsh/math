@@ -1,13 +1,13 @@
 ---
 name: project-rule
-description: Code generation rules for 数学通 (Math Learning System). Apply when generating any code for this project.
+description: Code generation rules for 知识通 (Math Learning System). Apply when generating any code for this project.
 license: MIT
 metadata:
   author: kimi-code
   version: "1.0"
 ---
 
-# 数学通 项目代码生成规则
+# 知识通 项目代码生成规则
 
 > **Agent 必读**: 本文档是“代码风格与实现约束的唯一权威”（不覆盖工作流/原则/决策权）。开始编码前请先阅读本文档，了解技术约束和代码风格。
 > 

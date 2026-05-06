@@ -1,6 +1,6 @@
 ## Why
 
-数学通项目需要实现用户认证系统，以支持学生、教师、管理员三种角色的访问控制。基于前置变更 `setup-database-schema` 已完成的 User 模型（包含 email, passwordHash, role 等字段），本变更将实现完整的认证流程，包括用户注册、登录、JWT Token 管理和角色权限控制。
+知识通项目需要实现用户认证系统，以支持学生、教师、管理员三种角色的访问控制。基于前置变更 `setup-database-schema` 已完成的 User 模型（包含 email, passwordHash, role 等字段），本变更将实现完整的认证流程，包括用户注册、登录、JWT Token 管理和角色权限控制。
 
 ## What Changes
 
