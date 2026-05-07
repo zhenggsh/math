@@ -1,5 +1,5 @@
 import React from 'react'
-import { Layout, Menu, Button, Space, Typography, Avatar } from 'antd'
+import { Layout, Menu, Button, Space, Typography, Avatar, App } from 'antd'
 import {
   HomeOutlined,
   BookOutlined,
@@ -13,7 +13,6 @@ import {
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import { getTextbooks } from '../../services/textbook.service'
-import { message } from 'antd'
 
 const { Header, Content } = Layout
 const { Text } = Typography
@@ -31,6 +30,7 @@ const menuItems = [
 ]
 
 export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
+  const { message } = App.useApp()
   const navigate = useNavigate()
   const location = useLocation()
   const { user, isAuthenticated, logout } = useAuth()

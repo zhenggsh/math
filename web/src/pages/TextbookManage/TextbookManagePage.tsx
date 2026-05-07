@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-misused-promises, @typescript-eslint/no-unsafe-enum-comparison */
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Card, Button, Space, Typography, Alert, message, Empty } from 'antd'
+import { Card, Button, Space, Typography, Alert, App, Empty } from 'antd'
 import { PlusOutlined, ArrowLeftOutlined } from '@ant-design/icons'
 import { useTextbooks } from './hooks/useTextbooks'
 import { TextbookTable } from './components/TextbookTable'
@@ -12,6 +12,7 @@ import { useAuth } from '../../hooks/useAuth'
 const { Title, Text } = Typography
 
 const TextbookManagePage: React.FC = () => {
+  const { message } = App.useApp()
   const navigate = useNavigate()
   const { user } = useAuth()
   const [uploadModalOpen, setUploadModalOpen] = useState(false)

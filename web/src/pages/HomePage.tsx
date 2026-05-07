@@ -1,11 +1,10 @@
 import React from 'react'
-import { Card, Row, Col, Typography, Button, Space } from 'antd'
+import { Card, Row, Col, Typography, Button, Space, App } from 'antd'
 import { BookOutlined, ReadOutlined, BulbOutlined, BarChartOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { getTextbooks } from '../services/textbook.service'
 import { Role } from '../types/auth.types'
-import { message } from 'antd'
 
 const { Title, Paragraph } = Typography
 
@@ -41,6 +40,7 @@ const featureCards = [
 ]
 
 export const HomePage: React.FC = () => {
+  const { message } = App.useApp()
   const navigate = useNavigate()
   const { user } = useAuth()
 

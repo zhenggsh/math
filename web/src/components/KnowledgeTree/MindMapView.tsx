@@ -75,7 +75,7 @@ const calculateLayout = (
     let childrenHeight = 0
     if (hasChildren && !isCollapsed) {
       const childrenResult = calculateLayout(
-        node.children,
+        node.children!,
         maxDepth,
         collapsedKeys,
         depth + 1,

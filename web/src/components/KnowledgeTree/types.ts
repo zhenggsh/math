@@ -1,4 +1,4 @@
-import type { ImportanceLevel } from '../../types/knowledge.types'
+import type { ImportanceLevel, KnowledgePoint } from '../../types/knowledge.types'
 
 /**
  * 知识树节点数据接口
@@ -18,8 +18,8 @@ export interface KnowledgeTreeNode {
   children?: KnowledgeTreeNode[]
   /** 是否叶子节点 */
   isLeaf?: boolean
-  /** 自定义数据 */
-  data?: KnowledgePointData
+  /** 原始数据 */
+  data: KnowledgePoint
 }
 
 /**
@@ -27,21 +27,6 @@ export interface KnowledgeTreeNode {
  */
 export type LearningStatus = 'not_started' | 'learning' | 'mastered' | 'review_needed'
 
-/**
- * 知识点数据
- */
-export interface KnowledgePointData {
-  /** 知识点ID */
-  id: string
-  /** 定义 */
-  definition?: string
-  /** 特性/运算方式 */
-  characteristics?: string
-  /** 内容引用 */
-  contentRef?: string
-  /** 教材ID */
-  textbookId: string
-}
 
 /**
  * 视图模式

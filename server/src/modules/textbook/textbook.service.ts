@@ -381,7 +381,13 @@ export class TextbookService {
 
     // 尝试从关联的教材内容文件中读取 Markdown 内容
     // 使用知识点编号（code）在 md 文件中定位对应内容块
-    let content = await this.readContentFromFile(point.code, point.textbookId);
+    let content = await this.readContentFromFile(
+      point.code,
+      point.textbookId,
+      point.level1,
+      point.level2,
+      point.level3,
+    );
 
     // 如果文件内容为空，回退到 definition
     if (!content && point.definition) {
@@ -406,10 +412,14 @@ export class TextbookService {
   /**
    * 从教材内容文件中读取知识点内容
    * 使用知识点编号（code）在 md 文件中匹配对应内容块
+   * 支持一二级节点按 code 层级匹配（a / a.b / a.b.c）
    */
   private async readContentFromFile(
     code: string,
     textbookId: string,
+    level1?: string | null,
+    level2?: string | null,
+    level3?: string | null,
   ): Promise<string> {
     try {
       const textbook = await this.prisma.textbook.findUnique({
@@ -426,39 +436,146 @@ export class TextbookService {
       }
 
       const fileContent = fs.readFileSync(contentFilePath, 'utf-8');
-
-      // 按知识点编号匹配内容块
-      // 支持格式：#### 知识点 1.1.1-1：标题
       const lines = fileContent.split('\n');
-      let capturing = false;
-      let content = '';
 
-      for (const line of lines) {
-        // 检测知识点标题行：#### 知识点 {code}[:：]
-        const startMatch = line.match(
-          new RegExp(`^####\\s+知识点\\s+${this.escapeRegex(code)}\\s*[:：]`),
+      // 根据 code 层级选择匹配策略
+      const codeParts = code.split('.');
+
+      if (codeParts.length === 1) {
+        // 一级知识点：先尝试 code 匹配，再回退到 level1 名称匹配
+        return (
+          this.matchByCodeLevel1(lines, code) ||
+          this.matchByNameLevel1(lines, level1 || '')
         );
-        if (startMatch) {
-          capturing = true;
-          content = line + '\n';
-          continue;
-        }
-
-        // 检测结束标记：下一个知识点标题 或 --- 分隔符
-        if (capturing) {
-          const nextKpMatch = line.match(/^####\s+知识点\s+\d/);
-          const separatorMatch = line.match(/^---\s*$/);
-          if (nextKpMatch || separatorMatch) {
-            break;
-          }
-          content += line + '\n';
-        }
       }
 
-      return content.trim();
+      if (codeParts.length === 2) {
+        // 二级知识点：先尝试 code 匹配，再回退到 level2 名称匹配
+        return (
+          this.matchByCodeLevel2(lines, code) ||
+          this.matchByNameLevel2(lines, level2 || '')
+        );
+      }
+
+      // 三级知识点：现有逻辑
+      return this.matchByCodeLevel3(lines, code);
     } catch {
       return '';
     }
+  }
+
+  /**
+   * 一级知识点：按 code 匹配（如 ## 第一章 / ## 1）
+   */
+  private matchByCodeLevel1(lines: string[], code: string): string {
+    const patterns = [
+      new RegExp(`^##\\s+.*第\\s*${this.escapeRegex(code)}\\s*章.*$`), // ## 第一章
+      new RegExp(`^##\\s+${this.escapeRegex(code)}\\b.*$`), // ## 1 / ## 1.
+    ];
+    return this.matchByPatterns(lines, patterns, '##');
+  }
+
+  /**
+   * 一级知识点：按名称匹配（如 ## 集合与函数概念）
+   */
+  private matchByNameLevel1(lines: string[], name: string): string {
+    if (!name) return '';
+    const patterns = [
+      new RegExp(`^##\\s+.*${this.escapeRegex(name)}.*$`),
+    ];
+    return this.matchByPatterns(lines, patterns, '##');
+  }
+
+  /**
+   * 二级知识点：按 code 匹配（如 ### 1.1 集合）
+   */
+  private matchByCodeLevel2(lines: string[], code: string): string {
+    const patterns = [
+      new RegExp(`^###\\s+${this.escapeRegex(code)}\\b.*$`), // ### 1.1
+    ];
+    return this.matchByPatterns(lines, patterns, '###');
+  }
+
+  /**
+   * 二级知识点：按名称匹配（如 ### 集合的概念）
+   */
+  private matchByNameLevel2(lines: string[], name: string): string {
+    if (!name) return '';
+    const patterns = [
+      new RegExp(`^###\\s+.*${this.escapeRegex(name)}.*$`),
+    ];
+    return this.matchByPatterns(lines, patterns, '###');
+  }
+
+  /**
+   * 三级知识点：按 code 精确匹配（#### 知识点 1.1.1：标题）
+   */
+  private matchByCodeLevel3(lines: string[], code: string): string {
+    let capturing = false;
+    let content = '';
+
+    for (const line of lines) {
+      const startMatch = line.match(
+        new RegExp(`^####\\s+知识点\\s+${this.escapeRegex(code)}\\s*[:：]`),
+      );
+      if (startMatch) {
+        capturing = true;
+        content = line + '\n';
+        continue;
+      }
+
+      if (capturing) {
+        const nextKpMatch = line.match(/^####\s+知识点\s+\d/);
+        const separatorMatch = line.match(/^---\s*$/);
+        if (nextKpMatch || separatorMatch) {
+          break;
+        }
+        content += line + '\n';
+      }
+    }
+
+    return content.trim();
+  }
+
+  /**
+   * 通用匹配：按正则模式匹配标题行，捕获到下一个同级或更高级标题
+   */
+  private matchByPatterns(
+    lines: string[],
+    patterns: RegExp[],
+    currentLevel: string,
+  ): string {
+    let capturing = false;
+    let content = '';
+    const currentHashCount = currentLevel.length; // ## → 2, ### → 3
+
+    for (const line of lines) {
+      if (!capturing) {
+        for (const pattern of patterns) {
+          if (pattern.test(line)) {
+            capturing = true;
+            content = line + '\n';
+            break;
+          }
+        }
+        continue;
+      }
+
+      // 检测结束：下一个同级或更高级标题（# 数量 <= currentHashCount）
+      const headingMatch = line.match(/^(#{1,6})\s+/);
+      if (headingMatch && headingMatch[1].length <= currentHashCount) {
+        break;
+      }
+
+      // 检测分隔线
+      if (line.match(/^---\s*$/)) {
+        break;
+      }
+
+      content += line + '\n';
+    }
+
+    return content.trim();
   }
 
   /**
@@ -466,6 +583,179 @@ export class TextbookService {
    */
   private escapeRegex(str: string): string {
     return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  /**
+   * 更新知识点在 MD 文件中的内容块
+   * @param knowledgePointId 知识点ID
+   * @param newContent 新内容（包含标题行）
+   */
+  async updateContentInFile(
+    knowledgePointId: string,
+    newContent: string,
+  ): Promise<void> {
+    const point = await this.prisma.knowledgePoint.findUnique({
+      where: { id: knowledgePointId },
+    });
+
+    if (!point) {
+      throw new NotFoundException(`知识点不存在: ${knowledgePointId}`);
+    }
+
+    const textbook = await this.prisma.textbook.findUnique({
+      where: { id: point.textbookId },
+    });
+
+    if (!textbook || !textbook.contentPath) {
+      throw new NotFoundException('教材内容文件不存在');
+    }
+
+    const filePath = this.fileService.getFilePath(textbook.contentPath);
+    if (!fs.existsSync(filePath)) {
+      throw new NotFoundException('内容文件不存在');
+    }
+
+    const fileContent = fs.readFileSync(filePath, 'utf-8');
+    const lines = fileContent.split('\n');
+
+    const range = this.findContentBlockRange(
+      lines,
+      point.code,
+      point.level1,
+      point.level2,
+    );
+
+    if (!range) {
+      throw new NotFoundException('无法在文件中找到对应内容块');
+    }
+
+    const newLines = [
+      ...lines.slice(0, range.startIndex),
+      newContent,
+      ...lines.slice(range.endIndex),
+    ];
+
+    fs.writeFileSync(filePath, newLines.join('\n'));
+    this.logger.log(`已更新知识点 ${point.code} 的内容`);
+  }
+
+  /**
+   * 查找内容块在文件中的起始和结束行索引
+   * @returns { startIndex, endIndex }，endIndex 为不包含
+   */
+  private findContentBlockRange(
+    lines: string[],
+    code: string,
+    level1?: string | null,
+    level2?: string | null,
+  ): { startIndex: number; endIndex: number } | null {
+    const codeParts = code.split('.');
+
+    if (codeParts.length === 1) {
+      return (
+        this.findBlockRangeByCodeLevel1(lines, code) ||
+        this.findBlockRangeByNameLevel1(lines, level1 || '')
+      );
+    }
+
+    if (codeParts.length === 2) {
+      return (
+        this.findBlockRangeByCodeLevel2(lines, code) ||
+        this.findBlockRangeByNameLevel2(lines, level2 || '')
+      );
+    }
+
+    return this.findBlockRangeByCodeLevel3(lines, code);
+  }
+
+  private findBlockRangeByCodeLevel1(
+    lines: string[],
+    code: string,
+  ): { startIndex: number; endIndex: number } | null {
+    const patterns = [
+      new RegExp(`^##\\s+.*第\\s*${this.escapeRegex(code)}\\s*章.*$`),
+      new RegExp(`^##\\s+${this.escapeRegex(code)}\\b.*$`),
+    ];
+    return this.findBlockRangeByPatterns(lines, patterns, '##');
+  }
+
+  private findBlockRangeByNameLevel1(
+    lines: string[],
+    name: string,
+  ): { startIndex: number; endIndex: number } | null {
+    if (!name) return null;
+    const patterns = [new RegExp(`^##\\s+.*${this.escapeRegex(name)}.*$`)];
+    return this.findBlockRangeByPatterns(lines, patterns, '##');
+  }
+
+  private findBlockRangeByCodeLevel2(
+    lines: string[],
+    code: string,
+  ): { startIndex: number; endIndex: number } | null {
+    const patterns = [new RegExp(`^###\\s+${this.escapeRegex(code)}\\b.*$`)];
+    return this.findBlockRangeByPatterns(lines, patterns, '###');
+  }
+
+  private findBlockRangeByNameLevel2(
+    lines: string[],
+    name: string,
+  ): { startIndex: number; endIndex: number } | null {
+    if (!name) return null;
+    const patterns = [new RegExp(`^###\\s+.*${this.escapeRegex(name)}.*$`)];
+    return this.findBlockRangeByPatterns(lines, patterns, '###');
+  }
+
+  private findBlockRangeByCodeLevel3(
+    lines: string[],
+    code: string,
+  ): { startIndex: number; endIndex: number } | null {
+    for (let i = 0; i < lines.length; i++) {
+      const startMatch = lines[i].match(
+        new RegExp(`^####\\s+知识点\\s+${this.escapeRegex(code)}\\s*[:：]`),
+      );
+      if (startMatch) {
+        let endIndex = lines.length;
+        for (let j = i + 1; j < lines.length; j++) {
+          const nextKpMatch = lines[j].match(/^####\s+知识点\s+\d/);
+          const separatorMatch = lines[j].match(/^---\s*$/);
+          const headingMatch = lines[j].match(/^(#{1,3})\s+/);
+          if (nextKpMatch || separatorMatch || headingMatch) {
+            endIndex = j;
+            break;
+          }
+        }
+        return { startIndex: i, endIndex };
+      }
+    }
+    return null;
+  }
+
+  private findBlockRangeByPatterns(
+    lines: string[],
+    patterns: RegExp[],
+    currentLevel: string,
+  ): { startIndex: number; endIndex: number } | null {
+    const currentHashCount = currentLevel.length;
+    for (let i = 0; i < lines.length; i++) {
+      for (const pattern of patterns) {
+        if (pattern.test(lines[i])) {
+          let endIndex = lines.length;
+          for (let j = i + 1; j < lines.length; j++) {
+            const headingMatch = lines[j].match(/^(#{1,6})\s+/);
+            if (headingMatch && headingMatch[1].length <= currentHashCount) {
+              endIndex = j;
+              break;
+            }
+            if (lines[j].match(/^---\s*$/)) {
+              endIndex = j;
+              break;
+            }
+          }
+          return { startIndex: i, endIndex };
+        }
+      }
+    }
+    return null;
   }
 
   /**

@@ -1,8 +1,9 @@
-export enum Role {
-  STUDENT = 'STUDENT',
-  TEACHER = 'TEACHER',
-  ADMIN = 'ADMIN',
-}
+export const Role = {
+  STUDENT: 'STUDENT',
+  TEACHER: 'TEACHER',
+  ADMIN: 'ADMIN',
+} as const;
+export type Role = (typeof Role)[keyof typeof Role];
 
 export interface User {
   id: string
@@ -37,5 +38,4 @@ export interface AuthContextType {
   logout: () => void
 }
 
-// 为了兼容 Vite 的类型导入，额外导出类型别名
-export type { User, AuthResponse, LoginRequest, RegisterRequest, AuthContextType }
+

@@ -192,6 +192,7 @@ export class TextbookParserService {
 
   /**
    * 将原始数据转换为知识点结构
+   * 自动生成一二级知识点记录（code 为 a 和 a.b）
    */
   private transformToKnowledgePoints(
     rawData: Record<string, string>[],
@@ -205,12 +206,20 @@ export class TextbookParserService {
     let prevL1 = '';
     let prevL2 = '';
 
-    return rawData.map((row, index) => {
+    const points = rawData.map((row, index) => {
       // 提取字段，支持多种可能的列名
       let code = this.getFieldValue(row, ['知识点编号', '编号', 'code']);
       let level1 = this.getFieldValue(row, ['一级知识点', '一级', 'level1']);
       let level2 = this.getFieldValue(row, ['二级知识点', '二级', 'level2']);
-      const level3 = this.getFieldValue(row, ['三级知识点', '三级', 'level3']);
+      let level3 = this.getFieldValue(row, ['三级知识点', '三级', 'level3']);
+
+      // 过滤占位符（Excel 中用"—"或"-"表示无）
+      if (level2 === '—' || level2 === '-') {
+        level2 = '';
+      }
+      if (level3 === '—' || level3 === '-') {
+        level3 = '';
+      }
       const definition = this.getFieldValue(row, ['定义', 'description']);
       const characteristics = this.getFieldValue(row, [
         '特性/运算方式',
@@ -290,6 +299,120 @@ export class TextbookParserService {
         importanceLevel,
       };
     });
+
+    // 后处理：自动生成一二级知识点记录
+    return this.generateHierarchyPoints(points);
+  }
+
+  /**
+   * 根据三级知识点自动生成一二级知识点记录
+   */
+  private generateHierarchyPoints(
+    points: RawKnowledgePoint[],
+  ): RawKnowledgePoint[] {
+    const existingCodes = new Set(points.map((p) => p.code));
+    const l1Map = new Map<
+      string,
+      { level1: string; importanceLevel: 'A' | 'B' | 'C' }
+    >();
+    const l2Map = new Map<
+      string,
+      { level1: string; level2: string; importanceLevel: 'A' | 'B' | 'C' }
+    >();
+
+    for (const point of points) {
+      // 只处理数字层级格式的 code（如 1.1.1）
+      if (!/^\d+(\.\d+)*$/.test(point.code)) {
+        continue;
+      }
+
+      const parts = point.code.split('.');
+
+      if (parts.length >= 3) {
+        // 三级记录，提取一二级
+        const l1Code = parts[0];
+        const l2Code = `${parts[0]}.${parts[1]}`;
+
+        if (!existingCodes.has(l1Code)) {
+          const current = l1Map.get(l1Code);
+          if (
+            !current ||
+            this.importanceRank(point.importanceLevel) >
+              this.importanceRank(current.importanceLevel)
+          ) {
+            l1Map.set(l1Code, {
+              level1: point.level1,
+              importanceLevel: point.importanceLevel,
+            });
+          }
+        }
+
+        if (!existingCodes.has(l2Code)) {
+          const current = l2Map.get(l2Code);
+          if (
+            !current ||
+            this.importanceRank(point.importanceLevel) >
+              this.importanceRank(current.importanceLevel)
+          ) {
+            l2Map.set(l2Code, {
+              level1: point.level1,
+              level2: point.level2 || '',
+              importanceLevel: point.importanceLevel,
+            });
+          }
+        }
+      } else if (parts.length === 2) {
+        // 二级记录，提取一级
+        const l1Code = parts[0];
+        if (!existingCodes.has(l1Code)) {
+          const current = l1Map.get(l1Code);
+          if (
+            !current ||
+            this.importanceRank(point.importanceLevel) >
+              this.importanceRank(current.importanceLevel)
+          ) {
+            l1Map.set(l1Code, {
+              level1: point.level1,
+              importanceLevel: point.importanceLevel,
+            });
+          }
+        }
+      }
+    }
+
+    const generated: RawKnowledgePoint[] = [];
+
+    for (const [code, info] of l1Map) {
+      generated.push({
+        code,
+        level1: info.level1,
+        importanceLevel: info.importanceLevel,
+      });
+    }
+
+    for (const [code, info] of l2Map) {
+      generated.push({
+        code,
+        level1: info.level1,
+        level2: info.level2 || undefined,
+        importanceLevel: info.importanceLevel,
+      });
+    }
+
+    if (generated.length > 0) {
+      this.logger.log(
+        `自动生成 ${generated.length} 个一二级知识点记录（一级: ${l1Map.size}, 二级: ${l2Map.size}）`,
+      );
+    }
+
+    return [...points, ...generated];
+  }
+
+  /**
+   * 重要性级别排序（用于取最高级别）
+   */
+  private importanceRank(level: 'A' | 'B' | 'C'): number {
+    return level === 'A' ? 3 : level === 'B' ? 2 : 1;
   }
 
   /**

@@ -1,10 +1,13 @@
-export { KnowledgeTree, type KnowledgeTreeProps } from './KnowledgeTree'
-export { TreeView, type TreeViewProps } from './TreeView'
-export { MindMapView, type MindMapViewProps } from './MindMapView'
+export { KnowledgeTree } from './KnowledgeTree'
+export { TreeView } from './TreeView'
+export { MindMapView } from './MindMapView'
 export type {
   KnowledgeTreeNode,
+  KnowledgeTreeProps,
   LearningStatus,
-  KnowledgePointData,
   ViewMode,
+  TreeViewProps,
+  MindMapViewProps,
   MindMapNodeLayout,
 } from './types'
+export type { KnowledgePoint } from '../../types/knowledge.types'

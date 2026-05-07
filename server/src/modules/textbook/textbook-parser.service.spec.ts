@@ -154,8 +154,13 @@ describe('TextbookParserService', () => {
       const result = service.parseFrameworkFile('/test/math01.xlsx', 'xlsx');
 
       expect(result.success).toBe(true);
-      expect(result.data).toHaveLength(1);
-      expect(result.data?.[0].code).toBe('1.1.1');
+      // 自动生成一二级记录：1.1.1 → 额外生成 1（一级）和 1.1（二级）
+      expect(result.data).toHaveLength(3);
+      expect(result.data?.map((p) => p.code).sort()).toEqual([
+        '1',
+        '1.1',
+        '1.1.1',
+      ]);
     });
   });
 

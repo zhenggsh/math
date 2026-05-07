@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Form, Input, Button, Card, Typography, message } from 'antd'
+import { Form, Input, Button, Card, Typography, App } from 'antd'
 import { UserOutlined, LockOutlined } from '@ant-design/icons'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
@@ -10,6 +10,8 @@ export const LoginPage: React.FC = () => {
   const [loading, setLoading] = useState(false)
   const { login } = useAuth()
   const navigate = useNavigate()
+
+  const { message } = App.useApp()
 
   const onFinish = async (values: { email: string; password: string }) => {
     setLoading(true)

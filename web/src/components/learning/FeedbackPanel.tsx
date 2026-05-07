@@ -4,10 +4,9 @@ import {
   Button,
   Input,
   Form,
-  message,
+  App,
   Divider,
   Typography,
-  Spin,
 } from 'antd';
 import { SaveOutlined, HistoryOutlined } from '@ant-design/icons';
 import { MasteryRating } from './MasteryRating';
@@ -23,7 +22,7 @@ import {
 } from '../../services/learningRecordApi';
 import styles from './FeedbackPanel.module.css';
 
-const { Title, Text } = Typography;
+const { Title } = Typography;
 const { TextArea } = Input;
 
 /**
@@ -44,6 +43,7 @@ export const FeedbackPanel: React.FC<FeedbackPanelProps> = ({
   knowledgePointId,
   onSubmitSuccess,
 }) => {
+  const { message } = App.useApp();
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(false);

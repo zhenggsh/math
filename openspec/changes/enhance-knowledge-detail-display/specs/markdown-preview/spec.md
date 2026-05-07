@@ -33,7 +33,9 @@
 #### Scenario: 显示知识点路径
 - **GIVEN** 用户选中了某个知识点
 - **WHEN** 内容区展示该知识点
-- **THEN** 内容区顶部 SHALL 显示面包屑路径：一级 > 二级 > 三级
+- **THEN** 内容区顶部 SHALL 显示面包屑路径：一级功能 > 二级功能 > 三级功能
+- **AND** 面包屑最后一项 SHALL 显示为 `一级知识点.二级知识点.三级知识点` 的拼接格式
+- **AND** 若某层级为空，SHALL 自动省略（如三级为空则显示 `一级.二级`）
 
 #### Scenario: 显示知识点元信息
 - **GIVEN** 内容区展示知识点
@@ -66,6 +68,24 @@
   - "下一个"按钮
   - 分隔线
   - "导出"下拉按钮
+
+#### Scenario: MarkdownPreview 纯受控模式
+- **GIVEN** `MarkdownPreview` 组件
+- **THEN** 该组件 SHALL 为纯受控组件，不维护内部视图状态
+- **AND** 视图切换 SHALL 仅由父组件（`LearningPage` toolbar）提供
+- **AND** `MarkdownPreview` 内部 SHALL 不再包含独立的 `Segmented` 切换控件
+
+#### Scenario: Mermaid 图表渲染与错误自动修复
+- **GIVEN** Markdown 内容包含 Mermaid 代码块
+- **WHEN** 系统渲染该代码块
+- **THEN** 系统 SHALL 正常渲染图表
+- **AND** 若渲染失败，SHALL 自动将以下半角字符替换为全角字符后重试：
+  - `(` → `（`，`)` → `）`
+  - `[` → `［`，`]` → `］`
+  - `"` → `"`，`'` → `'`
+  - `:` → `：`，`;` → `；`
+- **AND** 若自动转义后仍失败，SHALL 显示中文友好提示："图表渲染失败" + 错误原因 + 原始代码
+- **AND** 提示信息 SHALL 为 `warning` 级别（非 `error`）
 
 ## UI Specifications
 

@@ -119,7 +119,7 @@ export const TreeView: React.FC<TreeViewProps> = ({
 
   // 处理展开/折叠
   const handleExpand: TreeProps['onExpand'] = useCallback(
-    keys => {
+    (keys: React.Key[]) => {
       setAutoExpandParent(false)
       const stringKeys = keys as string[]
       if (controlledExpandedKeys === undefined) {

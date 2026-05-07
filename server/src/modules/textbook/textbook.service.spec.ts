@@ -62,6 +62,7 @@ describe('TextbookService', () => {
             knowledgePoint: {
               createMany: jest.fn(),
               deleteMany: jest.fn(),
+              count: jest.fn().mockResolvedValue(0),
             },
             $transaction: jest.fn((callback) =>
               callback({

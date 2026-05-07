@@ -9,6 +9,11 @@
 - **前驱/后继导航**：在内容区工具栏增加"上一个""下一个"按钮，按树形遍历顺序浏览知识点
 - **知识点导出**：在内容区工具栏增加"导出"按钮，支持将当前知识点导出为 Markdown、PDF 格式
 - **概述区展示**：在内容区顶部新增独立概述卡片，展示当前知识点的定义、特性/运算方式、重要性级别
+- **预览/原始视图切换统一**：移除 `MarkdownPreview` 内部的切换控件，仅由 `LearningPage` toolbar 提供统一入口
+- **面包屑路径拼接**：最后一节显示为 `一级.二级.三级` 的完整路径，而非仅三级名称
+- **Mermaid 语法错误自动修复**：渲染失败时自动尝试字符转义（半角→全角），仍失败则显示友好提示
+
+> **注意**：Raw 模式可编辑保存功能已独立为 `modify-knowledge-detail` change。
 
 ## Capabilities
 
@@ -22,14 +27,18 @@
   - 原始视图也改为左对齐
   - 新增概述区展示知识点框架元信息（定义、特性、重要性级别）
   - 工具栏扩展上一个/下一个/导出按钮
+  - 视图切换改为纯受控，移除内部 `Segmented`
 - `knowledge-tree`:
   - 一二级节点点击时也触发内容加载（目前仅三级节点触发）
   - 提供树形遍历序列用于导航
+  - 树构建逻辑重写：按 code 真实父子关系替代名称虚拟分组
 - `file-parser`:
   - MD 内容查找支持按名称匹配一二级知识点章节
+  - 新增自动生成一二级知识点记录（从三级数据提取 `a` / `a.b`）
 
 ## Impact
 
-- **前端**: `LearningPage.tsx`, `MarkdownPreview.tsx`, `KnowledgeTree.tsx`, 新增 `KnowledgeOverview.tsx`, `KnowledgeExport.tsx`
-- **后端**: `textbook.service.ts` 的 `readContentFromFile` 需支持按名称查找章节
+- **前端**: `LearningPage.tsx`, `MarkdownPreview.tsx`, `KnowledgeTree.tsx`, `knowledgeTree.ts`, `LearningPage.module.css`, 新增 `KnowledgeOverview.tsx`
+- **后端**: `textbook.service.ts` 的 `readContentFromFile` 需支持按名称查找章节；`textbook-parser.service.ts` 需自动生成一二级记录
 - **依赖**: 前端增加 `jsPDF` + `html2canvas`（PDF 导出）
+- **数据**: 现有教材需要重新同步以生成一二级记录

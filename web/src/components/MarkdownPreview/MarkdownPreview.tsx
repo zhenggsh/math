@@ -1,10 +1,9 @@
-import React, { useState, useMemo } from 'react'
+import React, { useMemo } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkMath from 'remark-math'
 import remarkGfm from 'remark-gfm'
 import rehypeKatex from 'rehype-katex'
-import { Spin, Empty, Segmented } from 'antd'
-import { EyeOutlined, CodeOutlined } from '@ant-design/icons'
+import { Spin, Empty } from 'antd'
 import 'katex/dist/katex.min.css'
 import type { MarkdownPreviewProps } from './types'
 import { MermaidRenderer } from './MermaidRenderer'
@@ -29,16 +28,16 @@ const CodeBlock: React.FC<{ language?: string; value: string }> = ({ language, v
 /**
  * Markdown 预览组件
  * 支持基础 Markdown、LaTeX 数学公式、Mermaid 图表
+ * 视图切换由外部控制（showRaw prop）
  */
 export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({
   content,
-  showRaw: controlledShowRaw,
+  showRaw = false,
   loading = false,
   className = '',
+  editable = false,
+  onContentChange,
 }) => {
-  const [internalShowRaw, setInternalShowRaw] = useState(false)
-  const showRaw = controlledShowRaw !== undefined ? controlledShowRaw : internalShowRaw
-
   // 自定义组件映射
   const components = useMemo(
     () => ({
@@ -72,19 +71,6 @@ export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({
     []
   )
 
-  // 处理视图切换
-  const handleViewChange = (value: string | number) => {
-    if (controlledShowRaw === undefined) {
-      setInternalShowRaw(value === 'raw')
-    }
-  }
-
-  // 视图选项
-  const viewOptions = [
-    { value: 'preview', label: 'Preview', icon: <EyeOutlined /> },
-    { value: 'raw', label: 'Raw', icon: <CodeOutlined /> },
-  ]
-
   if (loading) {
     return (
       <div className={`${styles.markdownPreview} ${className}`}>
@@ -103,19 +89,20 @@ export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({
 
   return (
     <div className={`${styles.markdownPreview} ${className}`}>
-      <div className={styles.toolbar}>
-        <Segmented
-          options={viewOptions}
-          value={showRaw ? 'raw' : 'preview'}
-          onChange={handleViewChange}
-          className={styles.viewSwitch}
-        />
-      </div>
       <div className={styles.content}>
         {showRaw ? (
-          <pre className={styles.rawContent}>
-            <code>{content}</code>
-          </pre>
+          editable && onContentChange ? (
+            <textarea
+              className={styles.rawEditor}
+              value={content}
+              onChange={(e) => onContentChange(e.target.value)}
+              spellCheck={false}
+            />
+          ) : (
+            <pre className={styles.rawContent}>
+              <code>{content}</code>
+            </pre>
+          )
         ) : (
           <div className={styles.renderedContent}>
             <ReactMarkdown

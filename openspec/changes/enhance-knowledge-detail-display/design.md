@@ -18,9 +18,12 @@
 - 在内容区顶部展示知识点元信息概述（定义、特性、重要性级别）
 
 **Non-Goals:**
-- 不涉及知识树本身的展示逻辑修改（展开/折叠、思维导图等已在其他变更中覆盖）
+- 不涉及知识树 UI 展示细节的修改（展开/折叠动画、思维导图渲染等已在其他变更中覆盖）
 - 导出为 DOC 格式（前端实现复杂度高，暂不纳入，仅预留接口）
 - 后端增加新的 API 端点（复用现有 `/knowledge-points/:id` 接口）
+- 原始视图下的内容编辑（已在 `modify-knowledge-detail` change 中覆盖）
+
+> **注意**：树构建逻辑（`knowledgeTree.ts` 的 `convertToTreeData`）的修改虽与树结构相关，但属于数据层转换逻辑的重构，而非 UI 展示细节。该修改是支撑一二级节点可点击、导航高亮等功能的前提，已纳入本变更范围。
 
 ## Decisions
 
@@ -41,30 +44,67 @@
 ### 4. PDF 导出方案：jsPDF + html2canvas
 - **Decision**: 使用 `html2canvas` 将内容区 DOM 截图，再通过 `jsPDF` 生成 PDF。
 - **Rationale**: 纯前端实现，无需后端参与；能保留 Markdown 渲染后的样式（公式、图表等）。
-- **Alternative**: 后端生成 PDF（Puppeteer/Playwright）— rejected，增加部署复杂度；纯文本生成 — rejected，会丢失公式和图表。
+- **Alternative**: 后端生成 PDF（Puppeteer/Playwright）— rejected，增加部署复杂度；纯文本生成 — rejected，会丢失公式和图表；`window.print()` — rejected，无法生成文件下载，且打印样式控制有限。
 - **Trade-off**: 复杂页面截图可能体积较大，公式/图表渲染需要等待完成后再导出。
 
 ### 5. 概述区位置：固定在内容区顶部
 - **Decision**: 在 Markdown 预览/原始视图上方、面包屑下方新增独立 `KnowledgeOverview` 卡片组件。
 - **Rationale**: 元信息应在内容之前展示，帮助用户建立上下文。使用 Ant Design `Card` 组件保持风格一致。
 
+### 6. 预览/原始视图切换：仅保留 toolbar 中的切换
+- **Decision**: `MarkdownPreview` 组件移除内部的 `Segmented` 切换控件，改为纯受控组件（通过 `showRaw` prop）。视图切换仅由 `LearningPage` toolbar 提供。
+- **Rationale**: 避免 UI 冗余。当 `showRaw` 被外部控制时，内部 `Segmented` 点击无效，造成困惑。
+- **Implementation**: `MarkdownPreview` 移除 `useState` 和 `Segmented`，直接根据 `showRaw` prop 渲染预览或原始视图。
+
+### 7. 后端自动生成一二级知识点记录
+- **Decision**: 在 `textbook-parser.service.ts` 中新增 `generateHierarchyPoints` 方法，从三级知识点数据自动提取并生成一二级记录。
+- **Rationale**: 现有 math01 数据仅有 43 条三级记录，数据库中无一二级记录。前端若要让一二级节点可点击加载内容，必须先有对应的数据库记录。这是"一二级节点可点击"功能的隐含前提。
+- **Trade-off**: 自动生成的一二级记录 definition/characteristics 为空（因为框架文件中这些字段只存在于三级记录），但 MD 内容查找仍可通过 code/名称匹配到对应章节。
+
+### 8. 前端树构建逻辑重写
+- **Decision**: 完全重写 `knowledgeTree.ts` 的 `convertToTreeData`，从"按 level1/level2 名称虚拟分组"改为"按 code 层级建立真实父子关系"。
+- **Rationale**: 原实现使用虚拟 key（`l1-xxx`、`l2-xxx`），与数据库 `id` 不对应。这导致：
+  - 导航时 `selectedKey` 无法与树节点匹配
+  - `expandedKeys` 需要虚拟 key 而非真实 id
+  - `KnowledgeTree` 组件高亮逻辑无法工作
+- **Implementation**: 按 code 中 `.` 的数量判断层级（0 个=一级，1 个=二级，2 个=三级），通过 code 前缀查找父节点，所有节点使用数据库 `id` 作为 `key`。
+
+### 9. 面包屑路径拼接：显示完整层级路径
+- **Decision**: 面包屑最后一项从仅显示节点 `title` 改为拼接 `level1.level2.level3`。
+- **Rationale**: 仅显示三级名称无法体现知识点在整体框架中的位置，拼接路径更直观。
+- **Implementation**: 从 `selectedNode.data` 中提取 level1/level2/level3，过滤空值后用 `.` 连接。
+
+### 10. Mermaid 语法错误自动修复
+- **Decision**: Mermaid 渲染失败时，自动将半角特殊字符替换为全角字符后重试一次；若仍失败，显示友好提示而非报错堆栈。
+- **Rationale**: 项目规范要求 Mermaid 中的特殊字符使用全角字符，但历史数据或手动输入可能未完全转义。自动修复可提升兼容性。
+- **Escape Rules**:
+  - `(` → `（`，`)` → `）`
+  - `[` → `［`，`]` → `］`
+  - `"` → `"`，`'` → `'`
+  - `:` → `：`，`;` → `；`
+- **Implementation**: `MermaidRenderer` 在 `catch` 块中调用 `escapeMermaidContent`，若转义后内容与原始内容不同则重试；仍失败则显示中文警告 + 原始代码。
+
 ## Risks / Trade-offs
 
 | Risk | Mitigation |
 |------|-----------|
 | MD 文件一二级章节标题格式不统一，名称匹配可能失败 | 匹配逻辑增加多种模式尝试（`## {name}`、`### {name}`、`#### {name}` 等），失败时展示友好提示 |
-| PDF 导出时 Mermaid 图表尚未渲染完成 | 导出前等待 500ms 确保异步渲染完成；若图表区域为空白，提示用户先滚动到该区域 |
+| PDF 导出时 Mermaid 图表尚未渲染完成 | 导出前等待 800ms 确保异步渲染完成；若图表区域为空白，提示用户先滚动到该区域 |
 | 原始视图左对齐后代码块显示异常 | 测试确认等宽字体代码块在左对齐下显示正常 |
 | 一二级节点内容可能较长，概述区信息不完整 | 一二级节点仍展示其 definition/characteristics（来自框架数据），MD 内容展示整个章节 |
+| jspdf ESM 版本有外部依赖 | 通过 Vite alias 将 `jspdf` 指向 UMD 版本（已打包所有依赖），避免 node_modules 中缺失子依赖 |
 
 ## Migration Plan
 
-无需数据迁移。本次变更为纯前端展示增强 + 后端读取逻辑扩展，不影响已有数据。
+需要数据迁移：
+1. 合并代码后，重新同步 math01 教材（调用 refreshTextbook API）
+2. 同步后数据库将从 43 条记录变为 54 条（3 一级 + 8 二级 + 43 三级）
 
 部署步骤：
 1. 合并代码
-2. 前端安装新增依赖：`jsPDF`、`html2canvas`
+2. 前端安装新增依赖：`jspdf`、`html2canvas`
 3. 重新构建并部署
+4. 重新同步现有教材以生成一二级记录
 
 ## Open Questions
 

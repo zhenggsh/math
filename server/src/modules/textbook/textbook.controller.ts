@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Put,
   Delete,
   Param,
   UseGuards,
@@ -267,6 +268,22 @@ export class TextbookController {
     return {
       success: true,
       data: point,
+    };
+  }
+
+  /**
+   * 更新教材内容文件中的知识点内容块
+   */
+  @Put(':id/content')
+  @Roles(Role.TEACHER, Role.ADMIN)
+  async updateContent(
+    @Param('id') id: string,
+    @Body() body: { knowledgePointId: string; content: string },
+  ): Promise<{ success: boolean; message: string }> {
+    await this.textbookService.updateContentInFile(body.knowledgePointId, body.content);
+    return {
+      success: true,
+      message: '内容已保存',
     };
   }
 

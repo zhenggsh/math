@@ -1,5 +1,4 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest';
-import axios from 'axios';
 import {
   getStudentOverview,
   getMasteryDistribution,

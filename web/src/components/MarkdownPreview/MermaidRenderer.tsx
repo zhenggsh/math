@@ -13,7 +13,30 @@ mermaid.initialize({
 })
 
 /**
+ * Mermaid 特殊字符转义表
+ * 将半角特殊字符替换为对应的全角字符，避免 Mermaid 解析错误
+ */
+const MERMAID_ESCAPE_MAP: Record<string, string> = {
+  '(': '（',
+  ')': '）',
+  '[': '［',
+  ']': '］',
+  '"': '"',
+  "'": '\u2019',
+  ':': '：',
+  ';': '；',
+}
+
+/**
+ * 尝试自动转义 Mermaid 内容中的特殊字符
+ */
+function escapeMermaidContent(value: string): string {
+  return value.replace(/[()\[\]"':;]/g, (char) => MERMAID_ESCAPE_MAP[char] || char)
+}
+
+/**
  * Mermaid 图表渲染组件
+ * 支持自动转义修复和错误提示
  */
 export const MermaidRenderer: React.FC<MermaidRendererProps> = ({ value }) => {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -27,8 +50,8 @@ export const MermaidRenderer: React.FC<MermaidRendererProps> = ({ value }) => {
   useEffect(() => {
     let cancelled = false
 
-    const renderDiagram = async () => {
-      if (!normalizedValue) {
+    const renderDiagram = async (content: string, isEscaped = false): Promise<void> => {
+      if (!content) {
         setSvg('')
         setLoading(false)
         return
@@ -42,21 +65,33 @@ export const MermaidRenderer: React.FC<MermaidRendererProps> = ({ value }) => {
         const id = `mermaid-${Math.random().toString(36).substring(2, 9)}`
 
         // 渲染图表
-        const { svg: renderedSvg } = await mermaid.render(id, normalizedValue)
+        const { svg: renderedSvg } = await mermaid.render(id, content)
 
         if (!cancelled) {
           setSvg(renderedSvg)
           setLoading(false)
         }
       } catch (err) {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : 'Failed to render diagram')
-          setLoading(false)
+        if (cancelled) return
+
+        // 首次失败且未尝试过转义：自动转义后重试
+        if (!isEscaped) {
+          const escapedContent = escapeMermaidContent(content)
+          // 仅当转义后的内容与原始内容不同才重试
+          if (escapedContent !== content) {
+            void renderDiagram(escapedContent, true)
+            return
+          }
         }
+
+        // 转义后仍失败或无需转义：显示错误提示
+        const errorMessage = err instanceof Error ? err.message : 'Failed to render diagram'
+        setError(errorMessage)
+        setLoading(false)
       }
     }
 
-    void renderDiagram()
+    void renderDiagram(normalizedValue)
 
     return () => {
       cancelled = true
@@ -75,9 +110,14 @@ export const MermaidRenderer: React.FC<MermaidRendererProps> = ({ value }) => {
     return (
       <div className={styles.mermaidContainer}>
         <Alert
-          message="Diagram render error"
-          description={error}
-          type="error"
+          message="图表渲染失败"
+          description={
+            <>
+              <div>当前图表包含 Mermaid 不支持的语法或特殊字符，已尝试自动转义但未能修复。</div>
+              <div style={{ marginTop: 8, fontSize: 12 }}>错误信息：{error}</div>
+            </>
+          }
+          type="warning"
           showIcon
           className={styles.errorAlert}
         />

@@ -10,6 +10,10 @@ export interface MarkdownPreviewProps {
   loading?: boolean
   /** 自定义类名 */
   className?: string
+  /** 是否可编辑（仅在 raw 模式下生效） */
+  editable?: boolean
+  /** 内容变更回调 */
+  onContentChange?: (content: string) => void
 }
 
 /**

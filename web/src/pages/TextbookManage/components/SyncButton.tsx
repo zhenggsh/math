@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-misused-promises */
 import React, { useState } from 'react'
-import { Button, Modal, Space, Typography, List, Tag, message } from 'antd'
+import { Button, Modal, Space, Typography, List, Tag, App } from 'antd'
 import { SyncOutlined } from '@ant-design/icons'
 import type { SyncResult } from '../../../types/textbook.types'
 
@@ -15,6 +15,7 @@ interface SyncModalState {
 }
 
 export const SyncButton: React.FC<SyncButtonProps> = ({ onSync, loading }) => {
+  const { message } = App.useApp()
   const [modalState, setModalState] = useState<SyncModalState>({
     open: false,
     result: null,

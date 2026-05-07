@@ -28,6 +28,7 @@
 - **GIVEN** 用户点击导出 PDF
 - **WHEN** 页面包含 Mermaid 图表或 KaTeX 公式
 - **THEN** 系统 SHALL 等待异步渲染完成后再生成 PDF
+- **AND** 若内容包含 Mermaid 图表，等待时间为 3 秒；否则等待 800ms
 - **AND** 最大等待时间为 3 秒
 
 ## Types

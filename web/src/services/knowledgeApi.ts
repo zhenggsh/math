@@ -50,6 +50,23 @@ export const knowledgeApi = {
     });
     return response.data.data;
   },
+
+  /**
+   * 保存知识点内容到教材 MD 文件
+   * @param textbookId 教材ID
+   * @param knowledgePointId 知识点ID
+   * @param content 新内容
+   */
+  async saveKnowledgePointContent(
+    textbookId: string,
+    knowledgePointId: string,
+    content: string,
+  ): Promise<void> {
+    await api.put(`/textbooks/${textbookId}/content`, {
+      knowledgePointId,
+      content,
+    });
+  },
 };
 
 /**
