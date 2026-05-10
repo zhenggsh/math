@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { Breadcrumb, Empty, Button, Segmented, Dropdown, App } from 'antd'
 import type { MenuProps } from 'antd'
 import {
@@ -20,6 +20,7 @@ import { KnowledgeOverview } from '../../components/KnowledgeOverview'
 import { AISidebar } from '../../components/AISidebar'
 import { FeedbackPanel } from '../../components/learning/FeedbackPanel'
 import { useAuth } from '../../hooks/useAuth'
+import { useTextbook } from '../../hooks/useTextbook'
 import { knowledgeApi } from '../../services/knowledgeApi'
 import type { KnowledgeTreeNode } from '../../types/knowledge.types'
 import { convertToTreeData } from '../../utils/knowledgeTree'
@@ -41,10 +42,39 @@ const findFirstLeaf = (node: KnowledgeTreeNode): KnowledgeTreeNode => {
 
 const LearningPage: React.FC = () => {
   const { message } = App.useApp()
-  const { textbookId } = useParams<{ textbookId?: string }>()
+  const { textbookId: urlTextbookId } = useParams<{ textbookId?: string }>()
   const navigate = useNavigate()
+  const location = useLocation()
   const { user } = useAuth()
   const canEdit = user?.role === 'TEACHER' || user?.role === 'ADMIN'
+
+  const { selectedTextbookIds, selectMultiple } = useTextbook()
+
+  // Derive active textbook ID: URL param wins, else Context's first selection
+  const activeTextbookId = urlTextbookId ?? selectedTextbookIds[0] ?? undefined
+
+  // URL-Context sync guard: prevent infinite loops
+  const lastSyncedId = useRef<string | null>(null)
+
+  useEffect(() => {
+    if (urlTextbookId && lastSyncedId.current !== urlTextbookId) {
+      // If URL has a different ID than Context, sync URL into Context
+      if (!selectedTextbookIds.includes(urlTextbookId)) {
+        lastSyncedId.current = urlTextbookId
+        selectMultiple([urlTextbookId])
+      }
+    }
+  }, [urlTextbookId, selectedTextbookIds, selectMultiple])
+
+  // Reset selected node when textbook changes
+  const prevTextbookIdRef = useRef<string | undefined>(undefined)
+  useEffect(() => {
+    if (activeTextbookId !== prevTextbookIdRef.current) {
+      prevTextbookIdRef.current = activeTextbookId
+      setSelectedNode(null)
+      setTreeData([])
+    }
+  }, [activeTextbookId])
 
   const [loading, setLoading] = useState(true)
   const [treeData, setTreeData] = useState<KnowledgeTreeNode[]>([])
@@ -67,7 +97,7 @@ const LearningPage: React.FC = () => {
     const baseTitle = 'Math Learning'
     if (selectedNode) {
       document.title = `${selectedNode.title} - ${baseTitle}`
-    } else if (textbookId) {
+    } else if (activeTextbookId) {
       document.title = `Learning - ${baseTitle}`
     } else {
       document.title = baseTitle
@@ -75,7 +105,7 @@ const LearningPage: React.FC = () => {
     return () => {
       document.title = baseTitle
     }
-  }, [selectedNode, textbookId])
+  }, [selectedNode, activeTextbookId])
 
   // DFS 扁平化遍历序列（用于导航）
   const flatSequence = useMemo(() => {
@@ -158,7 +188,7 @@ const LearningPage: React.FC = () => {
 
   // 加载知识树数据
   useEffect(() => {
-    if (!textbookId) {
+    if (!activeTextbookId) {
       setLoading(false)
       return
     }
@@ -166,7 +196,7 @@ const LearningPage: React.FC = () => {
     void (async () => {
       try {
         setLoading(true)
-        const data = await knowledgeApi.getKnowledgeTree(textbookId)
+        const data = await knowledgeApi.getKnowledgeTree(activeTextbookId)
         const tree = convertToTreeData(data)
         setTreeData(tree)
 
@@ -183,9 +213,20 @@ const LearningPage: React.FC = () => {
         setLoading(false)
       }
     })()
-    // 仅在 textbookId 变化时重新加载，点击节点时不触发
+    // Only reload when activeTextbookId changes, not when selectedNode changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [textbookId])
+  }, [activeTextbookId])
+
+  // When global selection changes while on LearningPage, update URL
+  useEffect(() => {
+    if (
+      selectedTextbookIds.length > 0 &&
+      selectedTextbookIds[0] !== urlTextbookId &&
+      location.pathname.startsWith('/learning')
+    ) {
+      void navigate(`/learning/${selectedTextbookIds[0]}`, { replace: true })
+    }
+  }, [selectedTextbookIds, urlTextbookId, navigate, location.pathname])
 
   // 面包屑路径
   const breadcrumbItems = useMemo(() => {
@@ -307,11 +348,11 @@ const LearningPage: React.FC = () => {
 
   // 保存内容到 MD 文件
   const handleSaveContent = useCallback(async () => {
-    if (!selectedNode || !textbookId) return
+    if (!selectedNode || !activeTextbookId) return
     setIsSaving(true)
     try {
       await knowledgeApi.saveKnowledgePointContent(
-        textbookId,
+        activeTextbookId,
         selectedNode.data.id,
         editedContent,
       )
@@ -322,7 +363,7 @@ const LearningPage: React.FC = () => {
     } finally {
       setIsSaving(false)
     }
-  }, [selectedNode, textbookId, editedContent])
+  }, [selectedNode, activeTextbookId, editedContent])
 
   const exportMenuItems: MenuProps['items'] = [
     {
@@ -424,7 +465,7 @@ const LearningPage: React.FC = () => {
     <FeedbackPanel key={selectedNode.data.id} knowledgePointId={selectedNode.data.id} />
   ) : null
 
-  if (!textbookId) {
+  if (!activeTextbookId) {
     return (
       <div className={styles.emptyState}>
         <Empty
