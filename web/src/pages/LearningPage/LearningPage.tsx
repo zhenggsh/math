@@ -123,7 +123,7 @@ const LearningPage: React.FC = () => {
   }, [treeData])
 
   const currentIndex = useMemo(() => {
-    return flatSequence.findIndex((n) => n.key === selectedNode?.key)
+    return flatSequence.findIndex(n => n.key === selectedNode?.key)
   }, [flatSequence, selectedNode])
 
   const hasPrevious = currentIndex > 0
@@ -162,16 +162,14 @@ const LearningPage: React.FC = () => {
       for (let i = 1; i < parts.length; i++) {
         parentCodes.push(parts.slice(0, i).join('.'))
       }
-      const parentKeys = flatSequence
-        .filter((n) => parentCodes.includes(n.code))
-        .map((n) => n.key)
-      setExpandedKeys((prev) => {
+      const parentKeys = flatSequence.filter(n => parentCodes.includes(n.code)).map(n => n.key)
+      setExpandedKeys(prev => {
         const next = new Set([...prev, ...parentKeys])
         return Array.from(next)
       })
       void handleSelectNode(targetNode)
     },
-    [flatSequence, handleSelectNode],
+    [flatSequence, handleSelectNode]
   )
 
   const handlePrevious = useCallback(() => {
@@ -302,7 +300,7 @@ const LearningPage: React.FC = () => {
       // 若内容包含 Mermaid 图表，最大等待 3 秒；否则等待 800ms
       const hasMermaid = content.includes('```mermaid')
       const waitTime = hasMermaid ? 3000 : 800
-      await new Promise((resolve) => setTimeout(resolve, waitTime))
+      await new Promise(resolve => setTimeout(resolve, waitTime))
 
       const element = document.querySelector(`.${styles.exportArea}`) as HTMLElement
       if (!element) return
@@ -354,7 +352,7 @@ const LearningPage: React.FC = () => {
       await knowledgeApi.saveKnowledgePointContent(
         activeTextbookId,
         selectedNode.data.id,
-        editedContent,
+        editedContent
       )
       setContent(editedContent)
       message.success('内容已保存')
@@ -404,7 +402,7 @@ const LearningPage: React.FC = () => {
             { value: 'raw', label: 'Raw', icon: <CodeOutlined /> },
           ]}
           value={showRaw ? 'raw' : 'preview'}
-          onChange={(value) => setShowRaw(value === 'raw')}
+          onChange={value => setShowRaw(value === 'raw')}
         />
         <div className={styles.toolbarRight}>
           <Button
@@ -413,19 +411,9 @@ const LearningPage: React.FC = () => {
             disabled={!hasPrevious}
             onClick={handlePrevious}
           />
-          <Button
-            icon={<RightOutlined />}
-            size="small"
-            disabled={!hasNext}
-            onClick={handleNext}
-          />
+          <Button icon={<RightOutlined />} size="small" disabled={!hasNext} onClick={handleNext} />
           {showRaw && canEdit && (
-            <Button
-              size="small"
-              type="primary"
-              loading={isSaving}
-              onClick={handleSaveContent}
-            >
+            <Button size="small" type="primary" loading={isSaving} onClick={handleSaveContent}>
               保存
             </Button>
           )}

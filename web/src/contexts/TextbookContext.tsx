@@ -50,7 +50,10 @@ export const TextbookProvider: React.FC<TextbookProviderProps> = ({ children }) 
         } else {
           try {
             const parsed = JSON.parse(raw) as unknown
-            if (Array.isArray(parsed) && parsed.every((item): item is string => typeof item === 'string')) {
+            if (
+              Array.isArray(parsed) &&
+              parsed.every((item): item is string => typeof item === 'string')
+            ) {
               if (parsed.length === 0) {
                 setSelectedTextbookIds([])
               } else {
@@ -119,7 +122,15 @@ export const TextbookProvider: React.FC<TextbookProviderProps> = ({ children }) 
       selectMultiple,
       clearSelection,
     }),
-    [selectedTextbookIds, textbooks, isLoading, selectTextbook, deselectTextbook, selectMultiple, clearSelection]
+    [
+      selectedTextbookIds,
+      textbooks,
+      isLoading,
+      selectTextbook,
+      deselectTextbook,
+      selectMultiple,
+      clearSelection,
+    ]
   )
 
   return <TextbookContext.Provider value={value}>{children}</TextbookContext.Provider>

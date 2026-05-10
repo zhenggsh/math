@@ -34,7 +34,12 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const navigate = useNavigate()
   const location = useLocation()
   const { user, isAuthenticated, logout } = useAuth()
-  const { selectedTextbookIds, textbooks, isLoading: textbooksLoading, selectMultiple } = useTextbook()
+  const {
+    selectedTextbookIds,
+    textbooks,
+    isLoading: textbooksLoading,
+    selectMultiple,
+  } = useTextbook()
 
   const handleMenuClick = ({ key }: { key: string }): void => {
     if (key === 'learning') {
@@ -99,7 +104,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
               disabled={textbooksLoading || textbooks.length === 0}
               value={selectedTextbookIds}
               onChange={(values: string[]) => selectMultiple(values)}
-              options={textbooks.map((t) => ({ label: t.name, value: t.id }))}
+              options={textbooks.map(t => ({ label: t.name, value: t.id }))}
             />
           )}
           {isAuthenticated && user ? (
