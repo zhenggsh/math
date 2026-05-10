@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
+import { TextbookProvider } from './contexts/TextbookContext'
 import { LoginPage } from './pages/LoginPage'
 import { RegisterPage } from './pages/RegisterPage'
 import { HomePage } from './pages/HomePage'
@@ -14,75 +15,77 @@ function App() {
   return (
     <AuthProvider>
       <Router>
-        <Routes>
-          {/* Auth routes - standalone, no layout */}
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
+        <TextbookProvider>
+          <Routes>
+            {/* Auth routes - standalone, no layout */}
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
 
-          {/* Public home page with layout */}
-          <Route
-            path="/"
-            element={
-              <AppLayout>
-                <HomePage />
-              </AppLayout>
-            }
-          />
+            {/* Public home page with layout */}
+            <Route
+              path="/"
+              element={
+                <AppLayout>
+                  <HomePage />
+                </AppLayout>
+              }
+            />
 
-          {/* Protected routes with layout */}
-          <Route
-            path="/teacher/textbooks"
-            element={
-              <AppLayout>
-                <ProtectedRoute>
-                  <TextbookManagePage />
-                </ProtectedRoute>
-              </AppLayout>
-            }
-          />
-          <Route
-            path="/learning/:textbookId"
-            element={
-              <AppLayout>
-                <ProtectedRoute>
-                  <LearningPage />
-                </ProtectedRoute>
-              </AppLayout>
-            }
-          />
-          <Route
-            path="/smart-learning"
-            element={
-              <AppLayout>
-                <ProtectedRoute>
-                  <SmartLearningPage />
-                </ProtectedRoute>
-              </AppLayout>
-            }
-          />
-          <Route
-            path="/analytics/student"
-            element={
-              <AppLayout>
-                <ProtectedRoute>
-                  <StudentAnalyticsPage />
-                </ProtectedRoute>
-              </AppLayout>
-            }
-          />
-          <Route
-            path="/analytics/teacher"
-            element={
-              <AppLayout>
-                <ProtectedRoute>
-                  <TeacherAnalyticsPage />
-                </ProtectedRoute>
-              </AppLayout>
-            }
-          />
+            {/* Protected routes with layout */}
+            <Route
+              path="/teacher/textbooks"
+              element={
+                <AppLayout>
+                  <ProtectedRoute>
+                    <TextbookManagePage />
+                  </ProtectedRoute>
+                </AppLayout>
+              }
+            />
+            <Route
+              path="/learning/:textbookId?"
+              element={
+                <AppLayout>
+                  <ProtectedRoute>
+                    <LearningPage />
+                  </ProtectedRoute>
+                </AppLayout>
+              }
+            />
+            <Route
+              path="/smart-learning"
+              element={
+                <AppLayout>
+                  <ProtectedRoute>
+                    <SmartLearningPage />
+                  </ProtectedRoute>
+                </AppLayout>
+              }
+            />
+            <Route
+              path="/analytics/student"
+              element={
+                <AppLayout>
+                  <ProtectedRoute>
+                    <StudentAnalyticsPage />
+                  </ProtectedRoute>
+                </AppLayout>
+              }
+            />
+            <Route
+              path="/analytics/teacher"
+              element={
+                <AppLayout>
+                  <ProtectedRoute>
+                    <TeacherAnalyticsPage />
+                  </ProtectedRoute>
+                </AppLayout>
+              }
+            />
 
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </TextbookProvider>
       </Router>
     </AuthProvider>
   )
