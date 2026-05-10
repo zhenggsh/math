@@ -1,5 +1,5 @@
 import React from 'react'
-import { Layout, Menu, Button, Space, Typography, Avatar, App } from 'antd'
+import { Layout, Menu, Button, Space, Typography, Avatar, App, Select, Spin } from 'antd'
 import {
   HomeOutlined,
   BookOutlined,
@@ -12,7 +12,7 @@ import {
 } from '@ant-design/icons'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
-import { getTextbooks } from '../../services/textbook.service'
+import { useTextbook } from '../../hooks/useTextbook'
 
 const { Header, Content } = Layout
 const { Text } = Typography
@@ -34,18 +34,16 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const navigate = useNavigate()
   const location = useLocation()
   const { user, isAuthenticated, logout } = useAuth()
+  const { selectedTextbookIds, textbooks, isLoading: textbooksLoading, selectMultiple } = useTextbook()
 
-  const handleMenuClick = async ({ key }: { key: string }): Promise<void> => {
+  const handleMenuClick = ({ key }: { key: string }): void => {
     if (key === 'learning') {
-      try {
-        const textbooks = await getTextbooks()
-        if (textbooks.length > 0) {
-          void navigate(`/learning/${textbooks[0].id}`)
-        } else {
-          message.warning('暂无教材，请先导入教材')
-        }
-      } catch {
-        message.error('获取教材列表失败')
+      if (selectedTextbookIds.length > 0) {
+        void navigate(`/learning/${selectedTextbookIds[0]}`)
+      } else if (textbooks.length > 0) {
+        void navigate(`/learning/${textbooks[0].id}`)
+      } else {
+        message.warning('暂无教材，请先导入教材')
       }
       return
     }
@@ -90,7 +88,20 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
           />
         </div>
 
-        <div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          {isAuthenticated && (
+            <Select
+              mode="multiple"
+              maxTagCount={2}
+              style={{ minWidth: 180, maxWidth: 280 }}
+              placeholder={textbooksLoading ? <Spin size="small" /> : '选择教材'}
+              loading={textbooksLoading}
+              disabled={textbooksLoading || textbooks.length === 0}
+              value={selectedTextbookIds}
+              onChange={(values: string[]) => selectMultiple(values)}
+              options={textbooks.map((t) => ({ label: t.name, value: t.id }))}
+            />
+          )}
           {isAuthenticated && user ? (
             <Space>
               <Avatar size="small" icon={<UserOutlined />} />
