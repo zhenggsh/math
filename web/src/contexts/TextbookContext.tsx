@@ -49,8 +49,8 @@ export const TextbookProvider: React.FC<TextbookProviderProps> = ({ children }) 
           }
         } else {
           try {
-            const parsed = JSON.parse(raw) as string[]
-            if (Array.isArray(parsed)) {
+            const parsed = JSON.parse(raw) as unknown
+            if (Array.isArray(parsed) && parsed.every((item): item is string => typeof item === 'string')) {
               if (parsed.length === 0) {
                 setSelectedTextbookIds([])
               } else {
