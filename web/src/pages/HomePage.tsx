@@ -3,7 +3,7 @@ import { Card, Row, Col, Typography, Button, Space, App } from 'antd'
 import { BookOutlined, ReadOutlined, BulbOutlined, BarChartOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-import { getTextbooks } from '../services/textbook.service'
+import { useTextbook } from '../hooks/useTextbook'
 import { Role } from '../types/auth.types'
 
 const { Title, Paragraph } = Typography
@@ -43,6 +43,7 @@ export const HomePage: React.FC = () => {
   const { message } = App.useApp()
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { selectedTextbookIds, textbooks } = useTextbook()
 
   const visibleCards = featureCards.filter(
     card => !card.role || user?.role === card.role || user?.role === Role.ADMIN
@@ -83,17 +84,14 @@ export const HomePage: React.FC = () => {
           <Col key={card.path} xs={24} sm={12} lg={6}>
             <Card
               hoverable
-              onClick={async (): Promise<void> => {
+              onClick={(): void => {
                 if (card.path === 'learning') {
-                  try {
-                    const textbooks = await getTextbooks()
-                    if (textbooks.length > 0) {
-                      void navigate(`/learning/${textbooks[0].id}`)
-                    } else {
-                      message.warning('暂无教材，请先导入教材')
-                    }
-                  } catch {
-                    message.error('获取教材列表失败')
+                  if (selectedTextbookIds.length > 0) {
+                    void navigate(`/learning/${selectedTextbookIds[0]}`)
+                  } else if (textbooks.length > 0) {
+                    void navigate(`/learning/${textbooks[0].id}`)
+                  } else {
+                    message.warning('暂无教材，请先导入教材')
                   }
                   return
                 }
