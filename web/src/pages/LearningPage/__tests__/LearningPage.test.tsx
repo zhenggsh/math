@@ -7,17 +7,39 @@ const mocks = vi.hoisted(() => ({
   mockUseNavigate: vi.fn<[], () => void>(() => vi.fn()),
   mockGetKnowledgeTree: vi.fn<[], Promise<unknown>>(),
   mockGetKnowledgePointDetail: vi.fn<[], Promise<unknown>>(),
+  mockUseTextbook: vi.fn<[], {
+    selectedTextbookIds: string[]
+    textbooks: unknown[]
+    isLoading: boolean
+    selectTextbook: () => void
+    deselectTextbook: () => void
+    selectMultiple: () => void
+    clearSelection: () => void
+  }>(() => ({
+    selectedTextbookIds: [],
+    textbooks: [],
+    isLoading: false,
+    selectTextbook: vi.fn(),
+    deselectTextbook: vi.fn(),
+    selectMultiple: vi.fn(),
+    clearSelection: vi.fn(),
+  })),
 }))
 
-const { mockUseParams, mockUseNavigate, mockGetKnowledgeTree, mockGetKnowledgePointDetail } = mocks
+const { mockUseParams, mockUseNavigate, mockGetKnowledgeTree, mockGetKnowledgePointDetail, mockUseTextbook } = mocks
 
 vi.mock('react-router-dom', () => ({
   useParams: () => mockUseParams(),
   useNavigate: () => mockUseNavigate(),
+  useLocation: () => ({ pathname: '/learning/tb-1' }),
 }))
 
 vi.mock('../../../hooks/useAuth', () => ({
-  useAuth: vi.fn(),
+  useAuth: vi.fn(() => ({ user: undefined, isAuthenticated: true, login: vi.fn(), logout: vi.fn() })),
+}))
+
+vi.mock('../../../hooks/useTextbook', () => ({
+  useTextbook: () => mockUseTextbook(),
 }))
 
 vi.mock('../../../services/knowledgeApi', () => ({
