@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { List, Tag, Typography, Empty, Spin, Button, Tooltip } from 'antd';
+import { List, Tag, Typography, Empty, Spin, Button } from 'antd';
 import { DownOutlined, UpOutlined } from '@ant-design/icons';
 import type { LearningRecord } from '../../types/learning-record.types';
 import { MASTERY_LEVEL_CONFIG } from '../../types/learning-record.types';
@@ -81,7 +81,8 @@ export const RecordHistory: React.FC<RecordHistoryProps> = ({
       renderItem={(record) => {
         const config = MASTERY_LEVEL_CONFIG[record.masteryLevel];
         const isExpanded = expandedIds.has(record.id);
-        const hasNotes = record.notes && record.notes.trim().length > 0;
+        const notesText = record.notes ?? '';
+        const hasNotes = notesText.trim().length > 0;
 
         return (
           <List.Item className={styles.recordItem}>
@@ -112,9 +113,9 @@ export const RecordHistory: React.FC<RecordHistoryProps> = ({
                   }
                   className={styles.notes}
                 >
-                  {record.notes}
+                  {notesText}
                 </Paragraph>
-                {record.notes.length > 50 && (
+                {notesText.length > 50 && (
                   <Button
                     type="link"
                     size="small"

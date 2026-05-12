@@ -108,7 +108,7 @@ export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({
             <ReactMarkdown
               remarkPlugins={[remarkMath, remarkGfm]}
               rehypePlugins={[rehypeKatex]}
-              components={components}
+              components={components as any}
             >
               {content}
             </ReactMarkdown>

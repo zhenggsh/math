@@ -184,9 +184,7 @@ export class LearningRecordService {
   /**
    * 将 Prisma 学习记录映射为响应DTO
    */
-  private mapToResponseDto(
-    record: unknown,
-  ): LearningRecordResponseDto {
+  private mapToResponseDto(record: unknown): LearningRecordResponseDto {
     const r = record as {
       id: string;
       userId: string;

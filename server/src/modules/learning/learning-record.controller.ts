@@ -91,7 +91,8 @@ export class LearningRecordController {
   })
   async findAll(
     @CurrentUser('userId') userId: string,
-    @Query(new ValidationPipe({ transform: true })) query: QueryLearningRecordsDto,
+    @Query(new ValidationPipe({ transform: true }))
+    query: QueryLearningRecordsDto,
   ): Promise<{
     success: boolean;
     data: PaginatedLearningRecordsResponseDto;

@@ -25,8 +25,18 @@ The project already uses React Context for auth state (`AuthContext`) and Ant De
 ### Decision: Multi-select with single-active behavior in LearningPage
 **Rationale:** The selector supports multi-select for future analytics (compare across textbooks). However, `LearningPage` displays a single knowledge tree, so it uses `selectedTextbookIds[0]` as the active textbook. This provides forward compatibility without over-engineering now.
 
-### Decision: Keep URL `textbookId` as transient fallback
-**Rationale:** Direct links to `/learning/:textbookId` should still work for sharing. If URL param exists but context is empty, the URL `textbookId` is used for the current page load only. It does NOT update the global context or localStorage — this preserves the user's explicit selection state and avoids surprising side effects when following a shared link.
+### Decision: URL-Context bidirectional synchronization
+**Rationale:** The URL and global context must stay in sync to ensure consistent behavior across refresh, share, and navigation. The policy is:
+
+1. **Entering LearningPage with URL param** (`/learning/A`): Display textbook A and **synchronize A into the global context** (so refresh and other modules see A). This makes shared links work intuitively.
+
+2. **Entering LearningPage without URL param** (`/learning`): Use Context's `selectedTextbookIds[0]`. If Context is empty, show empty state.
+
+3. **Global selector change while on LearningPage**: `navigate(/learning/${newId}, { replace: true })` to update URL without adding history entries.
+
+4. **Global selector change while NOT on LearningPage**: Update Context only; URL unchanged.
+
+This ensures the URL always reflects the actually displayed textbook, share links work correctly, and the back button is not cluttered with textbook switches.
 
 ### Decision: localStorage over sessionStorage
 **Rationale:** Users expect their textbook selection to persist across browser sessions, not just the current tab.
@@ -42,6 +52,15 @@ The project already uses React Context for auth state (`AuthContext`) and Ant De
 - **[Risk]** `getTextbooks()` requires authentication and may return 401 if called before auth state is ready.
   → **Mitigation:** The provider will gate the fetch on auth token availability. If the request fails, `isLoading` becomes false and the selector shows an empty disabled state without crashing.
 
+- **[Risk]** Textbooks saved in localStorage may be deleted by a teacher, leaving stale IDs.
+  → **Mitigation:** On context initialization, filter `selectedTextbookIds` against the API response. Remove any IDs not present in the current textbook list. If all IDs are invalid, fall back to the first available textbook.
+
+- **[Risk]** URL-Context synchronization could create infinite update loops.
+  → **Mitigation:** LearningPage's `useEffect` for textbook loading must include a guard to prevent re-triggering when the URL was just updated by the same Context change. Use a ref or compare previous values.
+
+- **[Risk]** Two existing entry points (AppLayout "学习" menu and HomePage "知识学习" card) bypass the global selector by directly fetching textbooks and navigating to the first one.
+  → **Mitigation:** Update both entry points to navigate to `/learning` (letting Context drive the textbook selection) or `/learning/${selectedTextbookIds[0]}`.
+
 - **[Trade-off]** Multi-select UI is slightly more complex than single-select.
   → **Acceptance:** Ant Design `Select mode="multiple"` handles this natively with minimal code.
 
@@ -49,7 +68,11 @@ The project already uses React Context for auth state (`AuthContext`) and Ant De
 
 No migration needed. This is a new feature that coexists with existing URL-based navigation.
 
-**Routing note:** The existing `/learning/:textbookId` route is preserved as-is. The `textbookId` URL parameter becomes optional in practice — `LearningPage` will use context first and fall back to the URL param. No route definition changes are required in `App.tsx`.
+**Routing change:** Modify `/learning/:textbookId` to `/learning/:textbookId?` (optional param) in `App.tsx`. This allows accessing `/learning` without a textbook ID, in which case LearningPage derives the active textbook from Context.
+
+The `textbookId` parameter behavior:
+- If present: drives the displayed textbook and synchronizes into Context
+- If absent: Context's first selected textbook drives the display
 
 ## Open Questions
 

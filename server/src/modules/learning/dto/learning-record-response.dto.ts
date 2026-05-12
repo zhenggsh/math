@@ -21,7 +21,11 @@ export class KnowledgePointInfoDto {
   })
   level2: string | null;
 
-  @ApiProperty({ description: '三级知识点', example: '集合的含义', nullable: true })
+  @ApiProperty({
+    description: '三级知识点',
+    example: '集合的含义',
+    nullable: true,
+  })
   level3: string | null;
 
   @ApiProperty({ description: '重要性级别', enum: ImportanceLevel })
@@ -64,7 +68,10 @@ export class LearningRecordResponseDto {
  * 分页学习记录响应DTO
  */
 export class PaginatedLearningRecordsResponseDto {
-  @ApiProperty({ description: '学习记录列表', type: [LearningRecordResponseDto] })
+  @ApiProperty({
+    description: '学习记录列表',
+    type: [LearningRecordResponseDto],
+  })
   items: LearningRecordResponseDto[];
 
   @ApiProperty({ description: '总记录数' })

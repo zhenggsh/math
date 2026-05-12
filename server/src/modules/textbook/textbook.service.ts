@@ -308,9 +308,7 @@ export class TextbookService {
   /**
    * 获取教材下的知识点列表
    */
-  async getKnowledgePoints(
-    textbookId: string,
-  ): Promise<
+  async getKnowledgePoints(textbookId: string): Promise<
     {
       id: string;
       code: string;
@@ -354,23 +352,19 @@ export class TextbookService {
   /**
    * 获取知识点详情
    */
-  async getKnowledgePointDetail(
-    knowledgePointId: string,
-  ): Promise<
-    {
-      id: string;
-      code: string;
-      level1: string;
-      level2: string | null;
-      level3: string | null;
-      definition: string | null;
-      characteristics: string | null;
-      importanceLevel: string;
-      contentRef: string | null;
-      textbookId: string;
-      content: string;
-    }
-  > {
+  async getKnowledgePointDetail(knowledgePointId: string): Promise<{
+    id: string;
+    code: string;
+    level1: string;
+    level2: string | null;
+    level3: string | null;
+    definition: string | null;
+    characteristics: string | null;
+    importanceLevel: string;
+    contentRef: string | null;
+    textbookId: string;
+    content: string;
+  }> {
     const point = await this.prisma.knowledgePoint.findUnique({
       where: { id: knowledgePointId },
     });
@@ -430,7 +424,9 @@ export class TextbookService {
         return '';
       }
 
-      const contentFilePath = this.fileService.getFilePath(textbook.contentPath);
+      const contentFilePath = this.fileService.getFilePath(
+        textbook.contentPath,
+      );
       if (!fs.existsSync(contentFilePath)) {
         return '';
       }
@@ -480,9 +476,7 @@ export class TextbookService {
    */
   private matchByNameLevel1(lines: string[], name: string): string {
     if (!name) return '';
-    const patterns = [
-      new RegExp(`^##\\s+.*${this.escapeRegex(name)}.*$`),
-    ];
+    const patterns = [new RegExp(`^##\\s+.*${this.escapeRegex(name)}.*$`)];
     return this.matchByPatterns(lines, patterns, '##');
   }
 
@@ -501,9 +495,7 @@ export class TextbookService {
    */
   private matchByNameLevel2(lines: string[], name: string): string {
     if (!name) return '';
-    const patterns = [
-      new RegExp(`^###\\s+.*${this.escapeRegex(name)}.*$`),
-    ];
+    const patterns = [new RegExp(`^###\\s+.*${this.escapeRegex(name)}.*$`)];
     return this.matchByPatterns(lines, patterns, '###');
   }
 

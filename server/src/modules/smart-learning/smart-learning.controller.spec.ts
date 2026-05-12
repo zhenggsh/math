@@ -88,7 +88,11 @@ describe('SmartLearningController', () => {
     });
 
     it('should pass query parameters', async () => {
-      const query = { level: ImportanceLevel.B, excludeMastered: true, limit: 20 };
+      const query = {
+        level: ImportanceLevel.B,
+        excludeMastered: true,
+        limit: 20,
+      };
       jest.spyOn(service, 'getByImportance').mockResolvedValue({} as any);
 
       await controller.getByImportance(mockUserId, query);

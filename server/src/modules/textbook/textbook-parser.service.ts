@@ -86,9 +86,7 @@ export class TextbookParserService {
         if (
           row.some(
             (cell) =>
-              cell !== undefined &&
-              cell !== null &&
-              String(cell).trim() !== '',
+              cell !== undefined && cell !== null && String(cell).trim() !== '',
           )
         ) {
           break;
@@ -145,11 +143,7 @@ export class TextbookParserService {
     const codePattern = /^\d+(\.\d+){2,}/;
 
     for (const record of records) {
-      const code = this.getFieldValue(record, [
-        '知识点编号',
-        '编号',
-        'code',
-      ]);
+      const code = this.getFieldValue(record, ['知识点编号', '编号', 'code']);
       if (codePattern.test(code)) {
         return true;
       }

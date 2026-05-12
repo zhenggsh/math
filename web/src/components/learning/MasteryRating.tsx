@@ -1,5 +1,6 @@
 import React from 'react';
 import { Radio, Space, Tooltip } from 'antd';
+import type { RadioChangeEvent } from 'antd';
 import type { MasteryLevel } from '../../types/learning-record.types';
 import { MASTERY_LEVEL_CONFIG } from '../../types/learning-record.types';
 import styles from './MasteryRating.module.css';
@@ -30,7 +31,7 @@ export const MasteryRating: React.FC<MasteryRatingProps> = ({
 }) => {
   const levels: MasteryLevel[] = ['A', 'B', 'C', 'D', 'E'];
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: RadioChangeEvent) => {
     const newValue = e.target.value as MasteryLevel;
     onChange?.(newValue);
   };

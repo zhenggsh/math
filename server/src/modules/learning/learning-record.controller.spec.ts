@@ -100,7 +100,10 @@ describe('LearningRecordController', () => {
 
       mockService.findAll.mockResolvedValue(mockResult);
 
-      const result = await controller.findAll(mockUserId, { page: 1, limit: 20 });
+      const result = await controller.findAll(mockUserId, {
+        page: 1,
+        limit: 20,
+      });
 
       expect(result.success).toBe(true);
       expect(result.data.items).toHaveLength(1);

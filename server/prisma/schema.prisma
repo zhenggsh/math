@@ -68,7 +68,7 @@ model Textbook {
 // 知识点模型
 model KnowledgePoint {
   id                String          @id @default(uuid())
-  code              String          @unique
+  code              String
   level1            String
   level2            String?
   level3            String?
@@ -85,6 +85,9 @@ model KnowledgePoint {
   // 关系
   textbook          Textbook        @relation(fields: [textbookId], references: [id], onDelete: Cascade)
   learningRecords   LearningRecord[]
+
+  // 唯一约束：同一个教材内的知识点编号不能重复
+  @@unique([code, textbookId], name: "idx_knowledge_point_code_textbook")
 
   // 索引优化（智能学习模式）
   @@index([importanceLevel], name: "idx_knowledge_point_importance")

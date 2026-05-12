@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef } from 'react';
 import * as echarts from 'echarts/core';
-import type { EChartsOption, ECharts } from 'echarts/core';
+import type { EChartsCoreOption, ECharts } from 'echarts/core';
 import {
   BarChart,
   LineChart,
@@ -34,7 +34,7 @@ echarts.use([
  * EChartsWrapper Props
  */
 export interface EChartsWrapperProps {
-  option: EChartsOption;
+  option: EChartsCoreOption;
   style?: React.CSSProperties;
   onClick?: (params: unknown) => void;
   loading?: boolean;

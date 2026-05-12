@@ -262,9 +262,8 @@ export class TextbookController {
       content: string;
     };
   }> {
-    const point = await this.textbookService.getKnowledgePointDetail(
-      knowledgePointId,
-    );
+    const point =
+      await this.textbookService.getKnowledgePointDetail(knowledgePointId);
     return {
       success: true,
       data: point,
@@ -280,7 +279,10 @@ export class TextbookController {
     @Param('id') id: string,
     @Body() body: { knowledgePointId: string; content: string },
   ): Promise<{ success: boolean; message: string }> {
-    await this.textbookService.updateContentInFile(body.knowledgePointId, body.content);
+    await this.textbookService.updateContentInFile(
+      body.knowledgePointId,
+      body.content,
+    );
     return {
       success: true,
       message: '内容已保存',

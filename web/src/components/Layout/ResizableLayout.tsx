@@ -72,9 +72,12 @@ export const ResizableLayout: React.FC<ResizableLayoutProps> = ({
       if (saved) {
         try {
           const parsed = JSON.parse(saved) as { left?: number; center?: number; right?: number }
-          const sizes = [parsed.left || defaultSizes.left, parsed.center || defaultSizes.center]
+          const sizes: number[] = [
+            (parsed.left || defaultSizes.left || DEFAULT_SIZES.left) as number,
+            (parsed.center || defaultSizes.center || DEFAULT_SIZES.center) as number,
+          ]
           if (showRightPanel) {
-            sizes.push(parsed.right || defaultSizes.right)
+            sizes.push((parsed.right || defaultSizes.right || DEFAULT_SIZES.right) as number)
           }
           return sizes
         } catch {
@@ -132,9 +135,9 @@ export const ResizableLayout: React.FC<ResizableLayoutProps> = ({
       setHorizontalSizes(prev => {
         const [left, center, right] = prev
         if (showRightPanel && prev.length === 2) {
-          return [left, center, right || defaultSizes.right]
+          return [left, center, right || defaultSizes.right] as number[]
         } else if (!showRightPanel && prev.length === 3) {
-          return [left, center]
+          return [left, center] as number[]
         }
         return prev
       })

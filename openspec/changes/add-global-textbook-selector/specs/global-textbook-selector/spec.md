@@ -8,9 +8,13 @@ The system SHALL provide a global context for managing textbook selection state.
 - **WHEN** the application mounts
 - **THEN** the system SHALL load the textbook list via `GET /textbooks`
 - **AND** restore previously selected textbooks from `localStorage` key `mathtong:selected-textbooks`
+- **AND** validate each restored ID against the API response list
+- **AND** remove any IDs that no longer exist in the API response
+- **AND** persist the validated (filtered) selection back to `localStorage`
 - **AND** if no previous selection exists (first visit), select the first textbook from the API response by default
 - **AND** if no textbooks exist in the API response, maintain an empty selection
 - **AND** if the user has previously cleared the selection (empty array in localStorage), maintain an empty selection
+- **AND** if all restored IDs were invalid (deleted), select the first textbook from the API response by default
 
 #### Scenario: Select a textbook
 - **GIVEN** the textbook list is loaded
@@ -75,19 +79,56 @@ The system SHALL integrate the global textbook selection with the learning page.
 - **THEN** the learning page SHALL use `selectedTextbookIds[0]` as the active textbook
 - **AND** it SHALL load the knowledge tree for that textbook
 
-#### Scenario: URL fallback
-- **GIVEN** no textbooks are selected in the global context
-- **AND** URL contains `textbookId` parameter
-- **WHEN** user navigates to the learning page
-- **THEN** the learning page SHALL use the URL `textbookId` as a transient fallback
+#### Scenario: URL drives context on entry
+- **GIVEN** user navigates to the learning page with URL `/learning/:textbookId`
+- **WHEN** the page loads
+- **THEN** the system SHALL display the textbook from the URL parameter
+- **AND** it SHALL synchronize that textbook ID into the global context
+- **AND** it SHALL persist the selection to `localStorage`
 - **AND** it SHALL load the knowledge tree for that textbook
-- **AND** it SHALL NOT modify the global context or localStorage
+
+#### Scenario: Entry without URL param
+- **GIVEN** user navigates to `/learning` (no textbookId in URL)
+- **WHEN** the page loads
+- **THEN** the system SHALL use `selectedTextbookIds[0]` from Context as the active textbook
+- **AND** it SHALL load the knowledge tree for that textbook
+- **AND** it SHALL update the URL to `/learning/${textbookId}` via replace navigation
+
+#### Scenario: Context drives URL on selector change
+- **GIVEN** user is on the learning page
+- **WHEN** user changes the global textbook selection
+- **THEN** the system SHALL update the URL to `/learning/${newTextbookId}`
+- **AND** it SHALL use `replace` navigation (not push)
+- **AND** it SHALL reload the knowledge tree for the new textbook
+
+#### Scenario: Context-only navigation
+- **GIVEN** user is NOT on the learning page
+- **WHEN** user changes the global textbook selection
+- **THEN** the system SHALL update the global context
+- **AND** it SHALL persist to `localStorage`
+- **AND** it SHALL NOT modify the current URL
 
 #### Scenario: No textbook selected
 - **GIVEN** no textbooks are selected
 - **AND** URL has no `textbookId`
 - **WHEN** user navigates to the learning page
 - **THEN** the system SHALL display a message prompting user to select a textbook
+
+### Requirement: Navigation entry points
+
+The system SHALL update all navigation entry points to use the global textbook selection.
+
+#### Scenario: AppLayout "学习" menu navigation
+- **GIVEN** user clicks the "学习" menu item in the navigation bar
+- **WHEN** textbooks are selected in the global context
+- **THEN** the system SHALL navigate to `/learning/${selectedTextbookIds[0]}`
+- **AND** it SHALL NOT directly fetch the textbook list to determine the target
+
+#### Scenario: HomePage "知识学习" card navigation
+- **GIVEN** user clicks the "知识学习" feature card on the home page
+- **WHEN** textbooks are selected in the global context
+- **THEN** the system SHALL navigate to `/learning/${selectedTextbookIds[0]}`
+- **AND** it SHALL NOT directly fetch the textbook list to determine the target
 
 ## Types
 

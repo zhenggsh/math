@@ -117,7 +117,7 @@ const StudentAnalyticsPage: React.FC = () => {
         <Col xs={24} lg={12}>
           <Card title="学习趋势（最近30天）" className={styles.chartCard}>
             {learningTrend?.trend.some(t => t.count > 0) ? (
-              <LineChart data={learningTrend.trend} showArea yAxisName="时长(分钟)" />
+              <LineChart data={learningTrend.trend.map(t => ({ date: t.date, value: t.durationMinutes, count: t.count }))} showArea yAxisName="时长(分钟)" />
             ) : (
               <Empty description="暂无数据" />
             )}

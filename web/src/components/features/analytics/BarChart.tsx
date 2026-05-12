@@ -1,5 +1,5 @@
 import React from 'react';
-import type { EChartsOption } from 'echarts/core';
+import type { EChartsCoreOption } from 'echarts/core';
 import { EChartsWrapper } from './EChartsWrapper';
 import { ANT_DESIGN_COLORS } from '../../../types/analytics.types';
 
@@ -26,7 +26,7 @@ export const BarChart: React.FC<BarChartProps> = ({
   xAxisName,
   yAxisName,
 }) => {
-  const option: EChartsOption = {
+  const option: EChartsCoreOption = {
     title: title
       ? {
           text: title,
