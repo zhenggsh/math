@@ -73,6 +73,7 @@ interface MindMapNodeProps {
   layout: MindMapNodeLayout
   selectedKey?: string
   collapsedKeys: Set<string>
+  maxDepth: number
   onSelect: (node: KnowledgeTreeNode) => void
   onToggleCollapse: (key: string) => void
   onHover: (node: MindMapNodeLayout | null) => void
@@ -86,6 +87,7 @@ const MindMapNode: React.FC<MindMapNodeProps> = ({
   layout,
   selectedKey,
   collapsedKeys,
+  maxDepth,
   onSelect,
   onToggleCollapse,
   onHover,
@@ -99,7 +101,7 @@ const MindMapNode: React.FC<MindMapNodeProps> = ({
   }[layout.data.importanceLevel]
 
   const hasChildren =
-    layout.data.children && layout.data.children.length > 0 && layout.depth < MAX_DEPTH_DEFAULT
+    layout.data.children && layout.data.children.length > 0 && layout.depth < maxDepth
   const isCollapsed = collapsedKeys.has(layout.id)
 
   // 使用相对坐标，避免父节点 <g> 的 transform 叠加
@@ -174,6 +176,7 @@ const MindMapNode: React.FC<MindMapNodeProps> = ({
           layout={child}
           selectedKey={selectedKey}
           collapsedKeys={collapsedKeys}
+          maxDepth={maxDepth}
           onSelect={onSelect}
           onToggleCollapse={onToggleCollapse}
           onHover={onHover}
@@ -418,6 +421,7 @@ export const MindMapView: React.FC<MindMapViewProps> = ({
                 layout={node}
                 selectedKey={selectedKey}
                 collapsedKeys={collapsedKeys}
+                maxDepth={maxDepth}
                 onSelect={handleSelect}
                 onToggleCollapse={toggleCollapse}
                 onHover={handleNodeHover}

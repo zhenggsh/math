@@ -1,5 +1,5 @@
 import React from 'react'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
 import { MindMapView } from '../MindMapView'
 import type { KnowledgeTreeNode } from '../types'
@@ -35,7 +35,7 @@ describe('MindMapView', () => {
     expect(screen.getByText('No knowledge points')).toBeInTheDocument()
   })
 
-  it('renders nodes and calls onSelect', () => {
+  it('renders SVG with nodes', () => {
     const onSelect = vi.fn()
     const { container } = render(<MindMapView data={mockData} onSelect={onSelect} />)
     expect(container.querySelector('svg')).toBeTruthy()
@@ -46,7 +46,7 @@ describe('MindMapView', () => {
     expect(screen.getByTestId('layout-selector')).toBeInTheDocument()
   })
 
-  it('calls onLayoutModeChange when layout mode switched', () => {
+  it('has layout mode selector in toolbar', () => {
     const onLayoutModeChange = vi.fn()
     render(
       <MindMapView
