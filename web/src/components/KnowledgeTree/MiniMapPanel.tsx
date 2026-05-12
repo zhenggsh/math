@@ -1,4 +1,32 @@
 import React, { useState, useMemo, useCallback } from 'react'
+
+const renderMiniNode = (node: MindMapNodeLayout, miniScale: number): React.ReactNode => (
+  <g key={node.id}>
+    <rect
+      x={node.x * miniScale}
+      y={node.y * miniScale}
+      width={node.width * miniScale}
+      height={node.height * miniScale}
+      fill="#e6f7ff"
+      stroke="#1890ff"
+      strokeWidth={0.5}
+      rx={2}
+    />
+    {node.children?.map(child => (
+      <g key={`conn-${child.id}`}>
+        <line
+          x1={(node.x + node.width / 2) * miniScale}
+          y1={(node.y + node.height / 2) * miniScale}
+          x2={(child.x + child.width / 2) * miniScale}
+          y2={(child.y + child.height / 2) * miniScale}
+          stroke="#1890ff"
+          strokeWidth={0.5}
+        />
+        {renderMiniNode(child, miniScale)}
+      </g>
+    ))}
+  </g>
+)
 import { EyeOutlined, EyeInvisibleOutlined } from '@ant-design/icons'
 import type { MindMapNodeLayout } from './types'
 import styles from './MiniMapPanel.module.css'
@@ -57,37 +85,6 @@ export const MiniMapPanel: React.FC<MiniMapPanelProps> = ({
     [miniScale, onNavigate]
   )
 
-  const renderMiniNode = useCallback(
-    (node: MindMapNodeLayout): React.ReactNode => (
-      <g key={node.id}>
-        <rect
-          x={node.x * miniScale}
-          y={node.y * miniScale}
-          width={node.width * miniScale}
-          height={node.height * miniScale}
-          fill="#e6f7ff"
-          stroke="#1890ff"
-          strokeWidth={0.5}
-          rx={2}
-        />
-        {node.children?.map(child => (
-          <g key={`conn-${child.id}`}>
-            <line
-              x1={(node.x + node.width / 2) * miniScale}
-              y1={(node.y + node.height / 2) * miniScale}
-              x2={(child.x + child.width / 2) * miniScale}
-              y2={(child.y + child.height / 2) * miniScale}
-              stroke="#1890ff"
-              strokeWidth={0.5}
-            />
-            {renderMiniNode(child)}
-          </g>
-        ))}
-      </g>
-    ),
-    [miniScale]
-  )
-
   return (
     <div className={styles.miniMapPanel} data-testid="mini-map-panel">
       {isExpanded && (
@@ -108,7 +105,7 @@ export const MiniMapPanel: React.FC<MiniMapPanelProps> = ({
               stroke="#d9d9d9"
               strokeWidth={1}
             />
-            {layout.map(renderMiniNode)}
+            {layout.map(node => renderMiniNode(node, miniScale))}
             {/* Viewport indicator */}
             <rect
               x={viewportRect.x}
