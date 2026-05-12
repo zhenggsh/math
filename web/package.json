@@ -13,7 +13,8 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "coverage": "vitest --coverage",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit -p tsconfig.app.json"
   },
   "dependencies": {
     "@ant-design/icons": "^6.1.0",

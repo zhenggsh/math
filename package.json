@@ -11,7 +11,7 @@
     "lint:fix": "pnpm --filter web lint:fix && pnpm --filter server lint",
     "format": "pnpm --filter web format && pnpm --filter server format",
     "test": "pnpm --filter web test && pnpm --filter server test",
-    "typecheck": "pnpm --filter web tsc --noEmit && pnpm --filter server tsc --noEmit"
+    "typecheck": "pnpm --filter web typecheck && pnpm --filter server typecheck"
   },
   "engines": {
     "node": ">=18.0.0",
