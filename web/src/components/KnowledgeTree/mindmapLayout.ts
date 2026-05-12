@@ -166,8 +166,8 @@ export const calculateLayout = (
 
   layout.forEach(applyOffset)
 
-  const svgWidth = maxX - minX + dx + PADDING
-  const svgHeight = maxY - minY + dy + PADDING
+  const svgWidth = maxX + dx + PADDING
+  const svgHeight = maxY + dy + PADDING
 
   return { layout, totalHeight: currentY, svgWidth, svgHeight }
 }
