@@ -7,6 +7,7 @@ export type {
   KnowledgeTreeProps,
   LearningStatus,
   ViewMode,
+  LayoutMode,
   TreeViewProps,
   MindMapViewProps,
   MindMapNodeLayout,
