@@ -9,10 +9,16 @@ const mockNode: KnowledgeTreeNode = {
   title: '集合的含义',
   code: '1.1.1',
   importanceLevel: 'A',
-  definition: '一般地，我们把研究对象统称为元素，把一些元素组成的总体叫做集合。',
   learningStatus: 'mastered',
   isLeaf: true,
-  data: { id: 'kp-1', textbookId: 'tb-1' },
+  data: {
+    id: 'kp-1',
+    code: '1.1.1',
+    level1: '集合与逻辑',
+    importanceLevel: 'A',
+    textbookId: 'tb-1',
+    definition: '一般地，我们把研究对象统称为元素，把一些元素组成的总体叫做集合。',
+  },
 }
 
 describe('KnowledgeNodePopover', () => {
@@ -24,7 +30,7 @@ describe('KnowledgeNodePopover', () => {
   })
 
   it('shows "暂无定义" when no definition', () => {
-    const nodeWithoutDef = { ...mockNode, definition: undefined }
+    const nodeWithoutDef = { ...mockNode, data: { ...mockNode.data, definition: undefined } }
     render(<KnowledgeNodePopover node={nodeWithoutDef} visible={true} />)
     expect(screen.getByText('暂无定义')).toBeInTheDocument()
   })

@@ -1,6 +1,7 @@
 import React from 'react'
 import { Tag } from 'antd'
 import type { KnowledgeTreeNode } from './types'
+import type { ImportanceLevel } from '../../types/knowledge.types'
 import styles from './KnowledgeNodePopover.module.css'
 
 interface KnowledgeNodePopoverProps {
@@ -8,7 +9,7 @@ interface KnowledgeNodePopoverProps {
   visible: boolean
 }
 
-const IMPORTANCE_COLORS: Record<string, string> = {
+const IMPORTANCE_COLORS: Record<ImportanceLevel, string> = {
   A: '#ff4d4f',
   B: '#faad14',
   C: '#8c8c8c',
@@ -17,7 +18,7 @@ const IMPORTANCE_COLORS: Record<string, string> = {
 export const KnowledgeNodePopover: React.FC<KnowledgeNodePopoverProps> = ({ node, visible }) => {
   if (!visible) return null
 
-  const definition = node.definition || node.data?.definition
+  const definition = node.data?.definition
   const displayDefinition = definition && definition.trim().length > 0 ? definition : '暂无定义'
 
   return (

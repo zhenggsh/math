@@ -18,8 +18,6 @@ export interface KnowledgeTreeNode {
   children?: KnowledgeTreeNode[]
   /** 是否叶子节点 */
   isLeaf?: boolean
-  /** 定义 */
-  definition?: string
   /** 原始数据 */
   data: KnowledgePoint
 }
@@ -28,7 +26,6 @@ export interface KnowledgeTreeNode {
  * 学习状态
  */
 export type LearningStatus = 'not_started' | 'learning' | 'mastered' | 'review_needed'
-
 
 /**
  * 视图模式
