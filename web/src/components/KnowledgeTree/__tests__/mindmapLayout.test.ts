@@ -59,4 +59,18 @@ describe('mindmapLayout', () => {
     }
     result.layout.forEach(checkNode)
   })
+
+  it('stacks multiple root nodes vertically', () => {
+    const data = [
+      createNode('root1', [createNode('c1')]),
+      createNode('root2', [createNode('c2')]),
+    ]
+    const result = calculateLayout(data, 3, new Set(), 'tree')
+    expect(result.layout).toHaveLength(2)
+    expect(result.layout[1].y).toBeGreaterThan(result.layout[0].y)
+    // Verify children maintain correct relative position to their parent
+    const offset0 = result.layout[0].children![0].y - result.layout[0].y
+    const offset1 = result.layout[1].children![0].y - result.layout[1].y
+    expect(offset1).toBe(offset0)
+  })
 })

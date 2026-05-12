@@ -6,7 +6,7 @@ const LEVEL_GAP = 180
 const NODE_GAP = 20
 const PADDING = 50
 
-const calculateSubtreeLayout = (
+export const calculateSubtreeLayout = (
   node: KnowledgeTreeNode,
   maxDepth: number,
   collapsedKeys: Set<string>,
@@ -130,7 +130,12 @@ export const calculateLayout = (
   const layout: MindMapNodeLayout[] = []
 
   for (const result of rootResults) {
-    result.root.y = currentY
+    const yOffset = currentY - result.root.y
+    const applyYOffset = (node: MindMapNodeLayout) => {
+      node.y += yOffset
+      node.children?.forEach(applyYOffset)
+    }
+    applyYOffset(result.root)
     layout.push(result.root)
     currentY += result.totalHeight
   }
@@ -150,8 +155,8 @@ export const calculateLayout = (
 
   layout.forEach(traverse)
 
-  const dx = minX < 0 ? -minX + PADDING : PADDING
-  const dy = minY < 0 ? -minY + PADDING : PADDING
+  const dx = -minX + PADDING
+  const dy = -minY + PADDING
 
   const applyOffset = (node: MindMapNodeLayout) => {
     node.x += dx
