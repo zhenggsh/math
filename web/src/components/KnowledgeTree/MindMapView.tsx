@@ -347,7 +347,7 @@ export const MindMapView: React.FC<MindMapViewProps> = ({
             value={layoutMode}
             onChange={handleLayoutModeChange}
             options={[
-              { value: 'tree', label: 'Tree' },
+              { value: 'tree', label: 'Tree Layout' },
               { value: 'balanced', label: 'Balanced' },
             ]}
             size="small"
