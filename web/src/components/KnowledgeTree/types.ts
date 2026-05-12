@@ -34,6 +34,11 @@ export type LearningStatus = 'not_started' | 'learning' | 'mastered' | 'review_n
 export type ViewMode = 'tree' | 'mindmap'
 
 /**
+ * 布局模式
+ */
+export type LayoutMode = 'tree' | 'balanced'
+
+/**
  * KnowledgeTree 组件 Props
  */
 export interface KnowledgeTreeProps {
@@ -55,6 +60,10 @@ export interface KnowledgeTreeProps {
   expandedKeys?: string[]
   /** 默认展开的节点 keys */
   defaultExpandedKeys?: string[]
+  /** 布局模式 */
+  layoutMode?: LayoutMode
+  /** 布局模式变化回调 */
+  onLayoutModeChange?: (mode: LayoutMode) => void
 }
 
 /**
@@ -91,6 +100,10 @@ export interface MindMapViewProps {
   loading?: boolean
   /** 选中回调 */
   onSelect?: (node: KnowledgeTreeNode) => void
+  /** 布局模式 */
+  layoutMode?: LayoutMode
+  /** 布局模式变化回调 */
+  onLayoutModeChange?: (mode: LayoutMode) => void
 }
 
 /**
@@ -113,4 +126,6 @@ export interface MindMapNodeLayout {
   children?: MindMapNodeLayout[]
   /** 深度层级 */
   depth: number
+  /** 节点方向（平衡布局时使用） */
+  direction?: 'left' | 'right'
 }
