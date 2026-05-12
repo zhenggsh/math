@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { Tree, Tag, Spin, Empty, Button } from 'antd'
 import type { TreeProps } from 'antd'
 import {
@@ -21,6 +21,20 @@ const IMPORTANCE_COLORS: Record<ImportanceLevel, string> = {
   A: 'red',
   B: 'orange',
   C: 'default',
+}
+
+/**
+ * 根据 key 在树节点中递归查找节点
+ */
+const findNodeByKey = (nodes: KnowledgeTreeNode[], key: string): KnowledgeTreeNode | null => {
+  for (const node of nodes) {
+    if (node.key === key) return node
+    if (node.children) {
+      const found = findNodeByKey(node.children, key)
+      if (found) return found
+    }
+  }
+  return null
 }
 
 /**
@@ -57,7 +71,6 @@ const TreeNodeTitle: React.FC<{ node: KnowledgeTreeNode }> = ({ node }) => {
       className={styles.treeNodeTitle}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      style={{ position: 'relative' }}
     >
       <span className={styles.nodeIcon}>
         <BookOutlined />
@@ -107,18 +120,7 @@ export const TreeView: React.FC<TreeViewProps> = ({
     (selectedKeys: React.Key[]) => {
       const key = String(selectedKeys[0] || '')
       if (key && onSelect) {
-        // 查找节点数据
-        const findNode = (nodes: KnowledgeTreeNode[]): KnowledgeTreeNode | null => {
-          for (const node of nodes) {
-            if (node.key === key) return node
-            if (node.children) {
-              const found = findNode(node.children)
-              if (found) return found
-            }
-          }
-          return null
-        }
-        const node = findNode(data)
+        const node = findNodeByKey(data, key)
         if (node) {
           onSelect(node)
         }
@@ -141,7 +143,7 @@ export const TreeView: React.FC<TreeViewProps> = ({
   )
 
   // 展开全部
-  const expandAll = useCallback(() => {
+  const expandAll = useCallback((): void => {
     const getAllKeys = (nodes: KnowledgeTreeNode[]): string[] => {
       const keys: string[] = []
       nodes.forEach(node => {
@@ -160,7 +162,7 @@ export const TreeView: React.FC<TreeViewProps> = ({
   }, [data, controlledExpandedKeys, onExpand])
 
   // 折叠全部
-  const collapseAll = useCallback(() => {
+  const collapseAll = useCallback((): void => {
     if (controlledExpandedKeys === undefined) {
       setInternalExpandedKeys([])
     }
@@ -193,7 +195,7 @@ export const TreeView: React.FC<TreeViewProps> = ({
 
   // 键盘事件处理
   const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLDivElement>) => {
+    (e: React.KeyboardEvent<HTMLDivElement>): void => {
       if (e.key === 'ArrowUp') {
         e.preventDefault()
         const node = findNextNode('up')
@@ -222,17 +224,7 @@ export const TreeView: React.FC<TreeViewProps> = ({
         }
       } else if (e.key === 'Enter' && selectedKey && onSelect) {
         e.preventDefault()
-        const findNode = (nodes: KnowledgeTreeNode[]): KnowledgeTreeNode | null => {
-          for (const node of nodes) {
-            if (node.key === selectedKey) return node
-            if (node.children) {
-              const found = findNode(node.children)
-              if (found) return found
-            }
-          }
-          return null
-        }
-        const node = findNode(data)
+        const node = findNodeByKey(data, selectedKey)
         if (node) onSelect(node)
       }
     },
