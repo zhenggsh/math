@@ -15,31 +15,10 @@
   background-color: #fafafa;
 }
 
-.toolbarTitle {
-  font-weight: 600;
-  font-size: 14px;
-  color: #262626;
-}
-
 .toolbarActions {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 12px;
-}
-
-.actionLink {
-  color: #1890ff;
-  cursor: pointer;
-  transition: color 0.2s;
-}
-
-.actionLink:hover {
-  color: #40a9ff;
-}
-
-.divider {
-  color: #d9d9d9;
 }
 
 .tree {

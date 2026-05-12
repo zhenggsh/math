@@ -114,4 +114,17 @@ describe('TreeView', () => {
     fireEvent.click(screen.getByText('Collapse All'))
     expect(onExpand).toHaveBeenCalledWith([])
   })
+
+  it('has AntD Buttons for expand/collapse instead of action links', () => {
+    render(<TreeView data={mockData} />)
+    const expandButton = screen.getByRole('button', { name: /expand all/i })
+    const collapseButton = screen.getByRole('button', { name: /collapse all/i })
+    expect(expandButton).toBeInTheDocument()
+    expect(collapseButton).toBeInTheDocument()
+  })
+
+  it('does not show "Knowledge Tree" title in toolbar', () => {
+    const { container } = render(<TreeView data={mockData} />)
+    expect(container.querySelector('.toolbarTitle')).toBeFalsy()
+  })
 })
