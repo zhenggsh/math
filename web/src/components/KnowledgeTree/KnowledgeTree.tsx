@@ -3,7 +3,7 @@ import { Segmented, Spin, Empty } from 'antd'
 import { PartitionOutlined, ApartmentOutlined } from '@ant-design/icons'
 import { TreeView } from './TreeView'
 import { MindMapView } from './MindMapView'
-import type { KnowledgeTreeProps, ViewMode, KnowledgeTreeNode } from './types'
+import type { KnowledgeTreeProps, ViewMode, LayoutMode, KnowledgeTreeNode } from './types'
 import styles from './KnowledgeTree.module.css'
 
 const STORAGE_KEY = 'mathtong:knowledge-tree:view-mode'
@@ -16,9 +16,11 @@ export const KnowledgeTree: React.FC<KnowledgeTreeProps> = ({
   data,
   selectedKey,
   viewMode: controlledViewMode,
+  layoutMode: controlledLayoutMode,
   loading = false,
   onSelect,
   onViewModeChange,
+  onLayoutModeChange,
   onExpand,
   expandedKeys,
   defaultExpandedKeys,
@@ -36,6 +38,10 @@ export const KnowledgeTree: React.FC<KnowledgeTreeProps> = ({
 
   const viewMode = controlledViewMode !== undefined ? controlledViewMode : internalViewMode
 
+  const [internalLayoutMode, setInternalLayoutMode] = useState<LayoutMode>('tree')
+
+  const layoutMode = controlledLayoutMode !== undefined ? controlledLayoutMode : internalLayoutMode
+
   // 保存视图模式到 localStorage
   useEffect(() => {
     if (typeof window !== 'undefined' && controlledViewMode === undefined) {
@@ -52,6 +58,17 @@ export const KnowledgeTree: React.FC<KnowledgeTreeProps> = ({
       onViewModeChange?.(value)
     },
     [controlledViewMode, onViewModeChange]
+  )
+
+  // 处理布局模式切换
+  const handleLayoutModeChange = useCallback(
+    (value: LayoutMode) => {
+      if (controlledLayoutMode === undefined) {
+        setInternalLayoutMode(value)
+      }
+      onLayoutModeChange?.(value)
+    },
+    [controlledLayoutMode, onLayoutModeChange]
   )
 
   // 处理节点选择
@@ -109,6 +126,8 @@ export const KnowledgeTree: React.FC<KnowledgeTreeProps> = ({
           <MindMapView
             data={data}
             selectedKey={selectedKey}
+            layoutMode={layoutMode}
+            onLayoutModeChange={handleLayoutModeChange}
             loading={false}
             onSelect={handleSelect}
           />
