@@ -1,5 +1,5 @@
-import React, { useMemo, useState, useCallback } from 'react'
-import { Empty, Spin, Button, Space } from 'antd'
+import React, { useMemo, useState, useCallback, useRef, useEffect } from 'react'
+import { Empty, Spin, Button, Space, Select } from 'antd'
 import {
   ZoomInOutlined,
   ZoomOutOutlined,
@@ -7,14 +7,13 @@ import {
   PlusOutlined,
   MinusOutlined,
 } from '@ant-design/icons'
-import type { MindMapViewProps, KnowledgeTreeNode, MindMapNodeLayout } from './types'
-
+import type { MindMapViewProps, KnowledgeTreeNode, MindMapNodeLayout, LayoutMode } from './types'
+import { calculateLayout } from './mindmapLayout'
+import { usePanController } from './usePanController'
+import { MiniMapPanel } from './MiniMapPanel'
+import { KnowledgeNodePopover } from './KnowledgeNodePopover'
 import styles from './MindMapView.module.css'
 
-const NODE_WIDTH = 140
-const NODE_HEIGHT = 40
-const LEVEL_GAP = 180
-const NODE_GAP = 20
 const MAX_DEPTH_DEFAULT = 3
 
 interface Connection {
@@ -39,73 +38,59 @@ const collectConnections = (layout: MindMapNodeLayout[]): Connection[] => {
 }
 
 /**
- * 计算思维导图布局
- * 使用简单的水平层次布局
+ * 计算贝塞尔曲线连接路径，支持左右双向
  */
-const calculateLayout = (
-  nodes: KnowledgeTreeNode[],
-  maxDepth: number,
-  collapsedKeys: Set<string>,
-  depth = 0,
-  startY = 0,
-  parentX = 0
-): { layout: MindMapNodeLayout[]; totalHeight: number } => {
-  const layout: MindMapNodeLayout[] = []
-  let currentY = startY
+const calculateConnectionPath = (parent: MindMapNodeLayout, child: MindMapNodeLayout): string => {
+  const parentCenterX = parent.x + parent.width / 2
+  const childCenterX = child.x + child.width / 2
 
-  nodes.forEach(node => {
-    if (depth > maxDepth) return
-
-    const x = depth === 0 ? 50 : parentX + LEVEL_GAP
-    const y = currentY
-
-    const isCollapsed = collapsedKeys.has(node.key)
-    const hasChildren = node.children && node.children.length > 0 && depth < maxDepth
-
-    const nodeLayout: MindMapNodeLayout = {
-      id: node.key,
-      x,
-      y,
-      width: NODE_WIDTH,
-      height: NODE_HEIGHT,
-      data: node,
-      depth,
-    }
-
-    let childrenHeight = 0
-    if (hasChildren && !isCollapsed) {
-      const childrenResult = calculateLayout(
-        node.children!,
-        maxDepth,
-        collapsedKeys,
-        depth + 1,
-        currentY,
-        x
-      )
-      nodeLayout.children = childrenResult.layout
-      childrenHeight = childrenResult.totalHeight
-    }
-
-    const nodeTotalHeight = Math.max(NODE_HEIGHT + NODE_GAP, childrenHeight)
-    currentY += nodeTotalHeight
-
-    layout.push(nodeLayout)
-  })
-
-  return { layout, totalHeight: currentY - startY }
+  if (childCenterX < parentCenterX) {
+    // 子节点在左侧
+    const startX = parent.x
+    const startY = parent.y + parent.height / 2
+    const endX = child.x + child.width
+    const endY = child.y + child.height / 2
+    const cp1x = startX - 50
+    const cp1y = startY
+    const cp2x = endX + 50
+    const cp2y = endY
+    return `M ${startX} ${startY} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${endX} ${endY}`
+  } else {
+    // 子节点在右侧
+    const startX = parent.x + parent.width
+    const startY = parent.y + parent.height / 2
+    const endX = child.x
+    const endY = child.y + child.height / 2
+    const cp1x = startX + 50
+    const cp1y = startY
+    const cp2x = endX - 50
+    const cp2y = endY
+    return `M ${startX} ${startY} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${endX} ${endY}`
+  }
 }
 
-/**
- * 渲染节点
- */
-const MindMapNode: React.FC<{
+interface MindMapNodeProps {
   layout: MindMapNodeLayout
   selectedKey?: string
   collapsedKeys: Set<string>
   onSelect: (node: KnowledgeTreeNode) => void
   onToggleCollapse: (key: string) => void
+  onHover: (node: MindMapNodeLayout | null) => void
   parentLayout?: MindMapNodeLayout
-}> = ({ layout, selectedKey, collapsedKeys, onSelect, onToggleCollapse, parentLayout }) => {
+}
+
+/**
+ * 渲染单个思维导图节点
+ */
+const MindMapNode: React.FC<MindMapNodeProps> = ({
+  layout,
+  selectedKey,
+  collapsedKeys,
+  onSelect,
+  onToggleCollapse,
+  onHover,
+  parentLayout,
+}) => {
   const isSelected = layout.id === selectedKey
   const importanceColor = {
     A: '#ff4d4f',
@@ -122,13 +107,17 @@ const MindMapNode: React.FC<{
   const relativeY = parentLayout ? layout.y - parentLayout.y : layout.y
 
   return (
-    <g transform={`translate(${relativeX}, ${relativeY})`}>
+    <g
+      transform={`translate(${relativeX}, ${relativeY})`}
+      onMouseEnter={() => onHover(layout)}
+      onMouseLeave={() => onHover(null)}
+    >
       {/* 节点矩形 */}
       <rect
         x={0}
         y={0}
-        width={NODE_WIDTH}
-        height={NODE_HEIGHT}
+        width={layout.width}
+        height={layout.height}
         rx={4}
         ry={4}
         fill={isSelected ? '#e6f7ff' : '#fff'}
@@ -139,17 +128,17 @@ const MindMapNode: React.FC<{
       />
 
       {/* 重要性指示条 */}
-      <rect x={0} y={0} width={4} height={NODE_HEIGHT} rx={2} ry={2} fill={importanceColor} />
+      <rect x={0} y={0} width={4} height={layout.height} rx={2} ry={2} fill={importanceColor} />
 
       {/* 节点文字 */}
       <text
         x={10}
-        y={NODE_HEIGHT / 2 + 4}
+        y={layout.height / 2 + 4}
         fontSize={12}
         fill="#262626"
         style={{
           pointerEvents: 'none',
-          maxWidth: NODE_WIDTH - 20,
+          maxWidth: layout.width - 20,
         }}
       >
         {layout.data.title.length > 12 ? `${layout.data.title.slice(0, 12)}...` : layout.data.title}
@@ -158,9 +147,9 @@ const MindMapNode: React.FC<{
       {/* 折叠/展开按钮 */}
       {hasChildren && (
         <g
-          transform={`translate(${NODE_WIDTH - 6}, ${NODE_HEIGHT / 2})`}
+          transform={`translate(${layout.width - 6}, ${layout.height / 2})`}
           style={{ cursor: 'pointer' }}
-          onClick={e => {
+          onClick={(e: React.MouseEvent) => {
             e.stopPropagation()
             onToggleCollapse(layout.id)
           }}
@@ -187,6 +176,7 @@ const MindMapNode: React.FC<{
           collapsedKeys={collapsedKeys}
           onSelect={onSelect}
           onToggleCollapse={onToggleCollapse}
+          onHover={onHover}
           parentLayout={layout}
         />
       ))}
@@ -196,7 +186,7 @@ const MindMapNode: React.FC<{
 
 /**
  * 思维导图视图组件
- * 使用 SVG 实现，支持水平层次布局
+ * 使用 SVG 实现，支持水平层次布局和平衡布局
  */
 export const MindMapView: React.FC<MindMapViewProps> = ({
   data,
@@ -204,10 +194,30 @@ export const MindMapView: React.FC<MindMapViewProps> = ({
   maxDepth = MAX_DEPTH_DEFAULT,
   loading = false,
   onSelect,
+  layoutMode = 'tree',
+  onLayoutModeChange,
 }) => {
   const [scale, setScale] = useState(1)
-  const [translate, setTranslate] = useState({ x: 20, y: 20 })
   const [collapsedKeys, setCollapsedKeys] = useState<Set<string>>(new Set())
+  const [hoveredNode, setHoveredNode] = useState<MindMapNodeLayout | null>(null)
+  const [popoverPosition, setPopoverPosition] = useState({ x: 0, y: 0 })
+  const canvasRef = useRef<HTMLDivElement>(null)
+  const [containerSize, setContainerSize] = useState({ width: 800, height: 600 })
+
+  useEffect(() => {
+    const el = canvasRef.current
+    if (!el) return
+
+    const updateSize = (): void => {
+      setContainerSize({ width: el.clientWidth, height: el.clientHeight })
+    }
+
+    updateSize()
+
+    const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(updateSize) : null
+    observer?.observe(el)
+    return () => observer?.disconnect()
+  }, [])
 
   // 切换节点折叠状态
   const toggleCollapse = useCallback((key: string) => {
@@ -244,9 +254,17 @@ export const MindMapView: React.FC<MindMapViewProps> = ({
   }, [data, maxDepth])
 
   // 计算布局
-  const { layout, totalHeight } = useMemo(() => {
-    return calculateLayout(data, maxDepth, collapsedKeys)
-  }, [data, maxDepth, collapsedKeys])
+  const { layout, svgWidth, svgHeight } = useMemo(() => {
+    return calculateLayout(data, maxDepth, collapsedKeys, layoutMode)
+  }, [data, maxDepth, collapsedKeys, layoutMode])
+
+  // 平移控制器
+  const { translate, isPanning, setTranslate, handlers } = usePanController({
+    containerWidth: containerSize.width,
+    containerHeight: containerSize.height,
+    contentWidth: svgWidth,
+    contentHeight: svgHeight,
+  })
 
   // 处理节点选择
   const handleSelect = useCallback(
@@ -254,6 +272,30 @@ export const MindMapView: React.FC<MindMapViewProps> = ({
       onSelect?.(node)
     },
     [onSelect]
+  )
+
+  // 处理节点悬停
+  const handleNodeHover = useCallback(
+    (node: MindMapNodeLayout | null) => {
+      setHoveredNode(node)
+      if (node) {
+        const x = translate.x + node.x * scale + node.width * scale
+        const y = translate.y + node.y * scale
+        setPopoverPosition({ x, y })
+      }
+    },
+    [translate, scale]
+  )
+
+  // MiniMap 导航
+  const handleMiniMapNavigate = useCallback(
+    (x: number, y: number) => {
+      setTranslate({
+        x: containerSize.width / 2 - x * scale,
+        y: containerSize.height / 2 - y * scale,
+      })
+    },
+    [setTranslate, scale, containerSize]
   )
 
   // 缩放控制
@@ -268,7 +310,15 @@ export const MindMapView: React.FC<MindMapViewProps> = ({
   const resetView = useCallback(() => {
     setScale(1)
     setTranslate({ x: 20, y: 20 })
-  }, [])
+  }, [setTranslate])
+
+  // 布局模式切换
+  const handleLayoutModeChange = useCallback(
+    (value: LayoutMode) => {
+      onLayoutModeChange?.(value)
+    },
+    [onLayoutModeChange]
+  )
 
   if (loading) {
     return (
@@ -286,14 +336,22 @@ export const MindMapView: React.FC<MindMapViewProps> = ({
     )
   }
 
-  const svgWidth = Math.max(800, (maxDepth + 1) * LEVEL_GAP + NODE_WIDTH + 100)
-  const svgHeight = Math.max(600, totalHeight + 100)
-
   return (
     <div className={styles.mindMapView}>
       <div className={styles.toolbar}>
         <span className={styles.toolbarTitle}>Mind Map</span>
         <Space>
+          <Select
+            className={styles.layoutSelector}
+            data-testid="layout-selector"
+            value={layoutMode}
+            onChange={handleLayoutModeChange}
+            options={[
+              { value: 'tree', label: 'Tree' },
+              { value: 'balanced', label: 'Balanced' },
+            ]}
+            size="small"
+          />
           <Button icon={<ZoomOutOutlined />} onClick={zoomOut} size="small" />
           <span className={styles.zoomLevel}>{Math.round(scale * 100)}%</span>
           <Button icon={<ZoomInOutlined />} onClick={zoomIn} size="small" />
@@ -308,7 +366,11 @@ export const MindMapView: React.FC<MindMapViewProps> = ({
           </Button>
         </Space>
       </div>
-      <div className={styles.canvas}>
+      <div
+        ref={canvasRef}
+        className={`${styles.canvas} ${isPanning ? styles.panning : ''}`}
+        onMouseDown={handlers.onMouseDown}
+      >
         <svg
           width={svgWidth}
           height={svgHeight}
@@ -320,32 +382,35 @@ export const MindMapView: React.FC<MindMapViewProps> = ({
         >
           <g>
             {/* 先绘制所有连接线（在节点下方） */}
-            {collectConnections(layout).map(({ parent, child }, index) => (
-              <g key={`conn-${index}`}>
-                <path
-                  d={`M ${parent.x + NODE_WIDTH} ${parent.y + NODE_HEIGHT / 2} C ${parent.x + NODE_WIDTH + 50} ${parent.y + NODE_HEIGHT / 2}, ${child.x - 50} ${child.y + NODE_HEIGHT / 2}, ${child.x} ${child.y + NODE_HEIGHT / 2}`}
-                  fill="none"
-                  stroke="#1890ff"
-                  strokeWidth={2}
-                  strokeLinecap="round"
-                  opacity={0.7}
-                />
-                {/* 父节点端连接点 */}
-                <circle
-                  cx={parent.x + NODE_WIDTH}
-                  cy={parent.y + NODE_HEIGHT / 2}
-                  r={3}
-                  fill="#1890ff"
-                />
-                {/* 子节点端连接点 */}
-                <circle
-                  cx={child.x}
-                  cy={child.y + NODE_HEIGHT / 2}
-                  r={3}
-                  fill="#1890ff"
-                />
-              </g>
-            ))}
+            {collectConnections(layout).map(({ parent, child }, index) => {
+              const childIsLeft = child.x + child.width / 2 < parent.x + parent.width / 2
+              return (
+                <g key={`conn-${index}`}>
+                  <path
+                    d={calculateConnectionPath(parent, child)}
+                    fill="none"
+                    stroke="#1890ff"
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    opacity={0.7}
+                  />
+                  {/* 父节点端连接点 */}
+                  <circle
+                    cx={childIsLeft ? parent.x : parent.x + parent.width}
+                    cy={parent.y + parent.height / 2}
+                    r={3}
+                    fill="#1890ff"
+                  />
+                  {/* 子节点端连接点 */}
+                  <circle
+                    cx={childIsLeft ? child.x + child.width : child.x}
+                    cy={child.y + child.height / 2}
+                    r={3}
+                    fill="#1890ff"
+                  />
+                </g>
+              )
+            })}
             {/* 再绘制节点 */}
             {layout.map(node => (
               <MindMapNode
@@ -355,10 +420,34 @@ export const MindMapView: React.FC<MindMapViewProps> = ({
                 collapsedKeys={collapsedKeys}
                 onSelect={handleSelect}
                 onToggleCollapse={toggleCollapse}
+                onHover={handleNodeHover}
               />
             ))}
           </g>
         </svg>
+        {/* 节点悬停弹窗 */}
+        {hoveredNode && (
+          <div
+            className={styles.popoverOverlay}
+            style={{
+              left: popoverPosition.x,
+              top: popoverPosition.y,
+            }}
+          >
+            <KnowledgeNodePopover node={hoveredNode.data} visible={true} />
+          </div>
+        )}
+        {/* 缩略图面板 */}
+        <MiniMapPanel
+          layout={layout}
+          svgWidth={svgWidth}
+          svgHeight={svgHeight}
+          translate={translate}
+          scale={scale}
+          containerWidth={containerSize.width}
+          containerHeight={containerSize.height}
+          onNavigate={handleMiniMapNavigate}
+        />
       </div>
     </div>
   )
