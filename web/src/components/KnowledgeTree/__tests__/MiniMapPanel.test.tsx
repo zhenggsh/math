@@ -17,7 +17,7 @@ const mockLayout: MindMapNodeLayout[] = [
 ]
 
 describe('MiniMapPanel', () => {
-  it('renders collapsed state initially', () => {
+  it('renders expanded state initially', () => {
     const { container } = render(
       <MiniMapPanel
         layout={mockLayout}

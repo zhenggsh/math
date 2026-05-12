@@ -48,8 +48,8 @@ export const MiniMapPanel: React.FC<MiniMapPanelProps> = ({
       const clickX = e.clientX - rect.left
       const clickY = e.clientY - rect.top
       // Convert mini-map coordinates back to content coordinates
-      const contentX = (clickX / miniScale) * scale
-      const contentY = (clickY / miniScale) * scale
+      const contentX = clickX / miniScale
+      const contentY = clickY / miniScale
       onNavigate(contentX, contentY)
     },
     [miniScale, scale, onNavigate]
