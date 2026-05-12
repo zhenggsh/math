@@ -1,0 +1,42 @@
+.popover {
+  background: #fff;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  padding: 12px 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  min-width: 200px;
+  max-width: 320px;
+  pointer-events: none;
+  z-index: 1000;
+}
+
+.title {
+  font-weight: 600;
+  font-size: 14px;
+  color: #262626;
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+
+.meta {
+  margin-bottom: 8px;
+}
+
+.importanceTag {
+  font-size: 11px;
+  line-height: 16px;
+  height: 18px;
+  padding: 0 6px;
+  margin: 0;
+}
+
+.definition {
+  font-size: 12px;
+  color: #595959;
+  line-height: 1.6;
+  display: -webkit-box;
+  -webkit-line-clamp: 6;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
