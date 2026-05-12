@@ -11,7 +11,13 @@ const mockLayout: MindMapNodeLayout[] = [
     y: 100,
     width: 140,
     height: 40,
-    data: { key: 'root', title: 'Root', code: '1', importanceLevel: 'A', data: { id: '1', textbookId: 't' } },
+    data: {
+      key: 'root',
+      title: 'Root',
+      code: '1',
+      importanceLevel: 'A',
+      data: { id: '1', textbookId: 't' },
+    },
     depth: 0,
   },
 ]

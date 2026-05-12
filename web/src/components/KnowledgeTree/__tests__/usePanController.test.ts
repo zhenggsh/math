@@ -4,12 +4,14 @@ import { usePanController } from '../usePanController'
 
 describe('usePanController', () => {
   it('returns initial translate state', () => {
-    const { result } = renderHook(() => usePanController({
-      containerWidth: 800,
-      containerHeight: 600,
-      contentWidth: 1000,
-      contentHeight: 800,
-    }))
+    const { result } = renderHook(() =>
+      usePanController({
+        containerWidth: 800,
+        containerHeight: 600,
+        contentWidth: 1000,
+        contentHeight: 800,
+      })
+    )
     expect(result.current.translate).toEqual({ x: 20, y: 20 })
     expect(result.current.isPanning).toBe(false)
     expect(typeof result.current.setTranslate).toBe('function')
@@ -20,12 +22,14 @@ describe('usePanController', () => {
   })
 
   it('updates translate on middle-click drag', () => {
-    const { result } = renderHook(() => usePanController({
-      containerWidth: 800,
-      containerHeight: 600,
-      contentWidth: 1000,
-      contentHeight: 800,
-    }))
+    const { result } = renderHook(() =>
+      usePanController({
+        containerWidth: 800,
+        containerHeight: 600,
+        contentWidth: 1000,
+        contentHeight: 800,
+      })
+    )
 
     const mockEvent = {
       button: 1,
@@ -47,12 +51,14 @@ describe('usePanController', () => {
   })
 
   it('constrains translate to boundaries', () => {
-    const { result } = renderHook(() => usePanController({
-      containerWidth: 800,
-      containerHeight: 600,
-      contentWidth: 1000,
-      contentHeight: 800,
-    }))
+    const { result } = renderHook(() =>
+      usePanController({
+        containerWidth: 800,
+        containerHeight: 600,
+        contentWidth: 1000,
+        contentHeight: 800,
+      })
+    )
 
     act(() => {
       result.current.handlers.onMouseDown({
@@ -79,12 +85,14 @@ describe('usePanController', () => {
   })
 
   it('ignores left and right click', () => {
-    const { result } = renderHook(() => usePanController({
-      containerWidth: 800,
-      containerHeight: 600,
-      contentWidth: 1000,
-      contentHeight: 800,
-    }))
+    const { result } = renderHook(() =>
+      usePanController({
+        containerWidth: 800,
+        containerHeight: 600,
+        contentWidth: 1000,
+        contentHeight: 800,
+      })
+    )
 
     const preventDefault = vi.fn()
 
@@ -114,12 +122,14 @@ describe('usePanController', () => {
   })
 
   it('terminates pan on mouseup', () => {
-    const { result } = renderHook(() => usePanController({
-      containerWidth: 800,
-      containerHeight: 600,
-      contentWidth: 1000,
-      contentHeight: 800,
-    }))
+    const { result } = renderHook(() =>
+      usePanController({
+        containerWidth: 800,
+        containerHeight: 600,
+        contentWidth: 1000,
+        contentHeight: 800,
+      })
+    )
 
     act(() => {
       result.current.handlers.onMouseDown({
@@ -145,12 +155,14 @@ describe('usePanController', () => {
   })
 
   it('applies constraints via setTranslate', () => {
-    const { result } = renderHook(() => usePanController({
-      containerWidth: 800,
-      containerHeight: 600,
-      contentWidth: 1000,
-      contentHeight: 800,
-    }))
+    const { result } = renderHook(() =>
+      usePanController({
+        containerWidth: 800,
+        containerHeight: 600,
+        contentWidth: 1000,
+        contentHeight: 800,
+      })
+    )
 
     act(() => {
       result.current.setTranslate({ x: 5000, y: -5000 })

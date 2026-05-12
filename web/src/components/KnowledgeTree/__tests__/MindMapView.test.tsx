@@ -49,11 +49,7 @@ describe('MindMapView', () => {
   it('has layout mode selector with callback prop', () => {
     const onLayoutModeChange = vi.fn()
     render(
-      <MindMapView
-        data={mockData}
-        layoutMode="tree"
-        onLayoutModeChange={onLayoutModeChange}
-      />
+      <MindMapView data={mockData} layoutMode="tree" onLayoutModeChange={onLayoutModeChange} />
     )
     // The Select component renders with the current value
     expect(screen.getByTestId('layout-selector')).toBeInTheDocument()

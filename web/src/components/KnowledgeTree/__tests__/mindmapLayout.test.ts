@@ -23,9 +23,9 @@ describe('mindmapLayout', () => {
   })
 
   it('balanced layout splits children left and right', () => {
-    const data = [createNode('root', [
-      createNode('c1'), createNode('c2'), createNode('c3'), createNode('c4'),
-    ])]
+    const data = [
+      createNode('root', [createNode('c1'), createNode('c2'), createNode('c3'), createNode('c4')]),
+    ]
     const result = calculateLayout(data, 3, new Set(), 'balanced')
     const root = result.layout[0]
     expect(root.children).toHaveLength(4)
@@ -36,9 +36,7 @@ describe('mindmapLayout', () => {
   })
 
   it('balanced layout with odd children count puts more on left', () => {
-    const data = [createNode('root', [
-      createNode('c1'), createNode('c2'), createNode('c3'),
-    ])]
+    const data = [createNode('root', [createNode('c1'), createNode('c2'), createNode('c3')])]
     const result = calculateLayout(data, 3, new Set(), 'balanced')
     const root = result.layout[0]
     expect(root.children).toHaveLength(3)
@@ -61,10 +59,7 @@ describe('mindmapLayout', () => {
   })
 
   it('stacks multiple root nodes vertically', () => {
-    const data = [
-      createNode('root1', [createNode('c1')]),
-      createNode('root2', [createNode('c2')]),
-    ]
+    const data = [createNode('root1', [createNode('c1')]), createNode('root2', [createNode('c2')])]
     const result = calculateLayout(data, 3, new Set(), 'tree')
     expect(result.layout).toHaveLength(2)
     expect(result.layout[1].y).toBeGreaterThan(result.layout[0].y)

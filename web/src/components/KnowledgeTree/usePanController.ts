@@ -33,21 +33,29 @@ export const usePanController = ({
 }: UsePanControllerOptions): UsePanControllerResult => {
   const [translate, setTranslate] = useState<PanState>({ x: 20, y: 20 })
   const [isPanning, setIsPanning] = useState(false)
-  const dragStart = useRef<{ x: number; y: number; translateX: number; translateY: number } | null>(null)
+  const dragStart = useRef<{ x: number; y: number; translateX: number; translateY: number } | null>(
+    null
+  )
   const translateRef = useRef<PanState>(translate)
-  translateRef.current = translate
 
-  const constrainTranslate = useCallback((x: number, y: number): PanState => {
-    const minTranslateX = minVisible - contentWidth
-    const maxTranslateX = containerWidth - minVisible
-    const minTranslateY = minVisible - contentHeight
-    const maxTranslateY = containerHeight - minVisible
+  useEffect(() => {
+    translateRef.current = translate
+  }, [translate])
 
-    return {
-      x: Math.max(minTranslateX, Math.min(maxTranslateX, x)),
-      y: Math.max(minTranslateY, Math.min(maxTranslateY, y)),
-    }
-  }, [containerWidth, containerHeight, contentWidth, contentHeight, minVisible])
+  const constrainTranslate = useCallback(
+    (x: number, y: number): PanState => {
+      const minTranslateX = minVisible - contentWidth
+      const maxTranslateX = containerWidth - minVisible
+      const minTranslateY = minVisible - contentHeight
+      const maxTranslateY = containerHeight - minVisible
+
+      return {
+        x: Math.max(minTranslateX, Math.min(maxTranslateX, x)),
+        y: Math.max(minTranslateY, Math.min(maxTranslateY, y)),
+      }
+    },
+    [containerWidth, containerHeight, contentWidth, contentHeight, minVisible]
+  )
 
   const onMouseDown = useCallback((e: React.MouseEvent): void => {
     if (e.button !== 1) return
@@ -87,9 +95,12 @@ export const usePanController = ({
     }
   }, [isPanning, constrainTranslate])
 
-  const setTranslateWrapped = useCallback((newTranslate: PanState): void => {
-    setTranslate(constrainTranslate(newTranslate.x, newTranslate.y))
-  }, [constrainTranslate])
+  const setTranslateWrapped = useCallback(
+    (newTranslate: PanState): void => {
+      setTranslate(constrainTranslate(newTranslate.x, newTranslate.y))
+    },
+    [constrainTranslate]
+  )
 
   return {
     translate,
