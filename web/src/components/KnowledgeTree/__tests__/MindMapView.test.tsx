@@ -46,7 +46,7 @@ describe('MindMapView', () => {
     expect(screen.getByTestId('layout-selector')).toBeInTheDocument()
   })
 
-  it('has layout mode selector in toolbar', () => {
+  it('has layout mode selector with callback prop', () => {
     const onLayoutModeChange = vi.fn()
     render(
       <MindMapView
