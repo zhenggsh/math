@@ -29,9 +29,11 @@ export const MiniMapPanel: React.FC<MiniMapPanelProps> = ({
 }) => {
   const [isExpanded, setIsExpanded] = useState(true)
 
-  const scaleX = MINI_MAP_WIDTH / svgWidth
-  const scaleY = MINI_MAP_HEIGHT / svgHeight
-  const miniScale = Math.min(scaleX, scaleY)
+  const miniScale = useMemo(() => {
+    const scaleX = MINI_MAP_WIDTH / svgWidth
+    const scaleY = MINI_MAP_HEIGHT / svgHeight
+    return Math.min(scaleX, scaleY)
+  }, [svgWidth, svgHeight])
 
   // Viewport rectangle in mini-map coordinates
   const viewportRect = useMemo(() => {
@@ -43,7 +45,7 @@ export const MiniMapPanel: React.FC<MiniMapPanelProps> = ({
   }, [translate, scale, miniScale, containerWidth, containerHeight])
 
   const handleMiniMapClick = useCallback(
-    (e: React.MouseEvent<SVGSVGElement>) => {
+    (e: React.MouseEvent<SVGSVGElement>): void => {
       const rect = e.currentTarget.getBoundingClientRect()
       const clickX = e.clientX - rect.left
       const clickY = e.clientY - rect.top
@@ -52,35 +54,38 @@ export const MiniMapPanel: React.FC<MiniMapPanelProps> = ({
       const contentY = clickY / miniScale
       onNavigate(contentX, contentY)
     },
-    [miniScale, scale, onNavigate]
+    [miniScale, onNavigate]
   )
 
-  const renderMiniNode = (node: MindMapNodeLayout): React.ReactNode => (
-    <g key={node.id}>
-      <rect
-        x={node.x * miniScale}
-        y={node.y * miniScale}
-        width={node.width * miniScale}
-        height={node.height * miniScale}
-        fill="#e6f7ff"
-        stroke="#1890ff"
-        strokeWidth={0.5}
-        rx={2}
-      />
-      {node.children?.map(child => (
-        <g key={`conn-${child.id}`}>
-          <line
-            x1={(node.x + node.width / 2) * miniScale}
-            y1={(node.y + node.height / 2) * miniScale}
-            x2={(child.x + child.width / 2) * miniScale}
-            y2={(child.y + child.height / 2) * miniScale}
-            stroke="#1890ff"
-            strokeWidth={0.5}
-          />
-          {renderMiniNode(child)}
-        </g>
-      ))}
-    </g>
+  const renderMiniNode = useCallback(
+    (node: MindMapNodeLayout): React.ReactNode => (
+      <g key={node.id}>
+        <rect
+          x={node.x * miniScale}
+          y={node.y * miniScale}
+          width={node.width * miniScale}
+          height={node.height * miniScale}
+          fill="#e6f7ff"
+          stroke="#1890ff"
+          strokeWidth={0.5}
+          rx={2}
+        />
+        {node.children?.map(child => (
+          <g key={`conn-${child.id}`}>
+            <line
+              x1={(node.x + node.width / 2) * miniScale}
+              y1={(node.y + node.height / 2) * miniScale}
+              x2={(child.x + child.width / 2) * miniScale}
+              y2={(child.y + child.height / 2) * miniScale}
+              stroke="#1890ff"
+              strokeWidth={0.5}
+            />
+            {renderMiniNode(child)}
+          </g>
+        ))}
+      </g>
+    ),
+    [miniScale]
   )
 
   return (
@@ -91,6 +96,7 @@ export const MiniMapPanel: React.FC<MiniMapPanelProps> = ({
             width={MINI_MAP_WIDTH}
             height={MINI_MAP_HEIGHT}
             className={styles.miniMapSvg}
+            data-testid="mini-map-svg"
             onClick={handleMiniMapClick}
           >
             <rect
