@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react'
+import React, { useState, useCallback, useMemo } from 'react'
 import { Tree, Tag, Spin, Empty, Button } from 'antd'
 import type { TreeProps } from 'antd'
 import {
@@ -59,10 +59,14 @@ const convertToTreeData = (nodes: KnowledgeTreeNode[]): TreeProps['treeData'] =>
   }))
 }
 
+interface TreeNodeTitleProps {
+  node: KnowledgeTreeNode
+}
+
 /**
  * 树节点标题组件
  */
-const TreeNodeTitle: React.FC<{ node: KnowledgeTreeNode }> = ({ node }) => {
+const TreeNodeTitle: React.FC<TreeNodeTitleProps> = ({ node }) => {
   const [isHovered, setIsHovered] = useState(false)
   const statusConfig = node.learningStatus ? LEARNING_STATUS_CONFIG[node.learningStatus] : null
 
