@@ -28,7 +28,7 @@ const buildLogicalTree = (
   node: KnowledgeTreeNode,
   depth: number,
   direction: 'left' | 'right',
-  layoutMode: LayoutMode,
+  layoutMode: LayoutMode
 ): LogicalNode => {
   const children = node.children || []
 
@@ -37,21 +37,17 @@ const buildLogicalTree = (
 
   if (layoutMode === 'balanced' && depth === 0 && children.length > 0) {
     const leftCount = Math.ceil(children.length / 2)
-    leftChildren = children.slice(0, leftCount).map((child) =>
-      buildLogicalTree(child, depth + 1, 'left', layoutMode),
-    )
-    rightChildren = children.slice(leftCount).map((child) =>
-      buildLogicalTree(child, depth + 1, 'right', layoutMode),
-    )
+    leftChildren = children
+      .slice(0, leftCount)
+      .map(child => buildLogicalTree(child, depth + 1, 'left', layoutMode))
+    rightChildren = children
+      .slice(leftCount)
+      .map(child => buildLogicalTree(child, depth + 1, 'right', layoutMode))
   } else if (children.length > 0) {
     if (direction === 'left') {
-      leftChildren = children.map((child) =>
-        buildLogicalTree(child, depth + 1, 'left', layoutMode),
-      )
+      leftChildren = children.map(child => buildLogicalTree(child, depth + 1, 'left', layoutMode))
     } else {
-      rightChildren = children.map((child) =>
-        buildLogicalTree(child, depth + 1, 'right', layoutMode),
-      )
+      rightChildren = children.map(child => buildLogicalTree(child, depth + 1, 'right', layoutMode))
     }
   }
 
@@ -76,7 +72,7 @@ const calculateSubtreeHeight = (
   logical: LogicalNode,
   collapsedLeftKeys: Set<string>,
   collapsedRightKeys: Set<string>,
-  maxDepth: number,
+  maxDepth: number
 ): number => {
   if (logical.depth >= maxDepth) {
     return NODE_HEIGHT
@@ -92,7 +88,12 @@ const calculateSubtreeHeight = (
   // 计算左侧子树总高度
   let leftTotal = 0
   for (let i = 0; i < leftVisible.length; i++) {
-    leftTotal += calculateSubtreeHeight(leftVisible[i], collapsedLeftKeys, collapsedRightKeys, maxDepth)
+    leftTotal += calculateSubtreeHeight(
+      leftVisible[i],
+      collapsedLeftKeys,
+      collapsedRightKeys,
+      maxDepth
+    )
     if (i < leftVisible.length - 1) {
       leftTotal += NODE_GAP
     }
@@ -101,7 +102,12 @@ const calculateSubtreeHeight = (
   // 计算右侧子树总高度
   let rightTotal = 0
   for (let i = 0; i < rightVisible.length; i++) {
-    rightTotal += calculateSubtreeHeight(rightVisible[i], collapsedLeftKeys, collapsedRightKeys, maxDepth)
+    rightTotal += calculateSubtreeHeight(
+      rightVisible[i],
+      collapsedLeftKeys,
+      collapsedRightKeys,
+      maxDepth
+    )
     if (i < rightVisible.length - 1) {
       rightTotal += NODE_GAP
     }
@@ -121,7 +127,7 @@ const assignCoordinates = (
   maxDepth: number,
   x: number,
   yStart: number,
-  availableHeight: number,
+  availableHeight: number
 ): MindMapNodeLayout => {
   const nodeLayout: MindMapNodeLayout = {
     id: logical.id,
@@ -147,8 +153,8 @@ const assignCoordinates = (
 
   // 处理左侧子节点
   if (leftVisible.length > 0) {
-    const leftChildHeights = leftVisible.map((child) =>
-      calculateSubtreeHeight(child, collapsedLeftKeys, collapsedRightKeys, maxDepth),
+    const leftChildHeights = leftVisible.map(child =>
+      calculateSubtreeHeight(child, collapsedLeftKeys, collapsedRightKeys, maxDepth)
     )
     const leftTotalHeight = leftChildHeights.reduce((sum, h, i) => {
       return sum + h + (i < leftChildHeights.length - 1 ? NODE_GAP : 0)
@@ -168,7 +174,7 @@ const assignCoordinates = (
         maxDepth,
         childX,
         currentY,
-        childHeight,
+        childHeight
       )
       nodeLayout.children.push(childLayout)
 
@@ -178,8 +184,8 @@ const assignCoordinates = (
 
   // 处理右侧子节点
   if (rightVisible.length > 0) {
-    const rightChildHeights = rightVisible.map((child) =>
-      calculateSubtreeHeight(child, collapsedLeftKeys, collapsedRightKeys, maxDepth),
+    const rightChildHeights = rightVisible.map(child =>
+      calculateSubtreeHeight(child, collapsedLeftKeys, collapsedRightKeys, maxDepth)
     )
     const rightTotalHeight = rightChildHeights.reduce((sum, h, i) => {
       return sum + h + (i < rightChildHeights.length - 1 ? NODE_GAP : 0)
@@ -199,7 +205,7 @@ const assignCoordinates = (
         maxDepth,
         childX,
         currentY,
-        childHeight,
+        childHeight
       )
       nodeLayout.children.push(childLayout)
 
@@ -218,18 +224,18 @@ export const calculateLayout = (
   maxDepth: number,
   collapsedLeftKeys: Set<string>,
   collapsedRightKeys: Set<string>,
-  layoutMode: LayoutMode,
+  layoutMode: LayoutMode
 ): { layout: MindMapNodeLayout[]; svgWidth: number; svgHeight: number } => {
   if (nodes.length === 0) {
     return { layout: [], svgWidth: 0, svgHeight: 0 }
   }
 
   // 构建逻辑树
-  const logicalRoots = nodes.map((node) => buildLogicalTree(node, 0, 'right', layoutMode))
+  const logicalRoots = nodes.map(node => buildLogicalTree(node, 0, 'right', layoutMode))
 
   // 计算每个根节点子树的高度
-  const rootHeights = logicalRoots.map((root) =>
-    calculateSubtreeHeight(root, collapsedLeftKeys, collapsedRightKeys, maxDepth),
+  const rootHeights = logicalRoots.map(root =>
+    calculateSubtreeHeight(root, collapsedLeftKeys, collapsedRightKeys, maxDepth)
   )
 
   // 分配坐标
@@ -244,7 +250,7 @@ export const calculateLayout = (
       maxDepth,
       0,
       currentY,
-      rootHeights[i],
+      rootHeights[i]
     )
     layout.push(rootLayout)
     currentY += rootHeights[i] + NODE_GAP

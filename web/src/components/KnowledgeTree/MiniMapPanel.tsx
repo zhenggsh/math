@@ -90,17 +90,14 @@ export const MiniMapPanel: React.FC<MiniMapPanelProps> = ({
     [miniScale, onNavigate, isDragging]
   )
 
-  const handleViewportMouseDown = useCallback(
-    (e: React.MouseEvent<SVGRectElement>): void => {
-      e.stopPropagation()
-      setIsDragging(true)
-      dragStartRef.current = {
-        x: e.clientX,
-        y: e.clientY,
-      }
-    },
-    []
-  )
+  const handleViewportMouseDown = useCallback((e: React.MouseEvent<SVGRectElement>): void => {
+    e.stopPropagation()
+    setIsDragging(true)
+    dragStartRef.current = {
+      x: e.clientX,
+      y: e.clientY,
+    }
+  }, [])
 
   useEffect(() => {
     if (!isDragging) return

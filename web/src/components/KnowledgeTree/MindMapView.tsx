@@ -126,10 +126,7 @@ const MindMapNode: React.FC<MindMapNodeProps> = ({
   const textYOffset = fontStyle.fontSize === 14 ? 5 : fontStyle.fontSize === 10 ? 3 : 4
 
   return (
-    <g
-      transform={`translate(${relativeX}, ${relativeY})`}
-      onMouseDown={(e) => e.stopPropagation()}
-    >
+    <g transform={`translate(${relativeX}, ${relativeY})`} onMouseDown={e => e.stopPropagation()}>
       {/* 节点矩形 */}
       <rect
         x={0}
