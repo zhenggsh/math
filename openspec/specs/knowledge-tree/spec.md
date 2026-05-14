@@ -284,3 +284,21 @@ interface MindMapNodeLayout {
 - 支持键盘导航（上下箭头、左右展开折叠、Enter 选中）
 - 支持屏幕阅读器（ARIA 标签）
 - 颜色不仅是唯一信息载体（重要性同时用文字标签）
+## Requirements
+### Requirement: 思维导图布局模式选择
+
+系统 SHALL 支持在思维导图中切换不同的布局模式。
+
+#### Scenario: 选择树状布局
+- **GIVEN** 用户在思维导图视图
+- **WHEN** 用户从布局下拉框选择"树状布局"
+- **THEN** 节点 SHALL 从左到右水平展开
+- **AND** 所有子节点 SHALL 位于父节点右侧
+
+#### Scenario: 选择左右均衡布局
+- **GIVEN** 用户在思维导图视图
+- **WHEN** 用户从布局下拉框选择"左右均衡"
+- **THEN** 根节点 SHALL 居中
+- **AND** 前半部分子节点 SHALL 向左水平展开
+- **AND** 后半部分子节点 SHALL 向右水平展开
+
