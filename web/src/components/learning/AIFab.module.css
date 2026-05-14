@@ -116,11 +116,14 @@
 }
 
 @media (max-width: 768px) {
+  .panelOverlay {
+    bottom: 16px;
+    right: 16px;
+  }
+
   .panel {
     width: calc(100vw - 48px);
     max-height: 80vh;
-    bottom: 16px;
-    right: 16px;
   }
 
   .fabButton {

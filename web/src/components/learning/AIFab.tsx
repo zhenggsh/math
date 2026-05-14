@@ -83,6 +83,9 @@ const PromptPanel: React.FC<PromptPanelProps> = ({ knowledgePointTitle, onClose 
     setIsLoading(true)
     setResponseContent(null)
 
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+    }
     timeoutRef.current = setTimeout(() => {
       setResponseContent(item.mockResponse)
       setIsLoading(false)
@@ -126,7 +129,7 @@ const PromptPanel: React.FC<PromptPanelProps> = ({ knowledgePointTitle, onClose 
             <div className={styles.responseArea}>
               {isLoading ? (
                 <div className={styles.loadingContainer}>
-                  <Spin tip="正在思考..." />
+                  <Spin description="正在思考..." />
                 </div>
               ) : (
                 <div className={styles.responseText}>
@@ -145,7 +148,7 @@ const PromptPanel: React.FC<PromptPanelProps> = ({ knowledgePointTitle, onClose 
   )
 }
 
-export const AIFab: React.FC<AIFabProps> = ({ knowledgePointTitle }) => {
+export const AIFab: React.FC<AIFabProps> = ({ knowledgePointId, knowledgePointTitle }) => {
   const [panelOpen, setPanelOpen] = useState(false)
 
   const handleClose = useCallback(() => {
@@ -172,7 +175,7 @@ export const AIFab: React.FC<AIFabProps> = ({ knowledgePointTitle }) => {
 
       {panelOpen && (
         <PromptPanel
-          key={knowledgePointTitle}
+          key={knowledgePointId ?? knowledgePointTitle}
           knowledgePointTitle={knowledgePointTitle}
           onClose={handleClose}
         />

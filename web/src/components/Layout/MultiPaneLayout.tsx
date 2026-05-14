@@ -29,6 +29,7 @@ export const MultiPaneLayout: React.FC<MultiPaneLayoutProps> = ({
         leftPanel={<div className={styles.knowledgeTreeContainer}>{knowledgeTreePanel}</div>}
         centerPanel={<div className={styles.markdownContainer}>{markdownPanel}</div>}
         bottomPanel={learningFeedbackPanel}
+        showRightPanel={false}
         showBottomPanel={showBottomPanel}
         defaultSizes={{
           left: 300,
