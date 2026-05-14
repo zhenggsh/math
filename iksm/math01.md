@@ -127,37 +127,33 @@ graph LR
 
 **3. 特性**
 
-元素用小写字母表示，集合用大写字母表示；集合与元素的关系用 $\in$（属于）或 $
-otin$（不属于）表示；常见数集有 $\mathbb{N}$（自然数集）、$\mathbb{Z}$（整数集）、$\mathbb{Q}$（有理数集）、$\mathbb{R}$（实数集）。
+元素用小写字母表示，集合用大写字母表示；集合与元素的关系用 $\in$（属于）或 $\notin$（不属于）表示；常见数集有 $\mathbb{N}$（自然数集）、$\mathbb{Z}$（整数集）、$\mathbb{Q}$（有理数集）、$\mathbb{R}$（实数集）。
 
 **4. 运算方式**
 
-判断对象 $a$ 是否属于集合 $A$，结果为一个命题：$a \in A$（真）或 $a 
-otin A$（真）。集合的确定性要求对于任意对象，属于或不属于集合 $A$ 二者必居其一且仅居其一。
+判断对象 $a$ 是否属于集合 $A$，结果为一个命题：$a \in A$（真）或 $a \notin A$（真）。集合的确定性要求对于任意对象，属于或不属于集合 $A$ 二者必居其一且仅居其一。
 
 **5. 定理**
 
-- **集合确定性的逻辑表述**：设 $A$ 是一个集合，$x$ 为任意对象，则 $x \in A$ 与 $x 
-otin A$ 有且仅有一个成立。
+- **集合确定性的逻辑表述**：设 $A$ 是一个集合，$x$ 为任意对象，则 $x \in A$ 与 $x \notin A$ 有且仅有一个成立。
 - 前提：集合 $A$ 已明确定义。
 - 结论：元素与集合的关系是二值的。
 - 使用场合：判断元素归属、证明集合相等。
 
 **6. 公式**
 
-$$a \in A \quad 	ext{或} \quad a 
-otin A$$
+$$a \in A \quad \text{或} \quad a \notin A$$
 
 常见数集符号：
 
 $$\mathbb{N}^* = \mathbb{N}_+ = \{1, 2, 3, \dots\}$$
 $$\mathbb{Z} = \{\dots, -2, -1, 0, 1, 2, \dots\}$$
-$$\mathbb{Q} = \left\{x \mid x = rac{p}{q},\ p \in \mathbb{Z},\ q \in \mathbb{N}^*ight\}$$
-$$\mathbb{R} = 	ext{全体实数}$$
+$$\mathbb{Q} = \left\{x \mid x = \frac{p}{q},\ p \in \mathbb{Z},\ q \in \mathbb{N}^*\right\}$$
+$$\mathbb{R} = \text{全体实数}$$
 
 **7. 二级结论**
 
-- 空集 $arnothing$ 是不含任何元素的集合，它是任何集合的子集。
+- 空集 $\varnothing$ 是不含任何元素的集合，它是任何集合的子集。
 - 数集之间有包含关系：$\mathbb{N} \subsetneqq \mathbb{Z} \subsetneqq \mathbb{Q} \subsetneqq \mathbb{R}$。
 
 ---
@@ -172,11 +168,7 @@ $$\mathbb{R} = 	ext{全体实数}$$
 
 **3. 特性**
 
-确定性：$a \in A$ 与 $a 
-otin A$ 必居其一；互异性：$\{a, b, c\}$ 隐含 $a 
-eq b$ 且 $b 
-eq c$ 且 $a 
-eq c$；无序性：$\{1, 2, 3\} = \{3, 2, 1\}$。
+确定性：$a \in A$ 与 $a \notin A$ 必居其一；互异性：$\{a, b, c\}$ 隐含 $a \neq b$ 且 $b \neq c$ 且 $a \neq c$；无序性：$\{1, 2, 3\} = \{3, 2, 1\}$。
 
 **4. 运算方式**
 
@@ -184,29 +176,19 @@ eq c$；无序性：$\{1, 2, 3\} = \{3, 2, 1\}$。
 
 **5. 定理**
 
-- **互异性定理**：若集合 $A$ 用列举法表示为 $A = \{a_1, a_2, \dots, a_n\}$，则当 $i 
-eq j$ 时必有 $a_i 
-eq a_j$。
+- **互异性定理**：若集合 $A$ 用列举法表示为 $A = \{a_1, a_2, \dots, a_n\}$，则当 $i \neq j$ 时必有 $a_i \neq a_j$。
 - 前提：集合采用列举法表示。
 - 结论：元素两两不同。
-- 使用场合：根据集合元素个数求参数范围（如 $\{1, a, a^2\}$ 要求 $a 
-eq 1$ 且 $a^2 
-eq 1$ 且 $a^2 
-eq a$）。
+- 使用场合：根据集合元素个数求参数范围（如 $\{1, a, a^2\}$ 要求 $a \neq 1$ 且 $a^2 \neq 1$ 且 $a^2 \neq a$）。
 
 **6. 公式**
 
-$$\{a, b\} = \{b, a\} \quad 	ext{（无序性）}$$
-$$\{a, a, b\} = \{a, b\} \quad 	ext{（互异性）}$$
+$$\{a, b\} = \{b, a\} \quad \text{（无序性）}$$
+$$\{a, a, b\} = \{a, b\} \quad \text{（互异性）}$$
 
 **7. 二级结论**
 
-- 已知集合 $A = \{x, x^2, 1\}$ 含 3 个元素，则需满足 $x 
-eq 1$，$x^2 
-eq 1$ 且 $x 
-eq x^2$，即 $x 
-eq \pm 1$ 且 $x 
-eq 0$。
+- 已知集合 $A = \{x, x^2, 1\}$ 含 3 个元素，则需满足 $x \neq 1$，$x^2 \neq 1$ 且 $x \neq x^2$，即 $x \neq \pm 1$ 且 $x \neq 0$。
 - 两个集合相等的充要条件是元素完全相同（与顺序无关）。
 
 ---
@@ -260,8 +242,7 @@ $$\{x \in \mathbb{R} \mid x \leq b\} = (-\infty, b]$$
 
 **1. 定义**
 
-子集：$A$ 的每个元素都是 $B$ 的元素则 $A \subseteq B$；集合相等：$A \subseteq B$ 且 $B \subseteq A$ 则 $A = B$；真子集：$A \subseteq B$ 且 $A 
-eq B$ 则 $A \subsetneqq B$。空集是任何集合的子集。
+子集：$A$ 的每个元素都是 $B$ 的元素则 $A \subseteq B$；集合相等：$A \subseteq B$ 且 $B \subseteq A$ 则 $A = B$；真子集：$A \subseteq B$ 且 $A \neq B$ 则 $A \subsetneqq B$。空集是任何集合的子集。
 
 **2. 重要性级别**：A
 
@@ -289,16 +270,16 @@ eq B$ 则 $A \subsetneqq B$。空集是任何集合的子集。
 
 **6. 公式**
 
-$$A \subseteq B \Leftrightarrow orall x \in A,\ x \in B$$
-$$A = B \Leftrightarrow A \subseteq B 	ext{ 且 } B \subseteq A$$
-$$|A| = n \Rightarrow 	ext{子集个数} = 2^n$$
-$$	ext{真子集个数} = 2^n - 1$$
-$$	ext{非空真子集个数} = 2^n - 2$$
+$$A \subseteq B \Leftrightarrow \forall x \in A,\ x \in B$$
+$$A = B \Leftrightarrow A \subseteq B \text{ 且 } B \subseteq A$$
+$$|A| = n \Rightarrow \text{子集个数} = 2^n$$
+$$\text{真子集个数} = 2^n - 1$$
+$$\text{非空真子集个数} = 2^n - 2$$
 
 **7. 二级结论**
 
 - 若 $A \subseteq B$ 且 $A \subseteq C$，则 $A \subseteq B \cap C$。
-- 空集 $arnothing$ 是任何集合的子集，是任何非空集合的真子集，在解题中常作为易漏解的边界情况。
+- 空集 $\varnothing$ 是任何集合的子集，是任何非空集合的真子集，在解题中常作为易漏解的边界情况。
 - 若 $A \subsetneqq B$ 且 $B \subsetneqq C$，则 $A \subsetneqq C$，但 $A$ 可能等于 $C$ 仅当传递链中出现等号。
 
 ---
@@ -307,8 +288,7 @@ $$	ext{非空真子集个数} = 2^n - 2$$
 
 **1. 定义**
 
-并集 $A \cup B = \{x \mid x \in A 	ext{ 或 } x \in B\}$；交集 $A \cap B = \{x \mid x \in A 	ext{ 且 } x \in B\}$；补集 $\complement_U A = \{x \mid x \in U 	ext{ 且 } x 
-otin A\}$。德摩根定律：$\complement_U(A \cup B) = (\complement_U A) \cap (\complement_U B)$。
+并集 $A \cup B = \{x \mid x \in A \text{ 或 } x \in B\}$；交集 $A \cap B = \{x \mid x \in A \text{ 且 } x \in B\}$；补集 $\complement_U A = \{x \mid x \in U \text{ 且 } x \notin A\}$。德摩根定律：$\complement_U(A \cup B) = (\complement_U A) \cap (\complement_U B)$。
 
 **2. 重要性级别**：A
 
@@ -341,21 +321,17 @@ otin A\}$。德摩根定律：$\complement_U(A \cup B) = (\complement_U A) \cap 
 
 **6. 公式**
 
+
 $$A \cup B = \{x \mid x \in A \lor x \in B\}$$
 $$A \cap B = \{x \mid x \in A \land x \in B\}$$
-$$\complement_U A = \{x \mid x \in U \land x 
-otin A\}$$
-$$A \cup arnothing = A, \quad A \cap arnothing = arnothing$$
-$$A \cup U = U, \quad A \cap U = A$$
-$$A \cup (\complement_U A) = U, \quad A \cap (\complement_U A) = arnothing$$
+$$\complement_U A = \{x \mid x \in U \land x \notin A\}$$
 
 **7. 二级结论**
 
 - 若 $A \subseteq B$，则 $A \cup B = B$ 且 $A \cap B = A$。
 - $A \cap B = A \Leftrightarrow A \subseteq B \Leftrightarrow A \cup B = B$。
 - 容斥原理（两集合版）：$|A \cup B| = |A| + |B| - |A \cap B|$。
-- 对于有限个集合，德摩根定律可推广：$\complement_U\left(igcup_{i=1}^n A_iight) = igcap_{i=1}^n (\complement_U A_i)$。
-
+- 对于有限个集合，德摩根定律可推广：$\complement_U\left(\bigcup_{i=1}^n A_i\right) = \bigcap_{i=1}^n (\complement_U A_i)$。
 ---
 ### 1.2 函数及其表示（对应编号 1.2）
 
@@ -385,7 +361,7 @@ graph LR
 
 **1. 定义**
 
-设 $A$、$B$ 是两个非空集合，如果按照某种确定的对应关系 $f$，使 $A$ 中的任意一个元素 $x$ 在 $B$ 中都有唯一确定的元素 $y$ 与之对应，则称 $f: A 	o B$ 为从集合 $A$ 到集合 $B$ 的映射。其中 $y$ 称为 $x$ 在映射 $f$ 下的像，$x$ 称为 $y$ 的原像。
+设 $A$、$B$ 是两个非空集合，如果按照某种确定的对应关系 $f$，使 $A$ 中的任意一个元素 $x$ 在 $B$ 中都有唯一确定的元素 $y$ 与之对应，则称 $f: A \to B$ 为从集合 $A$ 到集合 $B$ 的映射。其中 $y$ 称为 $x$ 在映射 $f$ 下的像，$x$ 称为 $y$ 的原像。
 
 **2. 重要性级别**：A
 
@@ -401,20 +377,20 @@ graph LR
 
 **5. 定理**
 
-- **映射的存在性判定**：对应关系 $f: A 	o B$ 构成映射的充要条件是：$orall x \in A$，$\exists! y \in B$ 使得 $y = f(x)$。
+- **映射的存在性判定**：对应关系 $f: A \to B$ 构成映射的充要条件是：$\forall x \in A$，$\exists! y \in B$ 使得 $y = f(x)$。
 - 前提：集合 $A$、$B$ 非空，对应法则 $f$ 已给出。
 - 结论：每个原像恰有一个像。
 - 使用场合：判断给定对应关系是否为映射、分析函数图像是否满足垂直线检验。
 
 **6. 公式**
 
-$$f: A 	o B, \quad x \mapsto y = f(x)$$
-$$	ext{像集} = f(A) = \{f(x) \mid x \in A\} \subseteq B$$
+$$f: A \to B, \quad x \mapsto y = f(x)$$
+$$\text{像集} = f(A) = \{f(x) \mid x \in A\} \subseteq B$$
 
 **7. 二级结论**
 
-- 映射 $f: A 	o B$ 中，$A$ 中元素个数 $|A|$ 与像集 $f(A)$ 中元素个数 $|f(A)|$ 满足 $|f(A)| \leq |A|$，等号成立当且仅当 $f$ 为单射。
-- 若 $f: A 	o B$ 且 $g: B 	o C$ 都是映射，则复合映射 $g \circ f: A 	o C$ 仍为映射，定义为 $(g \circ f)(x) = g(f(x))$。
+- 映射 $f: A \to B$ 中，$A$ 中元素个数 $|A|$ 与像集 $f(A)$ 中元素个数 $|f(A)|$ 满足 $|f(A)| \leq |A|$，等号成立当且仅当 $f$ 为单射。
+- 若 $f: A \to B$ 且 $g: B \to C$ 都是映射，则复合映射 $g \circ f: A \to C$ 仍为映射，定义为 $(g \circ f)(x) = g(f(x))$。
 
 ---
 
@@ -422,7 +398,7 @@ $$	ext{像集} = f(A) = \{f(x) \mid x \in A\} \subseteq B$$
 
 **1. 定义**
 
-设 $A$、$B$ 是非空数集，如果按照某种确定的对应关系 $f$，使 $A$ 中的任意一个数 $x$ 在 $B$ 中都有唯一确定的数 $f(x)$ 与之对应，则称 $f: A 	o B$ 为从 $A$ 到 $B$ 的函数，记作 $y = f(x)$，$x \in A$。
+设 $A$、$B$ 是非空数集，如果按照某种确定的对应关系 $f$，使 $A$ 中的任意一个数 $x$ 在 $B$ 中都有唯一确定的数 $f(x)$ 与之对应，则称 $f: A \to B$ 为从 $A$ 到 $B$ 的函数，记作 $y = f(x)$，$x \in A$。
 
 **2. 重要性级别**：A
 
@@ -433,8 +409,7 @@ $$	ext{像集} = f(A) = \{f(x) \mid x \in A\} \subseteq B$$
 **4. 运算方式**
 
 - **函数求值**：给定 $x_0 \in A$，代入对应法则计算 $y_0 = f(x_0)$。
-- **函数值的代数运算**：已知 $f(x)$ 与 $g(x)$，可构造新函数 $(f+g)(x) = f(x) + g(x)$，$(f \cdot g)(x) = f(x) \cdot g(x)$，$\left(rac{f}{g}ight)(x) = rac{f(x)}{g(x)}$（要求 $g(x) 
-eq 0$）。
+- **函数值的代数运算**：已知 $f(x)$ 与 $g(x)$，可构造新函数 $(f+g)(x) = f(x) + g(x)$，$(f \cdot g)(x) = f(x) \cdot g(x)$，$\left(\frac{f}{g}\right)(x) = \frac{f(x)}{g(x)}$（要求 $g(x) \neq 0$）。
 
 **5. 定理**
 
@@ -446,8 +421,8 @@ eq 0$）。
 **6. 公式**
 
 $$y = f(x), \quad x \in A$$
-$$	ext{定义域: } D_f = A$$
-$$	ext{值域: } R_f = \{f(x) \mid x \in A\} \subseteq B$$
+$$\text{定义域: } D_f = A$$
+$$\text{值域: } R_f = \{f(x) \mid x \in A\} \subseteq B$$
 
 **7. 二级结论**
 
@@ -467,7 +442,7 @@ $$	ext{值域: } R_f = \{f(x) \mid x \in A\} \subseteq B$$
 
 **3. 特性**
 
-值域由定义域和对应关系共同决定；判断两个函数相等只需看定义域和对应关系是否相同；$f(x) = x$ 与 $g(x) = rac{x^2}{x}$ 不相等，因为定义域不同。
+值域由定义域和对应关系共同决定；判断两个函数相等只需看定义域和对应关系是否相同；$f(x) = x$ 与 $g(x) = \frac{x^2}{x}$ 不相等，因为定义域不同。
 
 **4. 运算方式**
 
@@ -476,14 +451,14 @@ $$	ext{值域: } R_f = \{f(x) \mid x \in A\} \subseteq B$$
 
 **5. 定理**
 
-- **函数相等的判定定理**：函数 $f$ 与函数 $g$ 相等 $\Leftrightarrow$ $D_f = D_g$ 且 $orall x \in D_f$，$f(x) = g(x)$。
+- **函数相等的判定定理**：函数 $f$ 与函数 $g$ 相等 $\Leftrightarrow$ $D_f = D_g$ 且 $\forall x \in D_f$，$f(x) = g(x)$。
 - 前提：两个函数均有明确定义。
 - 结论：定义域相同且对应关系完全一致。
 - 使用场合：判断两个解析式是否表示同一函数、求参数使两函数相等。
 
 **6. 公式**
 
-$$f = g \Leftrightarrow egin{cases} D_f = D_g \ f(x) = g(x),\ orall x \in D_f \end{cases}$$
+$$f = g \Leftrightarrow \begin{cases} D_f = D_g \ f(x) = g(x),\ \forall x \in D_f \end{cases}$$
 $$R_f = \{y \mid y = f(x),\ x \in D_f\}$$
 
 **7. 二级结论**
@@ -508,16 +483,11 @@ $$R_f = \{y \mid y = f(x),\ x \in D_f\}$$
 
 **4. 运算方式**
 
-- **分式函数**：分母 $
-eq 0$。
+- **分式函数**：分母 $\neq 0$。
 - **偶次根式**：被开方数 $\geq 0$。
-- **对数函数**：真数 $> 0$，底数 $> 0$ 且 $
-eq 1$。
-- **零次幂**：底数 $
-eq 0$（即 $x^0$ 要求 $x 
-eq 0$）。
-- **正切函数**：$x 
-eq k\pi + rac{\pi}{2}$，$k \in \mathbb{Z}$。
+- **对数函数**：真数 $> 0$，底数 $> 0$ 且 $\neq 1$。
+- **零次幂**：底数 $\neq 0$（即 $x^0$ 要求 $x \neq 0$）。
+- **正切函数**：$x \neq k\pi + \frac{\pi}{2}$，$k \in \mathbb{Z}$。
 - **复合函数**：设 $y = f(g(x))$，则定义域由 $g(x)$ 的定义域与 $f$ 对 $g(x)$ 值的要求共同决定。
 
 **5. 定理**
@@ -529,13 +499,10 @@ eq k\pi + rac{\pi}{2}$，$k \in \mathbb{Z}$。
 
 **6. 公式**
 
-$$f(x) = rac{1}{g(x)} \Rightarrow D_f = \{x \mid g(x) 
-eq 0\}$$
+$$f(x) = \frac{1}{g(x)} \Rightarrow D_f = \{x \mid g(x) \neq 0\}$$
 $$f(x) = \sqrt[2n]{g(x)} \Rightarrow D_f = \{x \mid g(x) \geq 0\}$$
-$$f(x) = \log_a g(x) \Rightarrow D_f = \{x \mid g(x) > 0,\ a > 0,\ a 
-eq 1\}$$
-$$f(x) = [g(x)]^0 \Rightarrow D_f = \{x \mid g(x) 
-eq 0\}$$
+$$f(x) = \log_a g(x) \Rightarrow D_f = \{x \mid g(x) > 0,\ a > 0,\ a \neq 1\}$$
+$$f(x) = [g(x)]^0 \Rightarrow D_f = \{x \mid g(x) \neq 0\}$$
 
 **7. 二级结论**
 
@@ -561,9 +528,8 @@ eq 0\}$$
 
 - **观察法**：适用于简单函数，如 $y = \sqrt{x}$ 的值域为 $[0, +\infty)$。
 - **配方法**：适用于二次函数，如 $y = x^2 - 2x + 3 = (x-1)^2 + 2$，值域为 $[2, +\infty)$。
-- **分离常数法**：适用于一次分式函数，如 $y = rac{2x+1}{x-1} = 2 + rac{3}{x-1}$，值域为 $\{y \mid y 
-eq 2\}$。
-- **判别式法**：适用于分子分母均为二次的分式函数，将 $y = rac{a_1x^2+b_1x+c_1}{a_2x^2+b_2x+c_2}$ 整理为关于 $x$ 的二次方程，令判别式 $\Delta \geq 0$ 求 $y$ 的范围。
+- **分离常数法**：适用于一次分式函数，如 $y = \frac{2x+1}{x-1} = 2 + \frac{3}{x-1}$，值域为 $\{y \mid y \neq 2\}$。
+- **判别式法**：适用于分子分母均为二次的分式函数，将 $y = \frac{a_1x^2+b_1x+c_1}{a_2x^2+b_2x+c_2}$ 整理为关于 $x$ 的二次方程，令判别式 $\Delta \geq 0$ 求 $y$ 的范围。
 - **换元法**：适用于含根式的函数，如令 $t = \sqrt{x+1}$（$t \geq 0$），转化为关于 $t$ 的函数求值域。
 - **单调性法**：若函数在区间上单调，则值域为区间端点函数值构成的区间。
 
@@ -571,29 +537,24 @@ eq 2\}$。
 
 - **闭区间连续函数的最值定理**：若函数 $f(x)$ 在闭区间 $[a, b]$ 上连续，则 $f(x)$ 在 $[a, b]$ 上必有最大值和最小值。
 - 前提：$f(x)$ 在 $[a, b]$ 上连续。
-- 结论：$\exists x_1, x_2 \in [a, b]$，使得 $f(x_1) \leq f(x) \leq f(x_2)$ 对 $orall x \in [a, b]$ 成立。
+- 结论：$\exists x_1, x_2 \in [a, b]$，使得 $f(x_1) \leq f(x) \leq f(x_2)$ 对 $\forall x \in [a, b]$ 成立。
 - 使用场合：闭区间上多项式函数、初等函数的最值与值域求解。
 
 **6. 公式**
 
-$$y = ax^2 + bx + c \quad (a 
-eq 0) \Rightarrow R_f = egin{cases} \left[rac{4ac-b^2}{4a}, +\inftyight), & a > 0 \ \left(-\infty, rac{4ac-b^2}{4a}ight], & a < 0 \end{cases}$$
+$$y = ax^2 + bx + c \quad (a \neq 0) \Rightarrow R_f = \begin{cases} \left[\frac{4ac-b^2}{4a}, +\infty\right), & a > 0 \ \left(-\infty, \frac{4ac-b^2}{4a}\right], & a < 0 \end{cases}$$
 
-$$y = rac{ax+b}{cx+d} \quad (c 
-eq 0) \Rightarrow R_f = \left\{y \mid y 
-eq rac{a}{c}ight\}$$
+$$y = \frac{ax+b}{cx+d} \quad (c \neq 0) \Rightarrow R_f = \left\{y \mid y \neq \frac{a}{c}\right\}$$
 
-$$y = a^x \quad (a > 0, a 
-eq 1) \Rightarrow R_f = (0, +\infty)$$
+$$y = a^x \quad (a > 0, a \neq 1) \Rightarrow R_f = (0, +\infty)$$
 
-$$y = \log_a x \quad (a > 0, a 
-eq 1) \Rightarrow R_f = \mathbb{R}$$
+$$y = \log_a x \quad (a > 0, a \neq 1) \Rightarrow R_f = \mathbb{R}$$
 
 **7. 二级结论**
 
 - 若 $f(x)$ 在区间 $D$ 上单调递增，则 $R_f = [f(x_{\min}), f(x_{\max})]$（端点可取时）。
 - 若 $f(x)$ 在 $D$ 上连续且存在最值，则值域必为闭区间 $[m, M]$。
-- 对于分式函数 $y = rac{ax+b}{cx+d}$，对称中心为 $\left(-rac{d}{c}, rac{a}{c}ight)$，值域中去掉的就是对称中心的纵坐标。
+- 对于分式函数 $y = \frac{ax+b}{cx+d}$，对称中心为 $\left(-\frac{d}{c}, \frac{a}{c}\right)$，值域中去掉的就是对称中心的纵坐标。
 
 ---
 
@@ -625,9 +586,9 @@ eq 1) \Rightarrow R_f = \mathbb{R}$$
 
 **6. 公式**
 
-$$	ext{解析法: } y = f(x)$$
-$$	ext{列表法: } egin{array}{c|c|c|c} x & x_1 & x_2 & \dots \ \hline y & y_1 & y_2 & \dots \end{array}$$
-$$	ext{图像法: } G_f = \{(x, y) \in \mathbb{R}^2 \mid y = f(x),\ x \in D_f\}$$
+$$\text{解析法: } y = f(x)$$
+$$\text{列表法: } \begin{array}{c|c|c|c} x & x_1 & x_2 & \dots \ \hline y & y_1 & y_2 & \dots \end{array}$$
+$$\text{图像法: } G_f = \{(x, y) \in \mathbb{R}^2 \mid y = f(x),\ x \in D_f\}$$
 
 **7. 二级结论**
 
@@ -658,21 +619,20 @@ $$	ext{图像法: } G_f = \{(x, y) \in \mathbb{R}^2 \mid y = f(x),\ x \in D_f\}$
 
 **5. 定理**
 
-- **分段函数的连续性判定**：分段函数 $f(x)$ 在分段点 $x_0$ 处连续的充要条件是：$\lim_{x 	o x_0^-} f(x) = \lim_{x 	o x_0^+} f(x) = f(x_0)$。
+- **分段函数的连续性判定**：分段函数 $f(x)$ 在分段点 $x_0$ 处连续的充要条件是：$\lim_{x \to x_0^-} f(x) = \lim_{x \to x_0^+} f(x) = f(x_0)$。
 - 前提：分段点左右两侧表达式已知。
 - 结论：左右极限存在、相等且等于函数值。
 - 使用场合：判断分段函数在分段点处是否连续、作图时判断分段点是否为实心点。
 
 **6. 公式**
 
-$$f(x) = egin{cases} f_1(x), & x \in D_1 \ f_2(x), & x \in D_2 \ dots \ f_n(x), & x \in D_n \end{cases}$$
+$$f(x) = \begin{cases} f_1(x), & x \in D_1 \ f_2(x), & x \in D_2 \ \vdots \ f_n(x), & x \in D_n \end{cases}$$
 
-其中 $D_1 \cup D_2 \cup \dots \cup D_n = D_f$，且 $D_i \cap D_j = arnothing$（$i 
-eq j$）。
+其中 $D_1 \cup D_2 \cup \dots \cup D_n = D_f$，且 $D_i \cap D_j = \varnothing$（$i \neq j$）。
 
 **7. 二级结论**
 
-- 绝对值函数 $y = |x|$ 是最经典的分段函数：$y = egin{cases} x, & x \geq 0 \ -x, & x < 0 \end{cases}$。
+- 绝对值函数 $y = |x|$ 是最经典的分段函数：$y = \begin{cases} x, & x \geq 0 \ -x, & x < 0 \end{cases}$。
 - 取整函数（高斯函数）$y = [x]$ 表示不超过 $x$ 的最大整数，其图像是阶梯形。
 - 分段函数在分段点处可能出现间断，这是分析分段函数性质的关键节点。
 - 实际问题中（如出租车计费、阶梯电价、个人所得税计算），分段函数是天然的数学模型。
