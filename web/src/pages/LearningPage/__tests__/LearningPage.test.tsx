@@ -57,13 +57,11 @@ vi.mock('../../../components/Layout', () => ({
   MultiPaneLayout: (props: {
     knowledgeTreePanel: React.ReactNode
     markdownPanel: React.ReactNode
-    aiSidebarPanel?: React.ReactNode
     learningFeedbackPanel?: React.ReactNode
   }) => (
     <div data-testid="multi-pane-layout">
       <div data-testid="tree-panel">{props.knowledgeTreePanel}</div>
       <div data-testid="markdown-panel">{props.markdownPanel}</div>
-      <div data-testid="ai-panel">{props.aiSidebarPanel}</div>
       <div data-testid="feedback-panel">{props.learningFeedbackPanel}</div>
     </div>
   ),
@@ -108,9 +106,9 @@ vi.mock('../../../components/MarkdownPreview', () => ({
   ),
 }))
 
-vi.mock('../../../components/AISidebar', () => ({
-  AISidebar: (props: { knowledgePointTitle?: string }) => (
-    <div data-testid="ai-sidebar">{props.knowledgePointTitle}</div>
+vi.mock('../../../components/learning/AIFab', () => ({
+  AIFab: (props: { knowledgePointTitle?: string }) => (
+    <div data-testid="ai-fab">{props.knowledgePointTitle || 'AI助手'}</div>
   ),
 }))
 
@@ -164,7 +162,7 @@ describe('LearningPage', () => {
       expect(screen.getByTestId('multi-pane-layout')).toBeInTheDocument()
       expect(screen.getByTestId('tree-panel')).toBeInTheDocument()
       expect(screen.getByTestId('markdown-panel')).toBeInTheDocument()
-      expect(screen.getByTestId('ai-panel')).toBeInTheDocument()
+      expect(screen.getByTestId('ai-fab')).toBeInTheDocument()
     })
   })
 

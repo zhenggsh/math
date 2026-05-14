@@ -19,10 +19,3 @@
   background-color: #fff;
   overflow: auto;
 }
-
-/* 响应式：移动端隐藏右侧面板 */
-@media (max-width: 768px) {
-  .multiPaneLayout :global(.sash-vertical:nth-of-type(2)) {
-    display: none;
-  }
-}

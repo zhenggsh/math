@@ -17,7 +17,7 @@ import { MultiPaneLayout } from '../../components/Layout'
 import { KnowledgeTree } from '../../components/KnowledgeTree'
 import { MarkdownPreview } from '../../components/MarkdownPreview'
 import { KnowledgeOverview } from '../../components/KnowledgeOverview'
-import { AISidebar } from '../../components/AISidebar'
+import { AIFab } from '../../components/learning/AIFab'
 import { FeedbackPanel } from '../../components/learning/FeedbackPanel'
 import { useAuth } from '../../hooks/useAuth'
 import { useTextbook } from '../../hooks/useTextbook'
@@ -28,7 +28,7 @@ import styles from './LearningPage.module.css'
 
 /**
  * 学习页面组件
- * 集成知识树、Markdown 预览、AI 侧栏的多栏式学习界面
+ * 集成知识树、Markdown 预览的多栏式学习界面，AI 助手通过浮动按钮访问
  */
 /**
  * 查找第一个叶子节点
@@ -443,11 +443,6 @@ const LearningPage: React.FC = () => {
     </div>
   )
 
-  // 渲染 AI 侧栏
-  const aiSidebarPanel = (
-    <AISidebar knowledgePointId={selectedNode?.data.id} knowledgePointTitle={selectedNode?.title} />
-  )
-
   // 渲染学习反馈面板
   const learningFeedbackPanel = selectedNode?.data.id ? (
     <FeedbackPanel key={selectedNode.data.id} knowledgePointId={selectedNode.data.id} />
@@ -469,11 +464,10 @@ const LearningPage: React.FC = () => {
       <MultiPaneLayout
         knowledgeTreePanel={knowledgeTreePanel}
         markdownPanel={markdownPanel}
-        aiSidebarPanel={aiSidebarPanel}
         learningFeedbackPanel={learningFeedbackPanel}
-        showAISidebar={true}
         showBottomPanel={true}
       />
+      <AIFab knowledgePointId={selectedNode?.data.id} knowledgePointTitle={selectedNode?.title} />
     </div>
   )
 }
