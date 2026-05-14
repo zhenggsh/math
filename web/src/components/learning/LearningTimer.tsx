@@ -1,27 +1,26 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Card, Statistic } from 'antd';
-import { ClockCircleOutlined } from '@ant-design/icons';
-import styles from './LearningTimer.module.css';
+import React, { useState, useEffect, useCallback, useRef } from 'react'
+import { ClockCircleOutlined } from '@ant-design/icons'
+import styles from './LearningTimer.module.css'
 
 /**
  * LearningTimer 组件 Props
  */
 export interface LearningTimerProps {
   /** 学习开始时间 */
-  startTime: Date;
+  startTime: Date
   /** 时长变化回调（每分钟触发一次） */
-  onDurationChange?: (minutes: number) => void;
+  onDurationChange?: (minutes: number) => void
   /** 是否暂停计时 */
-  paused?: boolean;
+  paused?: boolean
 }
 
 /**
  * 格式化时间为 MM:SS
  */
 function formatTime(totalSeconds: number): string {
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  const minutes = Math.floor(totalSeconds / 60)
+  const seconds = totalSeconds % 60
+  return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
 }
 
 /**
@@ -33,64 +32,59 @@ export const LearningTimer: React.FC<LearningTimerProps> = ({
   onDurationChange,
   paused = false,
 }) => {
-  const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
-  const lastReportedMinuteRef = useRef<number>(0);
-
   // 计算已过去的时间
   const calculateElapsed = useCallback(() => {
-    const now = new Date();
-    const diff = Math.floor((now.getTime() - startTime.getTime()) / 1000);
-    return Math.max(0, diff);
-  }, [startTime]);
+    const now = new Date()
+    const diff = Math.floor((now.getTime() - startTime.getTime()) / 1000)
+    return Math.max(0, diff)
+  }, [startTime])
 
-  // 初始化并启动计时器
+  const [elapsedSeconds, setElapsedSeconds] = useState<number>(() => calculateElapsed())
+  const lastReportedMinuteRef = useRef<number>(0)
+
+  // 启动计时器
   useEffect(() => {
-    setElapsedSeconds(calculateElapsed());
-
     if (paused) {
-      return;
+      return
     }
 
     const interval = setInterval(() => {
-      const elapsed = calculateElapsed();
-      setElapsedSeconds(elapsed);
+      const elapsed = calculateElapsed()
+      setElapsedSeconds(elapsed)
 
       // 每分钟触发一次回调
-      const minutes = Math.floor(elapsed / 60);
+      const minutes = Math.floor(elapsed / 60)
       if (minutes > lastReportedMinuteRef.current) {
-        lastReportedMinuteRef.current = minutes;
-        onDurationChange?.(minutes);
+        lastReportedMinuteRef.current = minutes
+        onDurationChange?.(minutes)
       }
-    }, 1000);
+    }, 1000)
 
     return () => {
-      clearInterval(interval);
-    };
-  }, [startTime, paused, calculateElapsed, onDurationChange]);
+      clearInterval(interval)
+    }
+  }, [startTime, paused, calculateElapsed, onDurationChange])
 
   // 获取当前学习时长（分钟，用于提交时）
   const getCurrentMinutes = useCallback((): number => {
-    return Math.ceil(elapsedSeconds / 60);
-  }, [elapsedSeconds]);
+    return Math.ceil(elapsedSeconds / 60)
+  }, [elapsedSeconds])
 
   // 暴露方法给父组件
   React.useImperativeHandle(
     React.useRef<{ getCurrentMinutes: () => number }>({
       getCurrentMinutes,
     }),
-    () => ({ getCurrentMinutes }),
-  );
+    () => ({ getCurrentMinutes })
+  )
 
   return (
-    <Card className={styles.timerCard} size="small">
-      <Statistic
-        title="学习时长"
-        value={formatTime(elapsedSeconds)}
-        prefix={<ClockCircleOutlined />}
-        valueStyle={{ fontSize: '24px', fontFamily: 'monospace' }}
-      />
-    </Card>
-  );
-};
+    <span className={styles.timerDisplay}>
+      <ClockCircleOutlined className={styles.timerIcon} />
+      <span className={styles.timerLabel}>学习时长</span>
+      <span className={styles.timerValue}>{formatTime(elapsedSeconds)}</span>
+    </span>
+  )
+}
 
-export default LearningTimer;
+export default LearningTimer

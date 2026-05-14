@@ -1,19 +1,24 @@
-.timerCard {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border: none;
-  color: white;
+.timerDisplay {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: #595959;
 }
 
-.timerCard :global(.ant-statistic-title) {
-  color: rgba(255, 255, 255, 0.85);
+.timerIcon {
+  color: #1890ff;
   font-size: 14px;
 }
 
-.timerCard :global(.ant-statistic-content) {
-  color: white;
+.timerLabel {
+  color: #8c8c8c;
+  font-size: 12px;
 }
 
-.timerCard :global(.ant-statistic-content-prefix) {
-  margin-right: 8px;
-  opacity: 0.9;
+.timerValue {
+  font-family: monospace;
+  font-size: 16px;
+  font-weight: 500;
+  color: #262626;
 }

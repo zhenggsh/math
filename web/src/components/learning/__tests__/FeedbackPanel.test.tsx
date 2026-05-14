@@ -23,15 +23,17 @@ describe('FeedbackPanel', () => {
 
     expect(screen.getByText('学习时长')).toBeInTheDocument();
     expect(screen.getByText('学习反馈')).toBeInTheDocument();
-    expect(screen.getByText('掌握程度')).toBeInTheDocument();
-    expect(screen.getByText('学习备注（可选）')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /提交学习记录/i })).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(
+      '记录今天的学习心得、疑问或需要注意的地方...',
+    )).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /提交/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /学习历史/i })).toBeInTheDocument();
   });
 
   it('should show error when submitting without mastery level', async () => {
     render(<FeedbackPanel knowledgePointId={mockKnowledgePointId} />);
 
-    const submitButton = screen.getByRole('button', { name: /提交学习记录/i });
+    const submitButton = screen.getByRole('button', { name: /提交/i });
     fireEvent.click(submitButton);
 
     await waitFor(() => {
@@ -64,7 +66,7 @@ describe('FeedbackPanel', () => {
     fireEvent.change(notesInput, { target: { value: 'Test notes' } });
 
     // Submit form
-    const submitButton = screen.getByRole('button', { name: /提交学习记录/i });
+    const submitButton = screen.getByRole('button', { name: /提交/i });
     fireEvent.click(submitButton);
 
     await waitFor(() => {
@@ -72,10 +74,15 @@ describe('FeedbackPanel', () => {
     });
   });
 
-  it('should display history section', () => {
+  it('should open history modal when clicking history button', async () => {
     render(<FeedbackPanel knowledgePointId={mockKnowledgePointId} />);
 
-    expect(screen.getByText('学习历史')).toBeInTheDocument();
+    const historyButton = screen.getByRole('button', { name: /学习历史/i });
+    fireEvent.click(historyButton);
+
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog).toBeInTheDocument();
+    expect(screen.getByText('暂无学习记录')).toBeInTheDocument();
   });
 
   it('should load and display history records', async () => {

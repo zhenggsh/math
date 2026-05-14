@@ -73,11 +73,11 @@ export const ResizableLayout: React.FC<ResizableLayoutProps> = ({
         try {
           const parsed = JSON.parse(saved) as { left?: number; center?: number; right?: number }
           const sizes: number[] = [
-            (parsed.left || defaultSizes.left || DEFAULT_SIZES.left) as number,
-            (parsed.center || defaultSizes.center || DEFAULT_SIZES.center) as number,
+            parsed.left || defaultSizes.left || DEFAULT_SIZES.left,
+            parsed.center || defaultSizes.center || DEFAULT_SIZES.center,
           ]
           if (showRightPanel) {
-            sizes.push((parsed.right || defaultSizes.right || DEFAULT_SIZES.right) as number)
+            sizes.push(parsed.right || defaultSizes.right || DEFAULT_SIZES.right)
           }
           return sizes
         } catch {
@@ -92,10 +92,7 @@ export const ResizableLayout: React.FC<ResizableLayoutProps> = ({
     return sizes as number[]
   })
 
-  const [verticalSizes, setVerticalSizes] = useState<number[]>([
-    100 - (defaultSizes.bottom || 200) / 8,
-    defaultSizes.bottom || 200,
-  ])
+  const [verticalSizes, setVerticalSizes] = useState<number[]>([80, 20])
 
   // 保存尺寸到 localStorage
   const saveSizes = useCallback(

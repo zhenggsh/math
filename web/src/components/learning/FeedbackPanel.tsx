@@ -1,93 +1,77 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import {
-  Card,
-  Button,
-  Input,
-  Form,
-  App,
-  Divider,
-  Typography,
-} from 'antd';
-import { SaveOutlined, HistoryOutlined } from '@ant-design/icons';
-import { MasteryRating } from './MasteryRating';
-import { LearningTimer } from './LearningTimer';
-import { RecordHistory } from './RecordHistory';
-import type {
-  LearningRecord,
-  MasteryLevel,
-} from '../../types/learning-record.types';
+import React, { useState, useEffect, useRef, useCallback } from 'react'
+import { Button, Input, Form, App, Modal, Typography } from 'antd'
+import { SaveOutlined, HistoryOutlined } from '@ant-design/icons'
+import { MasteryRating } from './MasteryRating'
+import { LearningTimer } from './LearningTimer'
+import { RecordHistory } from './RecordHistory'
+import type { LearningRecord, MasteryLevel } from '../../types/learning-record.types'
 import {
   createLearningRecord,
   getLearningRecordsByKnowledgePoint,
-} from '../../services/learningRecordApi';
-import styles from './FeedbackPanel.module.css';
+} from '../../services/learningRecordApi'
+import styles from './FeedbackPanel.module.css'
 
-const { Title } = Typography;
-const { TextArea } = Input;
+const { Title } = Typography
+const { TextArea } = Input
 
 /**
  * FeedbackPanel 组件 Props
  */
 export interface FeedbackPanelProps {
   /** 知识点ID */
-  knowledgePointId: string;
+  knowledgePointId: string
   /** 提交成功回调 */
-  onSubmitSuccess?: () => void;
+  onSubmitSuccess?: () => void
 }
 
 /**
  * 学习反馈面板组件
- * 整合计时器、掌握程度评分、备注输入和历史记录展示
+ * 上下两栏紧凑布局：上栏为学习反馈，下栏为功能区
  */
 export const FeedbackPanel: React.FC<FeedbackPanelProps> = ({
   knowledgePointId,
   onSubmitSuccess,
 }) => {
-  const { message } = App.useApp();
-  const [form] = Form.useForm();
-  const [submitting, setSubmitting] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [records, setRecords] = useState<LearningRecord[]>([]);
-  const [startTime] = useState<Date>(new Date());
-  const [durationMinutes, setDurationMinutes] = useState(0);
-  const timerRef = useRef<{ getCurrentMinutes: () => number }>(null);
+  const { message } = App.useApp()
+  const [form] = Form.useForm()
+  const [submitting, setSubmitting] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [records, setRecords] = useState<LearningRecord[]>([])
+  const [startTime] = useState<Date>(new Date())
+  const [durationMinutes, setDurationMinutes] = useState(0)
+  const [historyModalOpen, setHistoryModalOpen] = useState(false)
+  const timerRef = useRef<{ getCurrentMinutes: () => number }>(null)
 
   // 加载历史记录
   const loadHistory = useCallback(async () => {
     try {
-      setLoading(true);
-      const data = await getLearningRecordsByKnowledgePoint(knowledgePointId);
-      setRecords(data);
+      setLoading(true)
+      const data = await getLearningRecordsByKnowledgePoint(knowledgePointId)
+      setRecords(data)
     } catch (error) {
-      console.error('Failed to load learning records:', error);
-      // 静默加载失败，不显示错误消息
+      console.error('Failed to load learning records:', error)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  }, [knowledgePointId]);
+  }, [knowledgePointId])
 
   // 初始加载历史记录
   useEffect(() => {
-    loadHistory();
-  }, [loadHistory]);
+    void loadHistory()
+  }, [loadHistory])
 
   // 处理表单提交
-  const handleSubmit = async (values: {
-    masteryLevel: MasteryLevel;
-    notes?: string;
-  }) => {
+  const handleSubmit = async (values: { masteryLevel: MasteryLevel; notes?: string }) => {
     if (!values.masteryLevel) {
-      message.error('请选择掌握程度');
-      return;
+      message.error('请选择掌握程度')
+      return
     }
 
     try {
-      setSubmitting(true);
+      setSubmitting(true)
 
-      // 获取当前学习时长（使用计时器计算的值或表单值）
       const minutes =
-        timerRef.current?.getCurrentMinutes() ||
-        Math.max(1, Math.ceil(durationMinutes));
+        timerRef.current?.getCurrentMinutes() || Math.max(1, Math.ceil(durationMinutes))
 
       await createLearningRecord({
         knowledgePointId,
@@ -95,94 +79,93 @@ export const FeedbackPanel: React.FC<FeedbackPanelProps> = ({
         durationMinutes: minutes,
         startTime: startTime.toISOString(),
         notes: values.notes,
-      });
+      })
 
-      message.success('学习记录已保存');
-      form.resetFields();
+      message.success('学习记录已保存')
+      form.resetFields()
 
-      // 刷新历史记录
-      await loadHistory();
-
-      // 调用成功回调
-      onSubmitSuccess?.();
+      await loadHistory()
+      onSubmitSuccess?.()
     } catch (error) {
-      console.error('Failed to create learning record:', error);
-      message.error('保存学习记录失败，请重试');
+      console.error('Failed to create learning record:', error)
+      message.error('保存学习记录失败，请重试')
     } finally {
-      setSubmitting(false);
+      setSubmitting(false)
     }
-  };
+  }
 
   // 处理时长变化
   const handleDurationChange = (minutes: number) => {
-    setDurationMinutes(minutes);
-  };
+    setDurationMinutes(minutes)
+  }
 
   return (
     <div className={styles.feedbackPanel}>
-      {/* 计时器 */}
-      <div className={styles.timerSection}>
-        <LearningTimer
-          startTime={startTime}
-          onDurationChange={handleDurationChange}
-        />
-      </div>
+      <Form
+        form={form}
+        layout="vertical"
+        onFinish={values =>
+          void handleSubmit(values as { masteryLevel: MasteryLevel; notes?: string })
+        }
+        className={styles.feedbackForm}
+      >
+        {/* 上栏 — 学习反馈 */}
+        <div className={styles.upperSection}>
+          <div className={styles.ratingRow}>
+            <Title level={5} className={styles.sectionTitle}>
+              学习反馈
+            </Title>
+            <Form.Item
+              name="masteryLevel"
+              rules={[{ required: true, message: '请选择掌握程度' }]}
+              className={styles.masteryItem}
+            >
+              <MasteryRating size="small" />
+            </Form.Item>
+          </div>
 
-      {/* 反馈表单 */}
-      <Card className={styles.formCard} size="small">
-        <Title level={5} className={styles.sectionTitle}>
-          <SaveOutlined /> 学习反馈
-        </Title>
-
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleSubmit}
-          className={styles.feedbackForm}
-        >
-          <Form.Item
-            name="masteryLevel"
-            label="掌握程度"
-            rules={[{ required: true, message: '请选择掌握程度' }]}
-          >
-            <MasteryRating />
-          </Form.Item>
-
-          <Form.Item name="notes" label="学习备注（可选）">
+          <Form.Item name="notes" className={styles.notesItem}>
             <TextArea
               placeholder="记录今天的学习心得、疑问或需要注意的地方..."
               maxLength={500}
               showCount
-              rows={3}
+              rows={2}
             />
           </Form.Item>
+        </div>
 
-          <Form.Item className={styles.submitButtonWrapper}>
-            <Button
-              type="primary"
-              htmlType="submit"
-              loading={submitting}
-              icon={<SaveOutlined />}
-              size="large"
-              block
-            >
-              提交学习记录
-            </Button>
-          </Form.Item>
-        </Form>
-      </Card>
+        {/* 下栏 — 功能区 */}
+        <div className={styles.lowerSection}>
+          <Button icon={<HistoryOutlined />} onClick={() => setHistoryModalOpen(true)} size="small">
+            学习历史
+          </Button>
 
-      <Divider />
+          <Button
+            type="primary"
+            htmlType="submit"
+            loading={submitting}
+            icon={<SaveOutlined />}
+            size="small"
+          >
+            提交
+          </Button>
 
-      {/* 历史记录 */}
-      <div className={styles.historySection}>
-        <Title level={5} className={styles.sectionTitle}>
-          <HistoryOutlined /> 学习历史
-        </Title>
+          <LearningTimer startTime={startTime} onDurationChange={handleDurationChange} />
+        </div>
+      </Form>
+
+      {/* 学习历史 Modal */}
+      <Modal
+        title="学习历史"
+        open={historyModalOpen}
+        onCancel={() => setHistoryModalOpen(false)}
+        footer={null}
+        width={600}
+      >
         <RecordHistory records={records} loading={loading} />
-      </div>
+      </Modal>
     </div>
-  );
-};
+  )
+}
 
-export default FeedbackPanel;
+export default FeedbackPanel
