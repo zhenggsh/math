@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react'
+import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 
 const renderMiniNode = (node: MindMapNodeLayout, miniScale: number): React.ReactNode => (
   <g key={node.id}>
@@ -40,6 +40,7 @@ interface MiniMapPanelProps {
   containerWidth: number
   containerHeight: number
   onNavigate: (x: number, y: number) => void
+  onViewportPan?: (contentDeltaX: number, contentDeltaY: number) => void
 }
 
 const MINI_MAP_WIDTH = 200
@@ -54,8 +55,11 @@ export const MiniMapPanel: React.FC<MiniMapPanelProps> = ({
   containerWidth,
   containerHeight,
   onNavigate,
+  onViewportPan,
 }) => {
   const [isExpanded, setIsExpanded] = useState(true)
+  const [isDragging, setIsDragging] = useState(false)
+  const dragStartRef = useRef<{ x: number; y: number } | null>(null)
 
   const miniScale = useMemo(() => {
     const scaleX = MINI_MAP_WIDTH / svgWidth
@@ -74,6 +78,7 @@ export const MiniMapPanel: React.FC<MiniMapPanelProps> = ({
 
   const handleMiniMapClick = useCallback(
     (e: React.MouseEvent<SVGSVGElement>): void => {
+      if (isDragging) return
       const rect = e.currentTarget.getBoundingClientRect()
       const clickX = e.clientX - rect.left
       const clickY = e.clientY - rect.top
@@ -82,8 +87,48 @@ export const MiniMapPanel: React.FC<MiniMapPanelProps> = ({
       const contentY = clickY / miniScale
       onNavigate(contentX, contentY)
     },
-    [miniScale, onNavigate]
+    [miniScale, onNavigate, isDragging]
   )
+
+  const handleViewportMouseDown = useCallback(
+    (e: React.MouseEvent<SVGRectElement>): void => {
+      e.stopPropagation()
+      setIsDragging(true)
+      dragStartRef.current = {
+        x: e.clientX,
+        y: e.clientY,
+      }
+    },
+    []
+  )
+
+  useEffect(() => {
+    if (!isDragging) return
+
+    const handleMouseMove = (e: MouseEvent): void => {
+      if (!dragStartRef.current || !onViewportPan) return
+      const dx = e.clientX - dragStartRef.current.x
+      const dy = e.clientY - dragStartRef.current.y
+      dragStartRef.current = { x: e.clientX, y: e.clientY }
+      // Convert mini-map pixel delta to content coordinates
+      const contentDeltaX = dx / miniScale
+      const contentDeltaY = dy / miniScale
+      onViewportPan(contentDeltaX, contentDeltaY)
+    }
+
+    const handleMouseUp = (): void => {
+      setIsDragging(false)
+      dragStartRef.current = null
+    }
+
+    window.addEventListener('mousemove', handleMouseMove)
+    window.addEventListener('mouseup', handleMouseUp)
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove)
+      window.removeEventListener('mouseup', handleMouseUp)
+    }
+  }, [isDragging, miniScale, onViewportPan])
 
   return (
     <div className={styles.miniMapPanel} data-testid="mini-map-panel">
@@ -116,6 +161,8 @@ export const MiniMapPanel: React.FC<MiniMapPanelProps> = ({
               stroke="#1890ff"
               strokeWidth={1}
               strokeDasharray="4 2"
+              style={{ cursor: onViewportPan ? 'move' : 'default' }}
+              onMouseDown={handleViewportMouseDown}
             />
           </svg>
         </div>

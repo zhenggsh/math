@@ -6,7 +6,8 @@ import { MindMapView } from './MindMapView'
 import type { KnowledgeTreeProps, ViewMode, LayoutMode, KnowledgeTreeNode } from './types'
 import styles from './KnowledgeTree.module.css'
 
-const STORAGE_KEY = 'mathtong:knowledge-tree:view-mode'
+const VIEW_MODE_KEY = 'mathtong:knowledge-tree:view-mode'
+const LAYOUT_MODE_KEY = 'mathtong:knowledge-tree:layout-mode'
 
 /**
  * 知识树主组件
@@ -28,7 +29,7 @@ export const KnowledgeTree: React.FC<KnowledgeTreeProps> = ({
   const [internalViewMode, setInternalViewMode] = useState<ViewMode>(() => {
     // 从 localStorage 恢复视图模式
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem(STORAGE_KEY)
+      const saved = localStorage.getItem(VIEW_MODE_KEY)
       if (saved === 'tree' || saved === 'mindmap') {
         return saved
       }
@@ -38,16 +39,32 @@ export const KnowledgeTree: React.FC<KnowledgeTreeProps> = ({
 
   const viewMode = controlledViewMode !== undefined ? controlledViewMode : internalViewMode
 
-  const [internalLayoutMode, setInternalLayoutMode] = useState<LayoutMode>('tree')
+  const [internalLayoutMode, setInternalLayoutMode] = useState<LayoutMode>(() => {
+    // 从 localStorage 恢复布局模式
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(LAYOUT_MODE_KEY)
+      if (saved === 'tree' || saved === 'balanced') {
+        return saved
+      }
+    }
+    return 'tree'
+  })
 
   const layoutMode = controlledLayoutMode !== undefined ? controlledLayoutMode : internalLayoutMode
 
   // 保存视图模式到 localStorage
   useEffect(() => {
     if (typeof window !== 'undefined' && controlledViewMode === undefined) {
-      localStorage.setItem(STORAGE_KEY, viewMode)
+      localStorage.setItem(VIEW_MODE_KEY, viewMode)
     }
   }, [viewMode, controlledViewMode])
+
+  // 保存布局模式到 localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined' && controlledLayoutMode === undefined) {
+      localStorage.setItem(LAYOUT_MODE_KEY, layoutMode)
+    }
+  }, [layoutMode, controlledLayoutMode])
 
   // 处理视图模式切换
   const handleViewModeChange = useCallback(

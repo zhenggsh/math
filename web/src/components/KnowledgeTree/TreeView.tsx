@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react'
-import { Tree, Tag, Spin, Empty, Button } from 'antd'
+import { Tree, Tag, Spin, Empty, Button, Space } from 'antd'
 import type { TreeProps } from 'antd'
 import {
   BookOutlined,
@@ -11,7 +11,6 @@ import {
 } from '@ant-design/icons'
 import type { TreeViewProps, KnowledgeTreeNode } from './types'
 import type { ImportanceLevel } from '../../types/knowledge.types'
-import { KnowledgeNodePopover } from './KnowledgeNodePopover'
 import styles from './TreeView.module.css'
 
 /**
@@ -67,15 +66,10 @@ interface TreeNodeTitleProps {
  * 树节点标题组件
  */
 const TreeNodeTitle: React.FC<TreeNodeTitleProps> = ({ node }) => {
-  const [isHovered, setIsHovered] = useState(false)
   const statusConfig = node.learningStatus ? LEARNING_STATUS_CONFIG[node.learningStatus] : null
 
   return (
-    <div
-      className={styles.treeNodeTitle}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
+    <div className={styles.treeNodeTitle}>
       <span className={styles.nodeIcon}>
         <BookOutlined />
       </span>
@@ -90,7 +84,6 @@ const TreeNodeTitle: React.FC<TreeNodeTitleProps> = ({ node }) => {
           {statusConfig.icon}
         </span>
       )}
-      <KnowledgeNodePopover node={node} visible={isHovered} />
     </div>
   )
 }
@@ -254,14 +247,15 @@ export const TreeView: React.FC<TreeViewProps> = ({
   return (
     <div className={styles.treeView} tabIndex={0} onKeyDown={handleKeyDown}>
       <div className={styles.toolbar}>
-        <div className={styles.toolbarActions}>
+        <span className={styles.toolbarTitle}>Tree-View</span>
+        <Space>
           <Button icon={<PlusOutlined />} onClick={expandAll} size="small">
-            Expand All
+            Expand
           </Button>
           <Button icon={<MinusOutlined />} onClick={collapseAll} size="small">
-            Collapse All
+            Collapse
           </Button>
-        </div>
+        </Space>
       </div>
       <Tree
         treeData={treeData}

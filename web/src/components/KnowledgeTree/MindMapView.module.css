@@ -71,7 +71,3 @@
   min-height: 200px;
 }
 
-.popoverOverlay {
-  pointer-events: none;
-  position: absolute;
-}

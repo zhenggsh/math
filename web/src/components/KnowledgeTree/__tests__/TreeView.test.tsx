@@ -74,10 +74,10 @@ describe('TreeView', () => {
     const onExpand = vi.fn()
     render(<TreeView data={mockData} onExpand={onExpand} />)
 
-    fireEvent.click(screen.getByText('Expand All'))
+    fireEvent.click(screen.getByText('Expand'))
     expect(onExpand).toHaveBeenCalledWith(expect.arrayContaining(['1', '1.1', '1.1.1', '2']))
 
-    fireEvent.click(screen.getByText('Collapse All'))
+    fireEvent.click(screen.getByText('Collapse'))
     expect(onExpand).toHaveBeenCalledWith([])
   })
 
@@ -106,24 +106,24 @@ describe('TreeView', () => {
     const onExpand = vi.fn()
     render(<TreeView data={mockData} onExpand={onExpand} />)
 
-    fireEvent.click(screen.getByText('Expand All'))
+    fireEvent.click(screen.getByText('Expand'))
     expect(onExpand).toHaveBeenCalledWith(['1', '1.1', '1.1.1', '2'])
 
     onExpand.mockClear()
-    fireEvent.click(screen.getByText('Collapse All'))
+    fireEvent.click(screen.getByText('Collapse'))
     expect(onExpand).toHaveBeenCalledWith([])
   })
 
-  it('has AntD Buttons for expand/collapse instead of action links', () => {
+  it('has AntD Buttons for expand/collapse', () => {
     render(<TreeView data={mockData} />)
-    const expandButton = screen.getByRole('button', { name: /expand all/i })
-    const collapseButton = screen.getByRole('button', { name: /collapse all/i })
+    const expandButton = screen.getByRole('button', { name: /expand/i })
+    const collapseButton = screen.getByRole('button', { name: /collapse/i })
     expect(expandButton).toBeInTheDocument()
     expect(collapseButton).toBeInTheDocument()
   })
 
-  it('does not show "Knowledge Tree" title in toolbar', () => {
-    const { container } = render(<TreeView data={mockData} />)
-    expect(container.querySelector('.toolbarTitle')).toBeFalsy()
+  it('shows Tree-View title in toolbar', () => {
+    render(<TreeView data={mockData} />)
+    expect(screen.getByText('Tree-View')).toBeInTheDocument()
   })
 })

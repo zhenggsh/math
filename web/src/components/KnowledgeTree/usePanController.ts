@@ -58,7 +58,7 @@ export const usePanController = ({
   )
 
   const onMouseDown = useCallback((e: React.MouseEvent): void => {
-    if (e.button !== 1) return
+    if (e.button !== 0 && e.button !== 1) return
     e.preventDefault()
     setIsPanning(true)
     dragStart.current = {

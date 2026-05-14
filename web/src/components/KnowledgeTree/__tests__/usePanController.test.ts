@@ -50,6 +50,35 @@ describe('usePanController', () => {
     expect(result.current.translate.y).toBe(40) // 20 + (120-100)
   })
 
+  it('updates translate on left-click drag', () => {
+    const { result } = renderHook(() =>
+      usePanController({
+        containerWidth: 800,
+        containerHeight: 600,
+        contentWidth: 1000,
+        contentHeight: 800,
+      })
+    )
+
+    const mockEvent = {
+      button: 0,
+      clientX: 100,
+      clientY: 100,
+      preventDefault: vi.fn(),
+    } as unknown as React.MouseEvent
+
+    act(() => {
+      result.current.handlers.onMouseDown(mockEvent)
+    })
+    expect(result.current.isPanning).toBe(true)
+
+    act(() => {
+      window.dispatchEvent(new MouseEvent('mousemove', { clientX: 150, clientY: 120 }))
+    })
+    expect(result.current.translate.x).toBe(70) // 20 + (150-100)
+    expect(result.current.translate.y).toBe(40) // 20 + (120-100)
+  })
+
   it('constrains translate to boundaries', () => {
     const { result } = renderHook(() =>
       usePanController({
@@ -84,7 +113,7 @@ describe('usePanController', () => {
     expect(result.current.translate.y).toBe(-700) // minTranslateY = 100 - 800
   })
 
-  it('ignores left and right click', () => {
+  it('ignores right click', () => {
     const { result } = renderHook(() =>
       usePanController({
         containerWidth: 800,
@@ -95,18 +124,6 @@ describe('usePanController', () => {
     )
 
     const preventDefault = vi.fn()
-
-    // Left click
-    act(() => {
-      result.current.handlers.onMouseDown({
-        button: 0,
-        clientX: 100,
-        clientY: 100,
-        preventDefault,
-      } as unknown as React.MouseEvent)
-    })
-    expect(result.current.isPanning).toBe(false)
-    expect(preventDefault).not.toHaveBeenCalled()
 
     // Right click
     act(() => {

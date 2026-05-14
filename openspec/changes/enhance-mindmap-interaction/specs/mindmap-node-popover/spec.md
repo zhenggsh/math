@@ -1,37 +1,14 @@
-## ADDED Requirements
+## REMOVED
 
-### Requirement: Rich node hover Popover
+The `KnowledgeNodePopover` component was removed during post-implementation review.
 
-The system SHALL display a rich Popover when hovering over knowledge tree nodes in both TreeView and MindMapView.
+**Reason:** Hover-triggered popover was found to obstruct mouse clicks and create a distracting flickering effect during rapid cursor movement across nodes. The tree node title already displays the importance tag inline, and the definition is available on the detail page after clicking a node.
 
-#### Scenario: TreeView node hover
-- **GIVEN** the user is in tree view
-- **WHEN** the user hovers over a knowledge tree node
-- **THEN** after a 300ms delay, a Popover SHALL appear
-- **AND** the Popover SHALL display:
-  - The knowledge point title
-  - The importance level (A/B/C with color)
-  - The definition (up to 6 lines, truncated with "..." if longer)
-  - The learning status icon (if user is logged in)
-
-#### Scenario: MindMapView node hover
-- **GIVEN** the user is in mind map view
-- **WHEN** the user hovers over a mind map node
-- **THEN** after a 300ms delay, a Popover SHALL appear
-- **AND** the Popover SHALL display the same information as in TreeView
-
-#### Scenario: Popover with no definition
-- **GIVEN** a knowledge point has no definition
-- **WHEN** the user hovers over that node
-- **THEN** the Popover SHALL display "暂无定义" in the definition section
-
-#### Scenario: Popover dismiss
-- **GIVEN** a Popover is visible
-- **WHEN** the user moves the mouse away from the node
-- **THEN** the Popover SHALL disappear immediately
-
-#### Scenario: Popover click-through
-- **GIVEN** a Popover is visible
-- **WHEN** the user clicks the node
-- **THEN** the click SHALL still trigger node selection
-- **AND** the Popover SHALL not intercept the click event
+**What was removed:**
+- `KnowledgeNodePopover.tsx` component
+- `KnowledgeNodePopover.module.css` styles
+- Popover integration in `TreeView.tsx` (`TreeNodeTitle`)
+- Popover integration in `MindMapView.tsx` (hover state, positioning, overlay rendering)
+- `KnowledgeNodePopover` export from `index.ts`
+- `KnowledgeNodePopover.test.tsx` test file
+- `.popoverOverlay` CSS class from `MindMapView.module.css`

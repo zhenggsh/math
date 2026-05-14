@@ -11,7 +11,6 @@ import type { MindMapViewProps, KnowledgeTreeNode, MindMapNodeLayout, LayoutMode
 import { calculateLayout } from './mindmapLayout'
 import { usePanController } from './usePanController'
 import { MiniMapPanel } from './MiniMapPanel'
-import { KnowledgeNodePopover } from './KnowledgeNodePopover'
 import styles from './MindMapView.module.css'
 
 const MAX_DEPTH_DEFAULT = 3
@@ -69,14 +68,27 @@ const calculateConnectionPath = (parent: MindMapNodeLayout, child: MindMapNodeLa
   }
 }
 
+/**
+ * 根据节点深度计算字体大小和粗细
+ */
+const getNodeFontStyle = (depth: number): { fontSize: number; fontWeight?: string } => {
+  if (depth === 0) {
+    return { fontSize: 14, fontWeight: 'bold' }
+  }
+  if (depth >= 2) {
+    return { fontSize: 10 }
+  }
+  return { fontSize: 12 }
+}
+
 interface MindMapNodeProps {
   layout: MindMapNodeLayout
   selectedKey?: string
-  collapsedKeys: Set<string>
+  collapsedLeftKeys: Set<string>
+  collapsedRightKeys: Set<string>
   maxDepth: number
   onSelect: (node: KnowledgeTreeNode) => void
-  onToggleCollapse: (key: string) => void
-  onHover: (node: MindMapNodeLayout | null) => void
+  onToggleCollapse: (key: string, side: 'left' | 'right') => void
   parentLayout?: MindMapNodeLayout
 }
 
@@ -86,11 +98,11 @@ interface MindMapNodeProps {
 const MindMapNode: React.FC<MindMapNodeProps> = ({
   layout,
   selectedKey,
-  collapsedKeys,
+  collapsedLeftKeys,
+  collapsedRightKeys,
   maxDepth,
   onSelect,
   onToggleCollapse,
-  onHover,
   parentLayout,
 }) => {
   const isSelected = layout.id === selectedKey
@@ -100,19 +112,23 @@ const MindMapNode: React.FC<MindMapNodeProps> = ({
     C: '#8c8c8c',
   }[layout.data.importanceLevel]
 
-  const hasChildren =
-    layout.data.children && layout.data.children.length > 0 && layout.depth < maxDepth
-  const isCollapsed = collapsedKeys.has(layout.id)
+  const hasLeftChildrenToShow = layout.hasLeftChildren && layout.depth < maxDepth
+  const hasRightChildrenToShow = layout.hasRightChildren && layout.depth < maxDepth
+  const isLeftCollapsed = collapsedLeftKeys.has(layout.id)
+  const isRightCollapsed = collapsedRightKeys.has(layout.id)
 
   // 使用相对坐标，避免父节点 <g> 的 transform 叠加
   const relativeX = parentLayout ? layout.x - parentLayout.x : layout.x
   const relativeY = parentLayout ? layout.y - parentLayout.y : layout.y
 
+  const fontStyle = getNodeFontStyle(layout.depth)
+  // 根据字体大小微调垂直位置以保持居中
+  const textYOffset = fontStyle.fontSize === 14 ? 5 : fontStyle.fontSize === 10 ? 3 : 4
+
   return (
     <g
       transform={`translate(${relativeX}, ${relativeY})`}
-      onMouseEnter={() => onHover(layout)}
-      onMouseLeave={() => onHover(null)}
+      onMouseDown={(e) => e.stopPropagation()}
     >
       {/* 节点矩形 */}
       <rect
@@ -135,8 +151,9 @@ const MindMapNode: React.FC<MindMapNodeProps> = ({
       {/* 节点文字 */}
       <text
         x={10}
-        y={layout.height / 2 + 4}
-        fontSize={12}
+        y={layout.height / 2 + textYOffset}
+        fontSize={fontStyle.fontSize}
+        fontWeight={fontStyle.fontWeight}
         fill="#262626"
         style={{
           pointerEvents: 'none',
@@ -146,14 +163,14 @@ const MindMapNode: React.FC<MindMapNodeProps> = ({
         {layout.data.title.length > 12 ? `${layout.data.title.slice(0, 12)}...` : layout.data.title}
       </text>
 
-      {/* 折叠/展开按钮 */}
-      {hasChildren && (
+      {/* 左侧折叠/展开按钮 */}
+      {hasLeftChildrenToShow && (
         <g
-          transform={`translate(${layout.width - 6}, ${layout.height / 2})`}
+          transform={`translate(6, ${layout.height / 2})`}
           style={{ cursor: 'pointer' }}
           onClick={(e: React.MouseEvent) => {
             e.stopPropagation()
-            onToggleCollapse(layout.id)
+            onToggleCollapse(layout.id, 'left')
           }}
         >
           <circle r={8} fill="#fff" stroke="#d9d9d9" strokeWidth={1} />
@@ -164,7 +181,30 @@ const MindMapNode: React.FC<MindMapNodeProps> = ({
             textAnchor="middle"
             style={{ pointerEvents: 'none' }}
           >
-            {isCollapsed ? '+' : '-'}
+            {isLeftCollapsed ? '+' : '-'}
+          </text>
+        </g>
+      )}
+
+      {/* 右侧折叠/展开按钮 */}
+      {hasRightChildrenToShow && (
+        <g
+          transform={`translate(${layout.width - 6}, ${layout.height / 2})`}
+          style={{ cursor: 'pointer' }}
+          onClick={(e: React.MouseEvent) => {
+            e.stopPropagation()
+            onToggleCollapse(layout.id, 'right')
+          }}
+        >
+          <circle r={8} fill="#fff" stroke="#d9d9d9" strokeWidth={1} />
+          <text
+            y={3}
+            fontSize={12}
+            fill="#595959"
+            textAnchor="middle"
+            style={{ pointerEvents: 'none' }}
+          >
+            {isRightCollapsed ? '+' : '-'}
           </text>
         </g>
       )}
@@ -175,11 +215,11 @@ const MindMapNode: React.FC<MindMapNodeProps> = ({
           key={child.id}
           layout={child}
           selectedKey={selectedKey}
-          collapsedKeys={collapsedKeys}
+          collapsedLeftKeys={collapsedLeftKeys}
+          collapsedRightKeys={collapsedRightKeys}
           maxDepth={maxDepth}
           onSelect={onSelect}
           onToggleCollapse={onToggleCollapse}
-          onHover={onHover}
           parentLayout={layout}
         />
       ))}
@@ -201,11 +241,11 @@ export const MindMapView: React.FC<MindMapViewProps> = ({
   onLayoutModeChange,
 }) => {
   const [scale, setScale] = useState(1)
-  const [collapsedKeys, setCollapsedKeys] = useState<Set<string>>(new Set())
-  const [hoveredNode, setHoveredNode] = useState<MindMapNodeLayout | null>(null)
-  const [popoverPosition, setPopoverPosition] = useState({ x: 0, y: 0 })
+  const [collapsedLeftKeys, setCollapsedLeftKeys] = useState<Set<string>>(new Set())
+  const [collapsedRightKeys, setCollapsedRightKeys] = useState<Set<string>>(new Set())
   const canvasRef = useRef<HTMLDivElement>(null)
   const [containerSize, setContainerSize] = useState({ width: 800, height: 600 })
+  const translateRef = useRef<{ x: number; y: number }>({ x: 20, y: 20 })
 
   useEffect(() => {
     const el = canvasRef.current
@@ -223,21 +263,34 @@ export const MindMapView: React.FC<MindMapViewProps> = ({
   }, [])
 
   // 切换节点折叠状态
-  const toggleCollapse = useCallback((key: string) => {
-    setCollapsedKeys(prev => {
-      const next = new Set(prev)
-      if (next.has(key)) {
-        next.delete(key)
-      } else {
-        next.add(key)
-      }
-      return next
-    })
+  const toggleCollapse = useCallback((key: string, side: 'left' | 'right') => {
+    if (side === 'left') {
+      setCollapsedLeftKeys(prev => {
+        const next = new Set(prev)
+        if (next.has(key)) {
+          next.delete(key)
+        } else {
+          next.add(key)
+        }
+        return next
+      })
+    } else {
+      setCollapsedRightKeys(prev => {
+        const next = new Set(prev)
+        if (next.has(key)) {
+          next.delete(key)
+        } else {
+          next.add(key)
+        }
+        return next
+      })
+    }
   }, [])
 
   // 展开全部
   const expandAll = useCallback(() => {
-    setCollapsedKeys(new Set())
+    setCollapsedLeftKeys(new Set())
+    setCollapsedRightKeys(new Set())
   }, [])
 
   // 折叠全部（只折叠非叶子节点）
@@ -253,13 +306,15 @@ export const MindMapView: React.FC<MindMapViewProps> = ({
       }
       return keys
     }
-    setCollapsedKeys(new Set(getAllParentKeys(data)))
+    const allKeys = new Set(getAllParentKeys(data))
+    setCollapsedLeftKeys(allKeys)
+    setCollapsedRightKeys(allKeys)
   }, [data, maxDepth])
 
   // 计算布局
   const { layout, svgWidth, svgHeight } = useMemo(() => {
-    return calculateLayout(data, maxDepth, collapsedKeys, layoutMode)
-  }, [data, maxDepth, collapsedKeys, layoutMode])
+    return calculateLayout(data, maxDepth, collapsedLeftKeys, collapsedRightKeys, layoutMode)
+  }, [data, maxDepth, collapsedLeftKeys, collapsedRightKeys, layoutMode])
 
   // 平移控制器
   const { translate, isPanning, setTranslate, handlers } = usePanController({
@@ -269,25 +324,17 @@ export const MindMapView: React.FC<MindMapViewProps> = ({
     contentHeight: svgHeight,
   })
 
+  // 同步 translate 到 ref
+  useEffect(() => {
+    translateRef.current = translate
+  }, [translate])
+
   // 处理节点选择
   const handleSelect = useCallback(
     (node: KnowledgeTreeNode) => {
       onSelect?.(node)
     },
     [onSelect]
-  )
-
-  // 处理节点悬停
-  const handleNodeHover = useCallback(
-    (node: MindMapNodeLayout | null) => {
-      setHoveredNode(node)
-      if (node) {
-        const x = translate.x + node.x * scale + node.width * scale
-        const y = translate.y + node.y * scale
-        setPopoverPosition({ x, y })
-      }
-    },
-    [translate, scale]
   )
 
   // MiniMap 导航
@@ -299,6 +346,18 @@ export const MindMapView: React.FC<MindMapViewProps> = ({
       })
     },
     [setTranslate, scale, containerSize]
+  )
+
+  // MiniMap 视口拖动
+  const handleMiniMapViewportPan = useCallback(
+    (contentDeltaX: number, contentDeltaY: number) => {
+      const current = translateRef.current
+      setTranslate({
+        x: current.x - contentDeltaX * scale,
+        y: current.y - contentDeltaY * scale,
+      })
+    },
+    [setTranslate, scale]
   )
 
   // 缩放控制
@@ -342,7 +401,7 @@ export const MindMapView: React.FC<MindMapViewProps> = ({
   return (
     <div className={styles.mindMapView}>
       <div className={styles.toolbar}>
-        <span className={styles.toolbarTitle}>Mind Map</span>
+        <span className={styles.toolbarTitle}>Mind-Map</span>
         <Space>
           <Select
             className={styles.layoutSelector}
@@ -385,10 +444,10 @@ export const MindMapView: React.FC<MindMapViewProps> = ({
         >
           <g>
             {/* 先绘制所有连接线（在节点下方） */}
-            {collectConnections(layout).map(({ parent, child }, index) => {
+            {collectConnections(layout).map(({ parent, child }) => {
               const childIsLeft = child.x + child.width / 2 < parent.x + parent.width / 2
               return (
-                <g key={`conn-${index}`}>
+                <g key={`conn-${parent.id}-${child.id}`}>
                   <path
                     d={calculateConnectionPath(parent, child)}
                     fill="none"
@@ -420,27 +479,15 @@ export const MindMapView: React.FC<MindMapViewProps> = ({
                 key={node.id}
                 layout={node}
                 selectedKey={selectedKey}
-                collapsedKeys={collapsedKeys}
+                collapsedLeftKeys={collapsedLeftKeys}
+                collapsedRightKeys={collapsedRightKeys}
                 maxDepth={maxDepth}
                 onSelect={handleSelect}
                 onToggleCollapse={toggleCollapse}
-                onHover={handleNodeHover}
               />
             ))}
           </g>
         </svg>
-        {/* 节点悬停弹窗 */}
-        {hoveredNode && (
-          <div
-            className={styles.popoverOverlay}
-            style={{
-              left: popoverPosition.x,
-              top: popoverPosition.y,
-            }}
-          >
-            <KnowledgeNodePopover node={hoveredNode.data} visible={true} />
-          </div>
-        )}
         {/* 缩略图面板 */}
         <MiniMapPanel
           layout={layout}
@@ -451,6 +498,7 @@ export const MindMapView: React.FC<MindMapViewProps> = ({
           containerWidth={containerSize.width}
           containerHeight={containerSize.height}
           onNavigate={handleMiniMapNavigate}
+          onViewportPan={handleMiniMapViewportPan}
         />
       </div>
     </div>

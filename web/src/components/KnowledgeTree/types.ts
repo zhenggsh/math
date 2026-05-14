@@ -127,4 +127,8 @@ export interface MindMapNodeLayout {
   depth: number
   /** 节点方向（平衡布局时使用） */
   direction?: 'left' | 'right'
+  /** 是否有左侧子节点（平衡布局时用于显示左侧展开按钮） */
+  hasLeftChildren?: boolean
+  /** 是否有右侧子节点（平衡布局时用于显示右侧展开按钮） */
+  hasRightChildren?: boolean
 }
