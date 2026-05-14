@@ -37,13 +37,29 @@
   margin-bottom: 0 !important;
 }
 
+.textareaContainer {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .notesItem {
   margin-bottom: 0 !important;
-  flex-shrink: 0;
+  height: 100%;
 }
 
 .notesItem :global(.ant-form-item-control-input) {
   min-height: auto;
+  height: 100%;
+}
+
+.notesItem :global(.ant-form-item-control-input-content) {
+  height: 100%;
+}
+
+.notesItem :global(textarea) {
+  height: 100% !important;
+  resize: none;
 }
 
 .lowerSection {

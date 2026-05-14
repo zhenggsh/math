@@ -40,7 +40,9 @@ export const FeedbackPanel: React.FC<FeedbackPanelProps> = ({
   const [startTime] = useState<Date>(new Date())
   const [durationMinutes, setDurationMinutes] = useState(0)
   const [historyModalOpen, setHistoryModalOpen] = useState(false)
+  const [textAreaRows, setTextAreaRows] = useState(2)
   const timerRef = useRef<{ getCurrentMinutes: () => number }>(null)
+  const textareaContainerRef = useRef<HTMLDivElement>(null)
 
   // 加载历史记录
   const loadHistory = useCallback(async () => {
@@ -99,6 +101,26 @@ export const FeedbackPanel: React.FC<FeedbackPanelProps> = ({
     setDurationMinutes(minutes)
   }
 
+  // 监听文本框容器高度，动态调整 rows
+  useEffect(() => {
+    const container = textareaContainerRef.current
+    if (!container) return
+
+    const observer = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        const containerHeight = entry.contentRect.height
+        // 减去标题行(~28) + 掌握程度行(~32) + gaps(~12)
+        const availableHeight = containerHeight - 28 - 32 - 12
+        const rowHeight = 22
+        const rows = Math.max(2, Math.min(10, Math.floor(availableHeight / rowHeight)))
+        setTextAreaRows(rows)
+      }
+    })
+
+    observer.observe(container)
+    return () => observer.disconnect()
+  }, [])
+
   return (
     <div className={styles.feedbackPanel}>
       <Form
@@ -124,14 +146,16 @@ export const FeedbackPanel: React.FC<FeedbackPanelProps> = ({
             </Form.Item>
           </div>
 
-          <Form.Item name="notes" className={styles.notesItem}>
-            <TextArea
-              placeholder="记录今天的学习心得、疑问或需要注意的地方..."
-              maxLength={500}
-              showCount
-              rows={2}
-            />
-          </Form.Item>
+          <div ref={textareaContainerRef} className={styles.textareaContainer}>
+            <Form.Item name="notes" className={styles.notesItem}>
+              <TextArea
+                placeholder="记录今天的学习心得、疑问或需要注意的地方..."
+                maxLength={500}
+                showCount
+                rows={textAreaRows}
+              />
+            </Form.Item>
+          </div>
         </div>
 
         {/* 下栏 — 功能区 */}
