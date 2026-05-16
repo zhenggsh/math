@@ -106,11 +106,12 @@ const MindMapNode: React.FC<MindMapNodeProps> = ({
   parentLayout,
 }) => {
   const isSelected = layout.id === selectedKey
-  const importanceColor = {
-    A: '#ff4d4f',
-    B: '#faad14',
-    C: '#8c8c8c',
-  }[layout.data.importanceLevel]
+  const importanceColor: string =
+    {
+      A: '#ff4d4f',
+      B: '#faad14',
+      C: '#8c8c8c',
+    }[layout.data.importanceLevel] ?? '#8c8c8c'
 
   const hasLeftChildrenToShow = layout.hasLeftChildren && layout.depth < maxDepth
   const hasRightChildrenToShow = layout.hasRightChildren && layout.depth < maxDepth
@@ -157,7 +158,18 @@ const MindMapNode: React.FC<MindMapNodeProps> = ({
           maxWidth: layout.width - 20,
         }}
       >
-        {layout.data.title.length > 12 ? `${layout.data.title.slice(0, 12)}...` : layout.data.title}
+        {(() => {
+          const rawTitle = layout.data.title?.trim() ?? ''
+          const displayTitle =
+            rawTitle ||
+            layout.data.data?.level3 ||
+            layout.data.data?.level2 ||
+            layout.data.data?.level1 ||
+            layout.data.code
+          const shortTitle =
+            displayTitle.length > 12 ? `${displayTitle.slice(0, 12)}...` : displayTitle
+          return shortTitle
+        })()}
       </text>
 
       {/* 左侧折叠/展开按钮 */}

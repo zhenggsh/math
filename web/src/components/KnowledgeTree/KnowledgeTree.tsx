@@ -105,7 +105,7 @@ export const KnowledgeTree: React.FC<KnowledgeTreeProps> = ({
   if (loading) {
     return (
       <div className={styles.loadingContainer}>
-        <Spin size="large" tip="Loading knowledge tree..." />
+        <Spin size="large" description="Loading knowledge tree..." />
       </div>
     )
   }

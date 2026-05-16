@@ -9,6 +9,45 @@ import type { MarkdownPreviewProps } from './types'
 import { MermaidRenderer } from './MermaidRenderer'
 import styles from './MarkdownPreview.module.css'
 
+interface MarkdownRenderErrorBoundaryProps {
+  contentKey: string
+  children: React.ReactNode
+}
+
+interface MarkdownRenderErrorBoundaryState {
+  hasError: boolean
+}
+
+/**
+ * 捕获 KaTeX / Markdown 管线中的同步渲染异常，避免整页白屏
+ */
+class MarkdownRenderErrorBoundary extends React.Component<
+  MarkdownRenderErrorBoundaryProps,
+  MarkdownRenderErrorBoundaryState
+> {
+  constructor(props: MarkdownRenderErrorBoundaryProps) {
+    super(props)
+    this.state = { hasError: false }
+  }
+
+  static getDerivedStateFromError(): MarkdownRenderErrorBoundaryState {
+    return { hasError: true }
+  }
+
+  componentDidUpdate(prevProps: MarkdownRenderErrorBoundaryProps): void {
+    if (prevProps.contentKey !== this.props.contentKey) {
+      this.setState({ hasError: false })
+    }
+  }
+
+  render(): React.ReactNode {
+    if (this.state.hasError) {
+      return <Empty description="公式或 Markdown 无法正常渲染，可切换到 Raw 视图查看或编辑原文。" />
+    }
+    return this.props.children
+  }
+}
+
 /**
  * 代码块组件
  */
@@ -74,7 +113,7 @@ export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({
   if (loading) {
     return (
       <div className={`${styles.markdownPreview} ${className}`}>
-        <Spin size="large" tip="Loading content..." />
+        <Spin size="large" description="Loading content..." />
       </div>
     )
   }
@@ -95,7 +134,7 @@ export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({
             <textarea
               className={styles.rawEditor}
               value={content}
-              onChange={(e) => onContentChange(e.target.value)}
+              onChange={e => onContentChange(e.target.value)}
               spellCheck={false}
             />
           ) : (
@@ -105,13 +144,15 @@ export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({
           )
         ) : (
           <div className={styles.renderedContent}>
-            <ReactMarkdown
-              remarkPlugins={[remarkMath, remarkGfm]}
-              rehypePlugins={[rehypeKatex]}
-              components={components as any}
-            >
-              {content}
-            </ReactMarkdown>
+            <MarkdownRenderErrorBoundary contentKey={content}>
+              <ReactMarkdown
+                remarkPlugins={[remarkMath, remarkGfm]}
+                rehypePlugins={[rehypeKatex]}
+                components={components as React.ComponentProps<typeof ReactMarkdown>['components']}
+              >
+                {content}
+              </ReactMarkdown>
+            </MarkdownRenderErrorBoundary>
           </div>
         )}
       </div>

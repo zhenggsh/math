@@ -34,6 +34,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const navigate = useNavigate()
   const location = useLocation()
   const { user, isAuthenticated, logout } = useAuth()
+
+  const isLearningPage = location.pathname.startsWith('/learning')
   const {
     selectedTextbookIds,
     textbooks,
@@ -86,7 +88,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
           </div>
           <Menu
             mode="horizontal"
-            selectedKeys={[location.pathname]}
+            selectedKeys={[
+              location.pathname.startsWith('/learning') ? 'learning' : location.pathname,
+            ]}
             items={menuItems}
             onClick={handleMenuClick}
             style={{ borderBottom: 'none', minWidth: 400 }}
@@ -146,7 +150,19 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         </div>
       </Header>
 
-      <Content style={{ padding: 24, background: '#f0f2f5' }}>{children}</Content>
+      <Content
+        style={{
+          padding: isLearningPage ? 0 : 24,
+          background: '#f0f2f5',
+          display: 'flex',
+          flexDirection: 'column',
+          flex: 1,
+          minHeight: 0,
+          overflow: 'hidden',
+        }}
+      >
+        {children}
+      </Content>
     </Layout>
   )
 }

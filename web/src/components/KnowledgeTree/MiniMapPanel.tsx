@@ -1,4 +1,7 @@
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react'
+import { EyeOutlined, EyeInvisibleOutlined } from '@ant-design/icons'
+import type { MindMapNodeLayout } from './types'
+import styles from './MiniMapPanel.module.css'
 
 const renderMiniNode = (node: MindMapNodeLayout, miniScale: number): React.ReactNode => (
   <g key={node.id}>
@@ -27,9 +30,6 @@ const renderMiniNode = (node: MindMapNodeLayout, miniScale: number): React.React
     ))}
   </g>
 )
-import { EyeOutlined, EyeInvisibleOutlined } from '@ant-design/icons'
-import type { MindMapNodeLayout } from './types'
-import styles from './MiniMapPanel.module.css'
 
 interface MiniMapPanelProps {
   layout: MindMapNodeLayout[]
@@ -62,17 +62,20 @@ export const MiniMapPanel: React.FC<MiniMapPanelProps> = ({
   const dragStartRef = useRef<{ x: number; y: number } | null>(null)
 
   const miniScale = useMemo(() => {
-    const scaleX = MINI_MAP_WIDTH / svgWidth
-    const scaleY = MINI_MAP_HEIGHT / svgHeight
+    const safeW = Math.max(svgWidth, 1)
+    const safeH = Math.max(svgHeight, 1)
+    const scaleX = MINI_MAP_WIDTH / safeW
+    const scaleY = MINI_MAP_HEIGHT / safeH
     return Math.min(scaleX, scaleY)
   }, [svgWidth, svgHeight])
 
   // Viewport rectangle in mini-map coordinates
   const viewportRect = useMemo(() => {
-    const x = (-translate.x / scale) * miniScale
-    const y = (-translate.y / scale) * miniScale
-    const w = (containerWidth / scale) * miniScale
-    const h = (containerHeight / scale) * miniScale
+    const safeScale = scale > 1e-6 ? scale : 1
+    const x = (-translate.x / safeScale) * miniScale
+    const y = (-translate.y / safeScale) * miniScale
+    const w = (containerWidth / safeScale) * miniScale
+    const h = (containerHeight / safeScale) * miniScale
     return { x, y, w, h }
   }, [translate, scale, miniScale, containerWidth, containerHeight])
 
