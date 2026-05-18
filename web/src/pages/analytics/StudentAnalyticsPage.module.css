@@ -107,3 +107,18 @@
     justify-content: space-between;
   }
 }
+
+.progressionCard {
+  margin-top: 16px;
+}
+
+.singleRecordHint {
+  text-align: center;
+  color: #8c8c8c;
+  font-size: 14px;
+  margin-top: 12px;
+  padding: 8px;
+  background-color: #f6ffed;
+  border: 1px solid #b7eb8f;
+  border-radius: 4px;
+}

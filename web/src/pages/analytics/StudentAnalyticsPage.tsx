@@ -1,18 +1,20 @@
-import React, { useEffect, useState } from 'react'
-import { Card, Row, Col, Statistic, Spin, Empty } from 'antd'
+import React, { useEffect, useMemo, useState } from 'react'
+import { Card, Row, Col, Statistic, Spin, Empty, Select } from 'antd'
 import { BookOutlined, ClockCircleOutlined, TrophyOutlined } from '@ant-design/icons'
-import { PieChart, LineChart } from '../../components/features/analytics'
+import { PieChart, LineChart, ProgressionChart } from '../../components/features/analytics'
 import {
   getStudentOverview,
   getMasteryDistribution,
   getLearningTrend,
   getWeakPoints,
+  getKnowledgePointProgress,
 } from '../../services/analytics.service'
 import type {
   StudentOverview,
   MasteryDistribution,
   LearningTrend,
   WeakPoints,
+  KnowledgePointProgress,
 } from '../../types/analytics.types'
 import { ANT_DESIGN_COLORS } from '../../types/analytics.types'
 import styles from './StudentAnalyticsPage.module.css'
@@ -26,6 +28,50 @@ const StudentAnalyticsPage: React.FC = () => {
   const [masteryDistribution, setMasteryDistribution] = useState<MasteryDistribution | null>(null)
   const [learningTrend, setLearningTrend] = useState<LearningTrend | null>(null)
   const [weakPoints, setWeakPoints] = useState<WeakPoints | null>(null)
+  const [progressLoading, setProgressLoading] = useState(false)
+  const [knowledgePointProgress, setKnowledgePointProgress] =
+    useState<KnowledgePointProgress | null>(null)
+  const [selectedKnowledgePointId, setSelectedKnowledgePointId] = useState<string>('')
+
+  const learnedKnowledgePoints = useMemo(() => {
+    if (!weakPoints?.weakPoints.length) return []
+    return weakPoints.weakPoints.map(wp => ({
+      knowledgePointId: wp.knowledgePointId,
+      code: wp.code,
+      name: wp.name,
+      lastMasteryLevel: wp.lastMasteryLevel,
+    }))
+  }, [weakPoints])
+
+  useEffect(() => {
+    if (learnedKnowledgePoints.length > 0 && !selectedKnowledgePointId) {
+      const weakest = learnedKnowledgePoints.reduce((min, current) => {
+        const levelOrder = { E: 0, D: 1, C: 2, B: 3, A: 4 }
+        const currentOrder = levelOrder[current.lastMasteryLevel as keyof typeof levelOrder] ?? 5
+        const minOrder = levelOrder[min.lastMasteryLevel as keyof typeof levelOrder] ?? 5
+        return currentOrder < minOrder ? current : min
+      })
+      setSelectedKnowledgePointId(weakest.knowledgePointId)
+    }
+  }, [learnedKnowledgePoints, selectedKnowledgePointId])
+
+  useEffect(() => {
+    if (selectedKnowledgePointId) {
+      void loadKnowledgePointProgress(selectedKnowledgePointId)
+    }
+  }, [selectedKnowledgePointId])
+
+  const loadKnowledgePointProgress = async (knowledgePointId: string): Promise<void> => {
+    try {
+      setProgressLoading(true)
+      const data = await getKnowledgePointProgress(knowledgePointId)
+      setKnowledgePointProgress(data)
+    } catch (error) {
+      void error
+    } finally {
+      setProgressLoading(false)
+    }
+  }
 
   useEffect(() => {
     void loadData()
@@ -59,6 +105,11 @@ const StudentAnalyticsPage: React.FC = () => {
       </div>
     )
   }
+
+  const hasProgressData =
+    knowledgePointProgress && knowledgePointProgress.progressRecords.length > 0
+  const hasSingleRecord =
+    knowledgePointProgress && knowledgePointProgress.progressRecords.length === 1
 
   const masteryPieData =
     masteryDistribution?.distribution.map(item => ({
@@ -117,13 +168,62 @@ const StudentAnalyticsPage: React.FC = () => {
         <Col xs={24} lg={12}>
           <Card title="学习趋势（最近30天）" className={styles.chartCard}>
             {learningTrend?.trend.some(t => t.count > 0) ? (
-              <LineChart data={learningTrend.trend.map(t => ({ date: t.date, value: t.durationMinutes, count: t.count }))} showArea yAxisName="时长(分钟)" />
+              <LineChart
+                data={learningTrend.trend.map(t => ({
+                  date: t.date,
+                  value: t.durationMinutes,
+                  count: t.count,
+                }))}
+                showArea
+                yAxisName="时长(分钟)"
+              />
             ) : (
               <Empty description="暂无数据" />
             )}
           </Card>
         </Col>
       </Row>
+
+      {/* 知识点掌握度轨迹 */}
+      <Card
+        title="知识点掌握度轨迹"
+        className={styles.progressionCard}
+        extra={
+          learnedKnowledgePoints.length > 0 ? (
+            <Select
+              style={{ width: 280 }}
+              placeholder="选择知识点"
+              value={selectedKnowledgePointId || undefined}
+              onChange={(value: string) => setSelectedKnowledgePointId(value)}
+              options={learnedKnowledgePoints.map(kp => ({
+                value: kp.knowledgePointId,
+                label: `${kp.code} ${kp.name}`,
+              }))}
+            />
+          ) : null
+        }
+      >
+        {progressLoading ? (
+          <div className={styles.loadingContainer}>
+            <Spin size="default" description="加载轨迹数据..." />
+          </div>
+        ) : hasProgressData ? (
+          <>
+            <ProgressionChart
+              records={knowledgePointProgress.progressRecords}
+              title={knowledgePointProgress.title}
+              loading={progressLoading}
+            />
+            {hasSingleRecord && (
+              <div className={styles.singleRecordHint}>
+                该知识点只有 1 条学习记录，继续学习以查看进步轨迹
+              </div>
+            )}
+          </>
+        ) : (
+          <Empty description="开始学习知识点后，这里将展示你的掌握度进步轨迹" />
+        )}
+      </Card>
 
       {/* 薄弱知识点 */}
       <Card title="薄弱知识点（需加强）" className={styles.weakPointsCard}>
