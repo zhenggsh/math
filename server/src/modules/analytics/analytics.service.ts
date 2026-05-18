@@ -9,6 +9,7 @@ import type {
   ClassOverviewDto,
   KnowledgeHeatDto,
   StudentComparisonDto,
+  KnowledgePointProgressDto,
 } from './interfaces/stats.interfaces';
 
 /**
@@ -185,6 +186,86 @@ export class AnalyticsService {
     );
 
     return { weakPoints };
+  }
+
+  /**
+   * 获取知识点掌握进度
+   */
+  async getKnowledgePointProgress(
+    userId: string,
+    knowledgePointId: string,
+    startDate?: string,
+    endDate?: string,
+  ): Promise<KnowledgePointProgressDto> {
+    this.logger.log(
+      `Getting knowledge point progress for user: ${userId}, knowledgePoint: ${knowledgePointId}`,
+    );
+
+    const where: Record<string, unknown> = {
+      userId,
+      knowledgePointId,
+    };
+
+    if (startDate || endDate) {
+      where.startTime = {};
+      if (startDate) {
+        (where.startTime as Record<string, Date>).gte = new Date(startDate);
+      }
+      if (endDate) {
+        (where.startTime as Record<string, Date>).lte = new Date(endDate);
+      }
+    }
+
+    const records = await this.prisma.learningRecord.findMany({
+      where,
+      include: {
+        knowledgePoint: {
+          select: {
+            id: true,
+            code: true,
+            level1: true,
+            level2: true,
+            level3: true,
+          },
+        },
+      },
+      orderBy: { startTime: 'asc' },
+    });
+
+    if (records.length === 0) {
+      return {
+        knowledgePointId,
+        code: '',
+        title: '',
+        level1: '',
+        level2: undefined,
+        level3: undefined,
+        progressRecords: [],
+      };
+    }
+
+    const knowledgePoint = records[0].knowledgePoint;
+
+    return {
+      knowledgePointId: knowledgePoint.id,
+      code: knowledgePoint.code,
+      title: [
+        knowledgePoint.level1,
+        knowledgePoint.level2,
+        knowledgePoint.level3,
+      ]
+        .filter(Boolean)
+        .join(' > '),
+      level1: knowledgePoint.level1,
+      level2: knowledgePoint.level2 ?? undefined,
+      level3: knowledgePoint.level3 ?? undefined,
+      progressRecords: records.map((record) => ({
+        date: record.startTime.toISOString().split('T')[0],
+        masteryLevel: record.masteryLevel,
+        durationMinutes: record.durationMinutes,
+        notes: record.notes ?? undefined,
+      })),
+    };
   }
 
   /**

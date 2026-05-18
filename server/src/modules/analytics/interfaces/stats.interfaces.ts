@@ -104,3 +104,26 @@ export interface StudentComparisonItem {
 export interface StudentComparisonDto {
   students: StudentComparisonItem[];
 }
+
+/**
+ * 知识点进度记录
+ */
+export interface ProgressRecordDto {
+  date: string;
+  masteryLevel: string;
+  durationMinutes: number;
+  notes?: string;
+}
+
+/**
+ * 知识点掌握进度响应
+ */
+export interface KnowledgePointProgressDto {
+  knowledgePointId: string;
+  code: string;
+  title: string;
+  level1: string;
+  level2?: string;
+  level3?: string;
+  progressRecords: ProgressRecordDto[];
+}

@@ -244,4 +244,130 @@ describe('AnalyticsService', () => {
       expect(result.students[0].totalDuration).toBe(50);
     });
   });
+
+  describe('getKnowledgePointProgress', () => {
+    it('should return progress records sorted by date', async () => {
+      const mockRecords = [
+        {
+          id: 'lr-1',
+          startTime: new Date('2024-01-01'),
+          durationMinutes: 30,
+          masteryLevel: 'C',
+          notes: 'First study',
+          knowledgePoint: {
+            id: 'kp-1',
+            code: '1.1.1',
+            level1: 'Chapter 1',
+            level2: 'Section 1',
+            level3: 'Point 1',
+          },
+        },
+        {
+          id: 'lr-3',
+          startTime: new Date('2024-01-02'),
+          durationMinutes: 20,
+          masteryLevel: 'C',
+          notes: null,
+          knowledgePoint: {
+            id: 'kp-1',
+            code: '1.1.1',
+            level1: 'Chapter 1',
+            level2: 'Section 1',
+            level3: 'Point 1',
+          },
+        },
+        {
+          id: 'lr-2',
+          startTime: new Date('2024-01-03'),
+          durationMinutes: 45,
+          masteryLevel: 'B',
+          notes: 'Second study',
+          knowledgePoint: {
+            id: 'kp-1',
+            code: '1.1.1',
+            level1: 'Chapter 1',
+            level2: 'Section 1',
+            level3: 'Point 1',
+          },
+        },
+      ];
+      jest
+        .spyOn(prismaService.learningRecord, 'findMany')
+        .mockResolvedValue(mockRecords as never);
+
+      const result = await service.getKnowledgePointProgress(
+        mockUserId,
+        'kp-1',
+      );
+
+      expect(result.knowledgePointId).toBe('kp-1');
+      expect(result.code).toBe('1.1.1');
+      expect(result.title).toBe('Chapter 1 > Section 1 > Point 1');
+      expect(result.progressRecords).toHaveLength(3);
+      expect(result.progressRecords[0].date).toBe('2024-01-01');
+      expect(result.progressRecords[1].date).toBe('2024-01-02');
+      expect(result.progressRecords[2].date).toBe('2024-01-03');
+      expect(result.progressRecords[0].masteryLevel).toBe('C');
+      expect(result.progressRecords[0].durationMinutes).toBe(30);
+      expect(result.progressRecords[0].notes).toBe('First study');
+    });
+
+    it('should return empty records for unlearned knowledge point', async () => {
+      jest
+        .spyOn(prismaService.learningRecord, 'findMany')
+        .mockResolvedValue([] as never);
+
+      const result = await service.getKnowledgePointProgress(
+        mockUserId,
+        'kp-unknown',
+      );
+
+      expect(result.progressRecords).toHaveLength(0);
+    });
+
+    it('should filter by userId', async () => {
+      const findManySpy = jest
+        .spyOn(prismaService.learningRecord, 'findMany')
+        .mockResolvedValue([] as never);
+
+      await service.getKnowledgePointProgress('other-user', 'kp-1');
+
+      expect(findManySpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            userId: 'other-user',
+            knowledgePointId: 'kp-1',
+          }),
+        }),
+      );
+    });
+
+    it('should filter by date range when provided', async () => {
+      const findManySpy = jest
+        .spyOn(prismaService.learningRecord, 'findMany')
+        .mockResolvedValue([] as never);
+      const startDate = '2024-01-01';
+      const endDate = '2024-01-31';
+
+      await service.getKnowledgePointProgress(
+        mockUserId,
+        'kp-1',
+        startDate,
+        endDate,
+      );
+
+      expect(findManySpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            userId: mockUserId,
+            knowledgePointId: 'kp-1',
+            startTime: {
+              gte: new Date(startDate),
+              lte: new Date(endDate),
+            },
+          }),
+        }),
+      );
+    });
+  });
 });
