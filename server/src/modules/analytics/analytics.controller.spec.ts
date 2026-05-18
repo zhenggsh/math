@@ -10,6 +10,7 @@ import type {
   MasteryDistributionDto,
   LearningTrendDto,
   WeakPointsDto,
+  KnowledgePointProgressDto,
   ClassOverviewDto,
   KnowledgeHeatDto,
   StudentComparisonDto,
@@ -26,6 +27,7 @@ describe('AnalyticsController', () => {
     getMasteryDistribution: jest.fn(),
     getLearningTrend: jest.fn(),
     getWeakPoints: jest.fn(),
+    getKnowledgePointProgress: jest.fn(),
     getClassOverview: jest.fn(),
     getKnowledgeHeat: jest.fn(),
     getStudentComparison: jest.fn(),
@@ -173,6 +175,67 @@ describe('AnalyticsController', () => {
       expect(mockAnalyticsService.getWeakPoints).toHaveBeenCalledWith(
         mockUserId,
         5,
+      );
+    });
+  });
+
+  describe('GET student/knowledge-point-progress', () => {
+    it('should return knowledge point progress with date range', async (): Promise<void> => {
+      const mockData: KnowledgePointProgressDto = {
+        knowledgePointId: 'kp-1',
+        code: '1.1.1',
+        title: '集合的含义',
+        level1: '集合与常用逻辑用语',
+        level2: '集合的概念',
+        level3: '集合的含义',
+        progressRecords: [
+          {
+            date: '2026-04-01',
+            masteryLevel: 'B',
+            durationMinutes: 30,
+            notes: '理解较好',
+          },
+        ],
+      };
+
+      mockAnalyticsService.getKnowledgePointProgress.mockResolvedValue(mockData);
+
+      const result = await controller.getKnowledgePointProgress(
+        mockUserId,
+        { knowledgePointId: 'kp-1', startDate: '2026-01-01', endDate: '2026-12-31' },
+      );
+
+      expect(result).toEqual({ success: true, data: mockData });
+      expect(mockAnalyticsService.getKnowledgePointProgress).toHaveBeenCalledWith(
+        mockUserId,
+        'kp-1',
+        '2026-01-01',
+        '2026-12-31',
+      );
+    });
+
+    it('should call service without date range when not provided', async (): Promise<void> => {
+      const mockData: KnowledgePointProgressDto = {
+        knowledgePointId: 'kp-1',
+        code: '1.1.1',
+        title: '集合的含义',
+        level1: '集合与常用逻辑用语',
+        progressRecords: [],
+      };
+
+      mockAnalyticsService.getKnowledgePointProgress.mockResolvedValue(mockData);
+
+      const result = await controller.getKnowledgePointProgress(
+        mockUserId,
+        { knowledgePointId: 'kp-1' },
+      );
+
+      expect(result).toEqual({ success: true, data: mockData });
+      expect(mockAnalyticsService.getKnowledgePointProgress).toHaveBeenCalledWith(
+        mockUserId,
+        'kp-1',
+        undefined,
+        undefined,
       );
     });
   });

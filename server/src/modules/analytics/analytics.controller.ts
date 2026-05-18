@@ -26,6 +26,7 @@ import { ExportDataDto } from './dto/export.dto';
 import {
   LearningTrendQueryDto,
   WeakPointsQueryDto,
+  KnowledgePointProgressQueryDto,
   ClassOverviewQueryDto,
   KnowledgeHeatQueryDto,
   StudentComparisonQueryDto,
@@ -35,6 +36,7 @@ import type {
   MasteryDistributionDto,
   LearningTrendDto,
   WeakPointsDto,
+  KnowledgePointProgressDto,
   ClassOverviewDto,
   KnowledgeHeatDto,
   StudentComparisonDto,
@@ -113,6 +115,23 @@ export class AnalyticsController {
     @Query(new ValidationPipe({ transform: true })) query: WeakPointsQueryDto,
   ): Promise<{ success: boolean; data: WeakPointsDto }> {
     const data = await this.service.getWeakPoints(userId, query.limit || 10);
+    return { success: true, data };
+  }
+
+  /**
+   * 知识点掌握度进度
+   */
+  @Get('student/knowledge-point-progress')
+  @Roles(Role.STUDENT)
+  @ApiOperation({ summary: '知识点掌握度进度' })
+  @ApiQuery({ name: 'startDate', required: false, description: '开始日期' })
+  @ApiQuery({ name: 'endDate', required: false, description: '结束日期' })
+  @ApiResponse({ status: 200, description: '获取成功' })
+  async getKnowledgePointProgress(
+    @CurrentUser('userId') userId: string,
+    @Query(new ValidationPipe({ transform: true })) query: KnowledgePointProgressQueryDto,
+  ): Promise<{ success: boolean; data: KnowledgePointProgressDto }> {
+    const data = await this.service.getKnowledgePointProgress(userId, query.knowledgePointId, query.startDate, query.endDate);
     return { success: true, data };
   }
 

@@ -1,5 +1,5 @@
-import { IsOptional, IsInt, IsString, Min, Max } from 'class-validator';
-import { ApiPropertyOptional } from '@nestjs/swagger';
+import { IsOptional, IsInt, IsString, IsNotEmpty, Min, Max } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
 /**
@@ -64,6 +64,26 @@ export class KnowledgeHeatQueryDto {
   @Min(1)
   @Max(100)
   limit?: number = 20;
+}
+
+/**
+ * 知识点掌握进度查询参数
+ */
+export class KnowledgePointProgressQueryDto {
+  @ApiProperty({ description: '知识点ID', example: 'kp-123' })
+  @IsString()
+  @IsNotEmpty()
+  knowledgePointId: string;
+
+  @ApiPropertyOptional({ description: '开始日期（可选）', example: '2026-01-01' })
+  @IsOptional()
+  @IsString()
+  startDate?: string;
+
+  @ApiPropertyOptional({ description: '结束日期（可选）', example: '2026-12-31' })
+  @IsOptional()
+  @IsString()
+  endDate?: string;
 }
 
 /**
