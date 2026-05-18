@@ -122,6 +122,29 @@ export interface LineChartData {
 }
 
 /**
+ * 知识点进度记录
+ */
+export interface ProgressRecord {
+  date: string;
+  masteryLevel: 'A' | 'B' | 'C' | 'D' | 'E';
+  durationMinutes: number;
+  notes?: string;
+}
+
+/**
+ * 知识点进度
+ */
+export interface KnowledgePointProgress {
+  knowledgePointId: string;
+  code: string;
+  title: string;
+  level1: string;
+  level2?: string;
+  level3?: string;
+  progressRecords: ProgressRecord[];
+}
+
+/**
  * ECharts 主题配置
  */
 export interface EChartsTheme {

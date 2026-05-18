@@ -8,6 +8,7 @@ import type {
   ClassOverview,
   KnowledgeHeat,
   StudentComparison,
+  KnowledgePointProgress,
 } from '../types/analytics.types';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
@@ -72,6 +73,28 @@ export async function getWeakPoints(limit = 10): Promise<WeakPoints> {
   const response = await api.get<ApiResponse<WeakPoints>>('/analytics/student/weak-points', {
     params: { limit },
   });
+  return response.data.data;
+}
+
+/**
+ * 获取知识点进度
+ * @param knowledgePointId 知识点ID
+ * @param startDate 开始日期（可选）
+ * @param endDate 结束日期（可选）
+ */
+export async function getKnowledgePointProgress(
+  knowledgePointId: string,
+  startDate?: string,
+  endDate?: string,
+): Promise<KnowledgePointProgress> {
+  const params: Record<string, string> = { knowledgePointId };
+  if (startDate) params.startDate = startDate;
+  if (endDate) params.endDate = endDate;
+
+  const response = await api.get<ApiResponse<KnowledgePointProgress>>(
+    '/analytics/student/knowledge-point-progress',
+    { params },
+  );
   return response.data.data;
 }
 
