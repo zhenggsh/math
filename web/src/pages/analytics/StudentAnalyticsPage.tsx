@@ -7,6 +7,7 @@ import {
   getMasteryDistribution,
   getLearningTrend,
   getWeakPoints,
+  getLearnedKnowledgePoints,
   getKnowledgePointProgress,
 } from '../../services/analytics.service'
 import type {
@@ -15,6 +16,7 @@ import type {
   LearningTrend,
   WeakPoints,
   KnowledgePointProgress,
+  LearnedKnowledgePoints,
 } from '../../types/analytics.types'
 import { ANT_DESIGN_COLORS } from '../../types/analytics.types'
 import styles from './StudentAnalyticsPage.module.css'
@@ -28,20 +30,16 @@ const StudentAnalyticsPage: React.FC = () => {
   const [masteryDistribution, setMasteryDistribution] = useState<MasteryDistribution | null>(null)
   const [learningTrend, setLearningTrend] = useState<LearningTrend | null>(null)
   const [weakPoints, setWeakPoints] = useState<WeakPoints | null>(null)
+  const [learnedPoints, setLearnedPoints] = useState<LearnedKnowledgePoints | null>(null)
   const [progressLoading, setProgressLoading] = useState(false)
   const [knowledgePointProgress, setKnowledgePointProgress] =
     useState<KnowledgePointProgress | null>(null)
   const [selectedKnowledgePointId, setSelectedKnowledgePointId] = useState<string>('')
 
   const learnedKnowledgePoints = useMemo(() => {
-    if (!weakPoints?.weakPoints.length) return []
-    return weakPoints.weakPoints.map(wp => ({
-      knowledgePointId: wp.knowledgePointId,
-      code: wp.code,
-      name: wp.name,
-      lastMasteryLevel: wp.lastMasteryLevel,
-    }))
-  }, [weakPoints])
+    if (!learnedPoints?.learnedKnowledgePoints.length) return []
+    return learnedPoints.learnedKnowledgePoints
+  }, [learnedPoints])
 
   useEffect(() => {
     if (learnedKnowledgePoints.length > 0 && !selectedKnowledgePointId) {
@@ -80,16 +78,18 @@ const StudentAnalyticsPage: React.FC = () => {
   const loadData = async () => {
     try {
       setLoading(true)
-      const [overviewData, masteryData, trendData, weakData] = await Promise.all([
+      const [overviewData, masteryData, trendData, weakData, learnedData] = await Promise.all([
         getStudentOverview(),
         getMasteryDistribution(),
         getLearningTrend(30),
         getWeakPoints(10),
+        getLearnedKnowledgePoints(),
       ])
       setOverview(overviewData)
       setMasteryDistribution(masteryData)
       setLearningTrend(trendData)
       setWeakPoints(weakData)
+      setLearnedPoints(learnedData)
     } catch (error) {
       // Error handling is done via UI state
       void error

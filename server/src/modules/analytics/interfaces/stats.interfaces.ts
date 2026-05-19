@@ -106,6 +106,24 @@ export interface StudentComparisonDto {
 }
 
 /**
+ * 已学知识点项
+ */
+export interface LearnedKnowledgePointDto {
+  knowledgePointId: string;
+  code: string;
+  name: string;
+  lastMasteryLevel: 'A' | 'B' | 'C' | 'D' | 'E';
+  lastLearningDate: string;
+}
+
+/**
+ * 已学知识点列表响应
+ */
+export interface LearnedKnowledgePointsDto {
+  learnedKnowledgePoints: LearnedKnowledgePointDto[];
+}
+
+/**
  * 知识点进度记录
  */
 export interface ProgressRecordDto {

@@ -1,5 +1,5 @@
-import axios from 'axios';
-import { getToken } from './auth.service';
+import axios from 'axios'
+import { getToken } from './auth.service'
 import type {
   StudentOverview,
   MasteryDistribution,
@@ -9,39 +9,40 @@ import type {
   KnowledgeHeat,
   StudentComparison,
   KnowledgePointProgress,
-} from '../types/analytics.types';
+  LearnedKnowledgePoints,
+} from '../types/analytics.types'
 
-const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
 
 // 创建带认证的 axios 实例
 const api = axios.create({
   baseURL: `${API_URL}`,
-});
+})
 
 // 请求拦截器 - 添加 token
-api.interceptors.request.use((config) => {
-  const token = getToken();
+api.interceptors.request.use(config => {
+  const token = getToken()
   if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+    config.headers.Authorization = `Bearer ${token}`
   }
-  return config;
-});
+  return config
+})
 
 /**
  * API 响应格式
  */
 interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-  message?: string;
+  success: boolean
+  data: T
+  message?: string
 }
 
 /**
  * 获取学生学习概览
  */
 export async function getStudentOverview(): Promise<StudentOverview> {
-  const response = await api.get<ApiResponse<StudentOverview>>('/analytics/student/overview');
-  return response.data.data;
+  const response = await api.get<ApiResponse<StudentOverview>>('/analytics/student/overview')
+  return response.data.data
 }
 
 /**
@@ -49,9 +50,9 @@ export async function getStudentOverview(): Promise<StudentOverview> {
  */
 export async function getMasteryDistribution(): Promise<MasteryDistribution> {
   const response = await api.get<ApiResponse<MasteryDistribution>>(
-    '/analytics/student/mastery-distribution',
-  );
-  return response.data.data;
+    '/analytics/student/mastery-distribution'
+  )
+  return response.data.data
 }
 
 /**
@@ -61,8 +62,8 @@ export async function getMasteryDistribution(): Promise<MasteryDistribution> {
 export async function getLearningTrend(days = 30): Promise<LearningTrend> {
   const response = await api.get<ApiResponse<LearningTrend>>('/analytics/student/learning-trend', {
     params: { days },
-  });
-  return response.data.data;
+  })
+  return response.data.data
 }
 
 /**
@@ -72,8 +73,18 @@ export async function getLearningTrend(days = 30): Promise<LearningTrend> {
 export async function getWeakPoints(limit = 10): Promise<WeakPoints> {
   const response = await api.get<ApiResponse<WeakPoints>>('/analytics/student/weak-points', {
     params: { limit },
-  });
-  return response.data.data;
+  })
+  return response.data.data
+}
+
+/**
+ * 获取已学知识点列表（所有掌握度级别）
+ */
+export async function getLearnedKnowledgePoints(): Promise<LearnedKnowledgePoints> {
+  const response = await api.get<ApiResponse<LearnedKnowledgePoints>>(
+    '/analytics/student/learned-knowledge-points',
+  )
+  return response.data.data
 }
 
 /**
@@ -85,17 +96,17 @@ export async function getWeakPoints(limit = 10): Promise<WeakPoints> {
 export async function getKnowledgePointProgress(
   knowledgePointId: string,
   startDate?: string,
-  endDate?: string,
+  endDate?: string
 ): Promise<KnowledgePointProgress> {
-  const params: Record<string, string> = { knowledgePointId };
-  if (startDate) params.startDate = startDate;
-  if (endDate) params.endDate = endDate;
+  const params: Record<string, string> = { knowledgePointId }
+  if (startDate) params.startDate = startDate
+  if (endDate) params.endDate = endDate
 
   const response = await api.get<ApiResponse<KnowledgePointProgress>>(
     '/analytics/student/knowledge-point-progress',
-    { params },
-  );
-  return response.data.data;
+    { params }
+  )
+  return response.data.data
 }
 
 /**
@@ -105,8 +116,8 @@ export async function getKnowledgePointProgress(
 export async function getClassOverview(classId?: string): Promise<ClassOverview> {
   const response = await api.get<ApiResponse<ClassOverview>>('/analytics/teacher/class-overview', {
     params: classId ? { classId } : undefined,
-  });
-  return response.data.data;
+  })
+  return response.data.data
 }
 
 /**
@@ -116,8 +127,8 @@ export async function getClassOverview(classId?: string): Promise<ClassOverview>
 export async function getKnowledgeHeat(limit = 20): Promise<KnowledgeHeat> {
   const response = await api.get<ApiResponse<KnowledgeHeat>>('/analytics/teacher/knowledge-heat', {
     params: { limit },
-  });
-  return response.data.data;
+  })
+  return response.data.data
 }
 
 /**
@@ -129,9 +140,9 @@ export async function getStudentComparison(studentIds: string[]): Promise<Studen
     '/analytics/teacher/student-comparison',
     {
       params: { studentIds: studentIds.join(',') },
-    },
-  );
-  return response.data.data;
+    }
+  )
+  return response.data.data
 }
 
 /**
@@ -139,9 +150,9 @@ export async function getStudentComparison(studentIds: string[]): Promise<Studen
  */
 export async function getStudents(): Promise<Array<{ id: string; name: string }>> {
   const response = await api.get<ApiResponse<Array<{ id: string; name: string }>>>(
-    '/analytics/teacher/students',
-  );
-  return response.data.data;
+    '/analytics/teacher/students'
+  )
+  return response.data.data
 }
 
 /**
@@ -149,13 +160,13 @@ export async function getStudents(): Promise<Array<{ id: string; name: string }>
  * @param params 导出参数
  */
 export async function exportData(params: {
-  classId?: string;
-  startDate?: string;
-  endDate?: string;
-  format: 'xlsx' | 'csv';
+  classId?: string
+  startDate?: string
+  endDate?: string
+  format: 'xlsx' | 'csv'
 }): Promise<Blob> {
   const response = await api.post('/analytics/teacher/export', params, {
     responseType: 'blob',
-  });
-  return response.data;
+  })
+  return response.data
 }

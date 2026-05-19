@@ -10,6 +10,7 @@ import type {
   KnowledgeHeatDto,
   StudentComparisonDto,
   KnowledgePointProgressDto,
+  LearnedKnowledgePointsDto,
 } from './interfaces/stats.interfaces';
 
 /**
@@ -186,6 +187,49 @@ export class AnalyticsService {
     );
 
     return { weakPoints };
+  }
+
+  /**
+   * 获取已学知识点列表（包含所有掌握度级别）
+   */
+  async getLearnedKnowledgePoints(userId: string): Promise<LearnedKnowledgePointsDto> {
+    this.logger.log(`Getting learned knowledge points for user: ${userId}`);
+
+    // 获取用户每个知识点的最新学习记录
+    const latestRecords = await this.prisma.learningRecord.findMany({
+      where: { userId },
+      distinct: ['knowledgePointId'],
+      orderBy: { createdAt: 'desc' },
+      include: {
+        knowledgePoint: {
+          select: {
+            id: true,
+            code: true,
+            level1: true,
+            level2: true,
+            level3: true,
+          },
+        },
+      },
+    });
+
+    const learnedPoints = latestRecords.map((record) => ({
+      knowledgePointId: record.knowledgePoint.id,
+      code: record.knowledgePoint.code,
+      name: [record.knowledgePoint.level1, record.knowledgePoint.level2, record.knowledgePoint.level3]
+        .filter(Boolean)
+        .join(' > '),
+      lastMasteryLevel: record.masteryLevel as 'A' | 'B' | 'C' | 'D' | 'E',
+      lastLearningDate: record.createdAt.toISOString(),
+    }));
+
+    // 按掌握度从低到高排序 (E > D > C > B > A)
+    const levelOrder = { E: 0, D: 1, C: 2, B: 3, A: 4 };
+    learnedPoints.sort(
+      (a, b) => levelOrder[a.lastMasteryLevel] - levelOrder[b.lastMasteryLevel],
+    );
+
+    return { learnedKnowledgePoints: learnedPoints };
   }
 
   /**

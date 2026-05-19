@@ -2,157 +2,175 @@
  * 学生学习概览
  */
 export interface StudentOverview {
-  totalLearningCount: number;
-  totalDurationMinutes: number;
-  uniqueKnowledgePoints: number;
+  totalLearningCount: number
+  totalDurationMinutes: number
+  uniqueKnowledgePoints: number
 }
 
 /**
  * 掌握程度分布项
  */
 export interface MasteryDistributionItem {
-  level: 'A' | 'B' | 'C' | 'D' | 'E';
-  count: number;
-  percentage: number;
+  level: 'A' | 'B' | 'C' | 'D' | 'E'
+  count: number
+  percentage: number
 }
 
 /**
  * 掌握程度分布
  */
 export interface MasteryDistribution {
-  distribution: MasteryDistributionItem[];
+  distribution: MasteryDistributionItem[]
 }
 
 /**
  * 学习趋势项
  */
 export interface LearningTrendItem {
-  date: string;
-  durationMinutes: number;
-  count: number;
+  date: string
+  durationMinutes: number
+  count: number
 }
 
 /**
  * 学习趋势
  */
 export interface LearningTrend {
-  trend: LearningTrendItem[];
+  trend: LearningTrendItem[]
 }
 
 /**
  * 薄弱知识点
  */
 export interface WeakPoint {
-  knowledgePointId: string;
-  code: string;
-  name: string;
-  importanceLevel: 'A' | 'B' | 'C';
-  lastMasteryLevel: 'D' | 'E';
-  lastLearningDate: string;
+  knowledgePointId: string
+  code: string
+  name: string
+  importanceLevel: 'A' | 'B' | 'C'
+  lastMasteryLevel: 'D' | 'E'
+  lastLearningDate: string
 }
 
 /**
  * 薄弱知识点列表
  */
 export interface WeakPoints {
-  weakPoints: WeakPoint[];
+  weakPoints: WeakPoint[]
 }
 
 /**
  * 班级概览
  */
 export interface ClassOverview {
-  studentCount: number;
-  activeStudentCount: number;
-  avgLearningCount: number;
-  avgDurationMinutes: number;
+  studentCount: number
+  activeStudentCount: number
+  avgLearningCount: number
+  avgDurationMinutes: number
 }
 
 /**
  * 知识点热度项
  */
 export interface KnowledgeHeatItem {
-  knowledgePointId: string;
-  code: string;
-  name: string;
-  learnCount: number;
-  uniqueStudentCount: number;
+  knowledgePointId: string
+  code: string
+  name: string
+  learnCount: number
+  uniqueStudentCount: number
 }
 
 /**
  * 知识点热度
  */
 export interface KnowledgeHeat {
-  heatList: KnowledgeHeatItem[];
+  heatList: KnowledgeHeatItem[]
 }
 
 /**
  * 学生对比项
  */
 export interface StudentComparisonItem {
-  id: string;
-  name: string;
-  totalDuration: number;
-  masteryStats: Record<string, number>;
+  id: string
+  name: string
+  totalDuration: number
+  masteryStats: Record<string, number>
 }
 
 /**
  * 学生对比
  */
 export interface StudentComparison {
-  students: StudentComparisonItem[];
+  students: StudentComparisonItem[]
 }
 
 /**
  * 图表数据类型
  */
 export interface PieChartData {
-  name: string;
-  value: number;
+  name: string
+  value: number
 }
 
 export interface BarChartData {
-  name: string;
-  value: number;
+  name: string
+  value: number
 }
 
 export interface LineChartData {
-  date: string;
-  value: number;
+  date: string
+  value: number
 }
 
 /**
  * 知识点进度记录
  */
 export interface ProgressRecord {
-  date: string;
-  masteryLevel: 'A' | 'B' | 'C' | 'D' | 'E';
-  durationMinutes: number;
-  notes?: string;
+  date: string
+  masteryLevel: 'A' | 'B' | 'C' | 'D' | 'E'
+  durationMinutes: number
+  notes?: string
 }
 
 /**
  * 知识点进度
  */
 export interface KnowledgePointProgress {
-  knowledgePointId: string;
-  code: string;
-  title: string;
-  level1: string;
-  level2?: string;
-  level3?: string;
-  progressRecords: ProgressRecord[];
+  knowledgePointId: string
+  code: string
+  title: string
+  level1: string
+  level2?: string
+  level3?: string
+  progressRecords: ProgressRecord[]
+}
+
+/**
+ * 已学知识点项
+ */
+export interface LearnedKnowledgePoint {
+  knowledgePointId: string
+  code: string
+  name: string
+  lastMasteryLevel: 'A' | 'B' | 'C' | 'D' | 'E'
+  lastLearningDate: string
+}
+
+/**
+ * 已学知识点列表
+ */
+export interface LearnedKnowledgePoints {
+  learnedKnowledgePoints: LearnedKnowledgePoint[]
 }
 
 /**
  * ECharts 主题配置
  */
 export interface EChartsTheme {
-  colors: string[];
-  backgroundColor: string;
+  colors: string[]
+  backgroundColor: string
   textStyle: {
-    color: string;
-  };
+    color: string
+  }
 }
 
 /**
@@ -170,4 +188,4 @@ export const ANT_DESIGN_COLORS = {
     D: '#FA8C16',
     E: '#F5222D',
   },
-};
+}

@@ -40,6 +40,7 @@ import type {
   ClassOverviewDto,
   KnowledgeHeatDto,
   StudentComparisonDto,
+  LearnedKnowledgePointsDto,
 } from './interfaces/stats.interfaces';
 import type { Response } from 'express';
 
@@ -115,6 +116,20 @@ export class AnalyticsController {
     @Query(new ValidationPipe({ transform: true })) query: WeakPointsQueryDto,
   ): Promise<{ success: boolean; data: WeakPointsDto }> {
     const data = await this.service.getWeakPoints(userId, query.limit || 10);
+    return { success: true, data };
+  }
+
+  /**
+   * 已学知识点列表
+   */
+  @Get('student/learned-knowledge-points')
+  @Roles(Role.STUDENT)
+  @ApiOperation({ summary: '已学知识点列表' })
+  @ApiResponse({ status: 200, description: '获取成功' })
+  async getLearnedKnowledgePoints(
+    @CurrentUser('userId') userId: string,
+  ): Promise<{ success: boolean; data: LearnedKnowledgePointsDto }> {
+    const data = await this.service.getLearnedKnowledgePoints(userId);
     return { success: true, data };
   }
 

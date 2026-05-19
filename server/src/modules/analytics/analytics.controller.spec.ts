@@ -27,6 +27,7 @@ describe('AnalyticsController', () => {
     getMasteryDistribution: jest.fn(),
     getLearningTrend: jest.fn(),
     getWeakPoints: jest.fn(),
+    getLearnedKnowledgePoints: jest.fn(),
     getKnowledgePointProgress: jest.fn(),
     getClassOverview: jest.fn(),
     getKnowledgeHeat: jest.fn(),
@@ -176,6 +177,29 @@ describe('AnalyticsController', () => {
         mockUserId,
         5,
       );
+    });
+  });
+
+  describe('GET student/learned-knowledge-points', () => {
+    it('should return learned knowledge points', async (): Promise<void> => {
+      const mockData = {
+        learnedKnowledgePoints: [
+          {
+            knowledgePointId: 'kp-1',
+            code: '1.1.1',
+            name: '集合 > 集合的含义',
+            lastMasteryLevel: 'C',
+            lastLearningDate: '2026-04-01',
+          },
+        ],
+      };
+
+      mockAnalyticsService.getLearnedKnowledgePoints.mockResolvedValue(mockData);
+
+      const result = await controller.getLearnedKnowledgePoints(mockUserId);
+
+      expect(result).toEqual({ success: true, data: mockData });
+      expect(mockAnalyticsService.getLearnedKnowledgePoints).toHaveBeenCalledWith(mockUserId);
     });
   });
 

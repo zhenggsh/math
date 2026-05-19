@@ -245,6 +245,71 @@ describe('AnalyticsService', () => {
     });
   });
 
+  describe('getLearnedKnowledgePoints', () => {
+    it('should return all learned knowledge points sorted by mastery level', async () => {
+      jest.spyOn(prismaService.learningRecord, 'findMany').mockResolvedValue([
+        {
+          knowledgePoint: {
+            id: 'kp-a',
+            code: '1.1.1',
+            level1: '集合',
+            level2: '集合的含义',
+            level3: null,
+          },
+          masteryLevel: 'A',
+          createdAt: new Date('2026-05-15'),
+        },
+        {
+          knowledgePoint: {
+            id: 'kp-c',
+            code: '1.2.1',
+            level1: '逻辑',
+            level2: '命题',
+            level3: null,
+          },
+          masteryLevel: 'C',
+          createdAt: new Date('2026-05-12'),
+        },
+        {
+          knowledgePoint: {
+            id: 'kp-e',
+            code: '1.3.1',
+            level1: '函数',
+            level2: '概念',
+            level3: null,
+          },
+          masteryLevel: 'E',
+          createdAt: new Date('2026-05-10'),
+        },
+      ] as never);
+
+      const result = await service.getLearnedKnowledgePoints(mockUserId);
+
+      expect(result.learnedKnowledgePoints).toHaveLength(3);
+      // Should be sorted E -> C -> A
+      expect(result.learnedKnowledgePoints[0].lastMasteryLevel).toBe('E');
+      expect(result.learnedKnowledgePoints[1].lastMasteryLevel).toBe('C');
+      expect(result.learnedKnowledgePoints[2].lastMasteryLevel).toBe('A');
+    });
+
+    it('should return empty array when no learning records', async () => {
+      jest.spyOn(prismaService.learningRecord, 'findMany').mockResolvedValue([] as never);
+
+      const result = await service.getLearnedKnowledgePoints(mockUserId);
+
+      expect(result.learnedKnowledgePoints).toHaveLength(0);
+    });
+
+    it('should filter by userId', async () => {
+      jest.spyOn(prismaService.learningRecord, 'findMany').mockResolvedValue([] as never);
+
+      await service.getLearnedKnowledgePoints('user-specific');
+
+      const findManyCall = jest.spyOn(prismaService.learningRecord, 'findMany').mock.calls[0];
+      expect(findManyCall[0].where.userId).toBe('user-specific');
+    });
+  });
+
   describe('getKnowledgePointProgress', () => {
     it('should return progress records sorted by date', async () => {
       const mockRecords = [
