@@ -46,6 +46,7 @@ describe('SmartLearningController', () => {
             knowledgePoint: { id: 'kp-1', code: '1.1.1' },
             learningRecord: { id: 'lr-1', masteryLevel: 'E' },
             priority: 100,
+            recommendationReason: '掌握度较低，需要加强',
           },
         ],
       };
@@ -74,7 +75,15 @@ describe('SmartLearningController', () => {
       const mockResult = {
         level: 'A',
         total: 5,
-        items: [{ id: 'kp-1', code: '1.1.1', isMastered: false }],
+        items: [
+          {
+            id: 'kp-1',
+            code: '1.1.1',
+            isMastered: false,
+            learningRecord: { id: 'lr-1', masteryLevel: 'C' },
+            recommendationReason: '重要知识点，优先掌握',
+          },
+        ],
       };
       jest
         .spyOn(service, 'getByImportance')

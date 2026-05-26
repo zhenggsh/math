@@ -19,6 +19,7 @@ import {
   ByImportanceQueryDto,
   RandomQueryDto,
 } from './dto/smart-learning.dto';
+import { WeakPointsResponse, ByImportanceResponse } from './dto/smart-learning-response.dto';
 
 @ApiTags('smart-learning')
 @Controller('smart-learning')
@@ -31,7 +32,8 @@ export class SmartLearningController {
   @ApiOperation({ summary: 'Get weak points for current user' })
   @ApiResponse({
     status: 200,
-    description: 'Returns weak points list with priority',
+    description: 'Returns weak points list with priority and recommendation reason',
+    type: WeakPointsResponse,
   })
   async getWeakPoints(
     @CurrentUser('sub') userId: string,
@@ -48,7 +50,8 @@ export class SmartLearningController {
   @ApiOperation({ summary: 'Get knowledge points by importance level' })
   @ApiResponse({
     status: 200,
-    description: 'Returns knowledge points grouped by importance',
+    description: 'Returns knowledge points grouped by importance with recommendation reason',
+    type: ByImportanceResponse,
   })
   async getByImportance(
     @CurrentUser('sub') userId: string,
