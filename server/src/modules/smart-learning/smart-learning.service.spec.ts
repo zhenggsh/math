@@ -192,7 +192,10 @@ describe('SmartLearningService', () => {
       const longAgoRecords = [
         {
           ...mockLearningRecords[0],
-          knowledgePoint: { ...mockKnowledgePoints[0], importanceLevel: ImportanceLevel.A },
+          knowledgePoint: {
+            ...mockKnowledgePoints[0],
+            importanceLevel: ImportanceLevel.A,
+          },
           startTime: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000),
           masteryLevel: MasteryLevel.C,
         },
@@ -256,7 +259,7 @@ describe('SmartLearningService', () => {
         .mockResolvedValue(mockKnowledgePoints as any);
       jest.spyOn(prismaService.knowledgePoint, 'count').mockResolvedValue(3);
 
-      const result = await service.getByImportance(mockUserId, {
+      await service.getByImportance(mockUserId, {
         level: ImportanceLevel.A,
         excludeMastered: true,
       });
@@ -360,7 +363,9 @@ describe('SmartLearningService', () => {
 
   describe('zero-record fallback', () => {
     it('should return empty for weak points when no records', async () => {
-      jest.spyOn(prismaService.learningRecord, 'findMany').mockResolvedValue([]);
+      jest
+        .spyOn(prismaService.learningRecord, 'findMany')
+        .mockResolvedValue([]);
 
       const result = await service.getWeakPoints(mockUserId, {});
 
@@ -392,13 +397,19 @@ describe('SmartLearningService', () => {
           ...mockLearningRecords[0],
           masteryLevel: MasteryLevel.C,
           startTime: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000),
-          knowledgePoint: { ...mockKnowledgePoints[0], importanceLevel: ImportanceLevel.B },
+          knowledgePoint: {
+            ...mockKnowledgePoints[0],
+            importanceLevel: ImportanceLevel.B,
+          },
         },
         {
           ...mockLearningRecords[1],
           masteryLevel: MasteryLevel.C,
           startTime: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
-          knowledgePoint: { ...mockKnowledgePoints[1], importanceLevel: ImportanceLevel.A },
+          knowledgePoint: {
+            ...mockKnowledgePoints[1],
+            importanceLevel: ImportanceLevel.A,
+          },
         },
       ];
 
@@ -408,7 +419,9 @@ describe('SmartLearningService', () => {
 
       const result = await service.getWeakPoints(mockUserId, {});
 
-      expect(result.items[0].knowledgePoint.importanceLevel).toBe(ImportanceLevel.A);
+      expect(result.items[0].knowledgePoint.importanceLevel).toBe(
+        ImportanceLevel.A,
+      );
     });
   });
 });
