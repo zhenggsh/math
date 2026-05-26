@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ConfigService } from '@nestjs/config';
 import { SmartLearningService } from './smart-learning.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MasteryLevel, ImportanceLevel } from '@prisma/client';
@@ -93,6 +94,21 @@ describe('SmartLearningService', () => {
             $queryRaw: jest.fn(),
           },
         },
+        {
+          provide: ConfigService,
+          useValue: {
+            get: jest.fn().mockReturnValue({
+              decayPerDay: 2,
+              decayMax: 30,
+              recentPenalty: 15,
+              frequencyWindowDays: 7,
+              importanceWeightA: 1.5,
+              importanceWeightB: 1.2,
+              importanceWeightC: 1.0,
+              velocityMultiplier: 10,
+            }),
+          },
+        },
       ],
     }).compile();
 
@@ -105,27 +121,23 @@ describe('SmartLearningService', () => {
   });
 
   describe('getWeakPoints', () => {
-    it('should return weak points sorted by mastery level', async () => {
+    it('should return weak points with recommendationReason', async () => {
       jest
         .spyOn(prismaService.learningRecord, 'findMany')
         .mockResolvedValue(mockLearningRecords as any);
-      jest.spyOn(prismaService.learningRecord, 'count').mockResolvedValue(3);
 
       const result = await service.getWeakPoints(mockUserId, {});
 
       expect(result.items).toHaveLength(3);
       expect(result.total).toBe(3);
-      // E level should have highest priority
-      expect(result.items[0].learningRecord.masteryLevel).toBe(MasteryLevel.E);
-      expect(result.items[1].learningRecord.masteryLevel).toBe(MasteryLevel.D);
-      expect(result.items[2].learningRecord.masteryLevel).toBe(MasteryLevel.C);
+      expect(result.items[0]).toHaveProperty('recommendationReason');
+      expect(typeof result.items[0].recommendationReason).toBe('string');
     });
 
     it('should filter by textbookId when provided', async () => {
       const findManySpy = jest
         .spyOn(prismaService.learningRecord, 'findMany')
         .mockResolvedValue([mockLearningRecords[0]] as any);
-      jest.spyOn(prismaService.learningRecord, 'count').mockResolvedValue(1);
 
       await service.getWeakPoints(mockUserId, { textbookId: mockTextbookId });
 
@@ -146,7 +158,6 @@ describe('SmartLearningService', () => {
       jest
         .spyOn(prismaService.learningRecord, 'findMany')
         .mockResolvedValue(mockLearningRecords.slice(0, 2) as any);
-      jest.spyOn(prismaService.learningRecord, 'count').mockResolvedValue(2);
 
       const result = await service.getWeakPoints(mockUserId, { limit: 2 });
 
@@ -157,12 +168,49 @@ describe('SmartLearningService', () => {
       jest
         .spyOn(prismaService.learningRecord, 'findMany')
         .mockResolvedValue([]);
-      jest.spyOn(prismaService.learningRecord, 'count').mockResolvedValue(0);
 
       const result = await service.getWeakPoints(mockUserId, {});
 
       expect(result.items).toHaveLength(0);
       expect(result.total).toBe(0);
+    });
+
+    it('should include recommendationReason for each weak point', async () => {
+      jest
+        .spyOn(prismaService.learningRecord, 'findMany')
+        .mockResolvedValue(mockLearningRecords as any);
+
+      const result = await service.getWeakPoints(mockUserId, {});
+
+      expect(result.items[0]).toHaveProperty('recommendationReason');
+      expect(typeof result.items[0].recommendationReason).toBe('string');
+      expect(result.items[0].recommendationReason.length).toBeGreaterThan(0);
+    });
+
+    it('should sort by scoring model with tie-breakers', async () => {
+      // C-level with long decay + high importance should outrank E-level studied yesterday
+      const longAgoRecords = [
+        {
+          ...mockLearningRecords[0],
+          knowledgePoint: { ...mockKnowledgePoints[0], importanceLevel: ImportanceLevel.A },
+          startTime: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000),
+          masteryLevel: MasteryLevel.C,
+        },
+        {
+          ...mockLearningRecords[1],
+          startTime: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+          masteryLevel: MasteryLevel.E,
+        },
+      ];
+
+      jest
+        .spyOn(prismaService.learningRecord, 'findMany')
+        .mockResolvedValue(longAgoRecords as any);
+
+      const result = await service.getWeakPoints(mockUserId, {});
+
+      // The C-level with long decay + high importance should outrank E-level studied yesterday
+      expect(result.items[0].learningRecord.masteryLevel).toBe(MasteryLevel.C);
     });
   });
 
