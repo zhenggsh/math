@@ -215,7 +215,7 @@ describe('SmartLearningService', () => {
   });
 
   describe('getByImportance', () => {
-    it('should return points by importance level A', async () => {
+    it('should return points by importance level A with learningRecord and recommendationReason', async () => {
       jest
         .spyOn(prismaService.learningRecord, 'findMany')
         .mockResolvedValue([]);
@@ -223,9 +223,6 @@ describe('SmartLearningService', () => {
         .spyOn(prismaService.knowledgePoint, 'findMany')
         .mockResolvedValue([mockKnowledgePoints[0]] as any);
       jest.spyOn(prismaService.knowledgePoint, 'count').mockResolvedValue(1);
-      jest
-        .spyOn(prismaService.learningRecord, 'findFirst')
-        .mockResolvedValue(null);
 
       const result = await service.getByImportance(mockUserId, {
         level: ImportanceLevel.A,
@@ -234,18 +231,32 @@ describe('SmartLearningService', () => {
       expect(result.level).toBe(ImportanceLevel.A);
       expect(result.items).toHaveLength(1);
       expect(result.items[0].id).toBe('kp-1');
+      expect(result.items[0]).toHaveProperty('learningRecord');
+      expect(result.items[0]).toHaveProperty('recommendationReason');
+      expect(typeof result.items[0].recommendationReason).toBe('string');
     });
 
     it('should exclude mastered points when excludeMastered is true', async () => {
+      // Mock a mastered record for kp-1
       jest
         .spyOn(prismaService.learningRecord, 'findMany')
-        .mockResolvedValue([{ knowledgePointId: 'kp-1' }] as any);
+        .mockResolvedValueOnce([{ knowledgePointId: 'kp-1' }] as any) // mastered check
+        .mockResolvedValueOnce([
+          {
+            id: 'lr-1',
+            knowledgePointId: 'kp-1',
+            masteryLevel: MasteryLevel.A,
+            startTime: new Date(),
+            durationMinutes: 0,
+            notes: null,
+          },
+        ] as any); // batch records
       jest
         .spyOn(prismaService.knowledgePoint, 'findMany')
-        .mockResolvedValue([mockKnowledgePoints[1]] as any);
-      jest.spyOn(prismaService.knowledgePoint, 'count').mockResolvedValue(1);
+        .mockResolvedValue(mockKnowledgePoints as any);
+      jest.spyOn(prismaService.knowledgePoint, 'count').mockResolvedValue(3);
 
-      await service.getByImportance(mockUserId, {
+      const result = await service.getByImportance(mockUserId, {
         level: ImportanceLevel.A,
         excludeMastered: true,
       });
@@ -268,13 +279,10 @@ describe('SmartLearningService', () => {
         .spyOn(prismaService.knowledgePoint, 'findMany')
         .mockResolvedValue(mockKnowledgePoints as any);
       jest.spyOn(prismaService.knowledgePoint, 'count').mockResolvedValue(3);
-      jest
-        .spyOn(prismaService.learningRecord, 'findFirst')
-        .mockResolvedValue(null);
 
       const result = await service.getByImportance(mockUserId, {});
 
-      expect(result.level).toBe(ImportanceLevel.A); // Default to A
+      expect(result.level).toBe(ImportanceLevel.A);
     });
   });
 

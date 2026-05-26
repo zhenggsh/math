@@ -43,6 +43,14 @@ export interface ByImportanceItem {
   importanceLevel: ImportanceLevel;
   definition: string | null;
   isMastered: boolean;
+  learningRecord: {
+    id: string;
+    masteryLevel: MasteryLevel;
+    durationMinutes: number;
+    startTime: Date;
+    notes: string | null;
+  } | null;
+  recommendationReason: string;
 }
 
 export interface RandomItem {
@@ -85,18 +93,24 @@ export class SmartLearningService {
     candidateIds: string[],
   ): Promise<
     Array<{
+      id: string;
       knowledgePointId: string;
       masteryLevel: MasteryLevel;
       startTime: Date;
+      durationMinutes: number;
+      notes: string | null;
     }>
   > {
     if (candidateIds.length === 0) return [];
     return this.prisma.learningRecord.findMany({
       where: { userId, knowledgePointId: { in: candidateIds } },
       select: {
+        id: true,
         knowledgePointId: true,
         masteryLevel: true,
         startTime: true,
+        durationMinutes: true,
+        notes: true,
       },
       orderBy: { startTime: 'desc' },
       take: Math.min(candidateIds.length * 2, 1000),
@@ -239,30 +253,20 @@ export class SmartLearningService {
     items: ByImportanceItem[];
   }> {
     const { level, excludeMastered = true, limit = 50 } = query;
-
-    this.logger.log(
-      `Getting points by importance for user: ${userId}, level: ${level}`,
-    );
-
-    // 如果指定了级别，只查询该级别；否则默认查询 A 级
+    const config = this.configService.get<RecommendationConfig>('recommendation')!;
     const targetLevel = level || ImportanceLevel.A;
 
-    // 获取用户已掌握的知识点ID
+    // Get mastered IDs if excluding
     let masteredIds: string[] = [];
     if (excludeMastered) {
       const masteredRecords = await this.prisma.learningRecord.findMany({
-        where: {
-          userId,
-          masteryLevel: MasteryLevel.A,
-        },
-        select: {
-          knowledgePointId: true,
-        },
+        where: { userId, masteryLevel: MasteryLevel.A },
+        select: { knowledgePointId: true },
       });
       masteredIds = masteredRecords.map((r) => r.knowledgePointId);
     }
 
-    // 查询知识点
+    // Query knowledge points
     const knowledgePoints = await this.prisma.knowledgePoint.findMany({
       where: {
         importanceLevel: targetLevel,
@@ -279,39 +283,86 @@ export class SmartLearningService {
         importanceLevel: true,
         definition: true,
       },
-      orderBy: {
-        code: 'asc',
-      },
-      take: limit,
+      orderBy: { code: 'asc' },
     });
 
-    // 检查每个知识点是否已掌握
-    const items: ByImportanceItem[] = await Promise.all(
-      knowledgePoints.map(async (point) => {
-        const record = await this.prisma.learningRecord.findFirst({
-          where: {
-            userId,
-            knowledgePointId: point.id,
-            masteryLevel: MasteryLevel.A,
-          },
-        });
-        return {
-          ...point,
-          isMastered: !!record,
-        };
-      }),
-    );
+    // Batch fetch recent records for all candidates
+    const candidateIds = knowledgePoints.map((kp) => kp.id);
+    const recentRecords = await this.getRecentRecordsForCandidates(userId, candidateIds);
 
-    const total = await this.prisma.knowledgePoint.count({
-      where: {
-        importanceLevel: targetLevel,
-        ...(excludeMastered && masteredIds.length > 0
-          ? { id: { notIn: masteredIds } }
-          : {}),
-      },
+    // Group by knowledgePointId
+    const recordsByKp = new Map<string, typeof recentRecords>();
+    for (const r of recentRecords) {
+      const list = recordsByKp.get(r.knowledgePointId) ?? [];
+      list.push(r);
+      recordsByKp.set(r.knowledgePointId, list);
+    }
+
+    // Score and build items
+    const scoredItems: Array<{
+      item: ByImportanceItem;
+      finalScore: number;
+      startTime: Date;
+      code: string;
+    }> = [];
+
+    for (const kp of knowledgePoints) {
+      const kpRecords = recordsByKp.get(kp.id) ?? [];
+      const latestRecord = kpRecords[0] ?? null;
+      const isMastered = latestRecord?.masteryLevel === MasteryLevel.A;
+
+      // Skip mastered if excludeMastered
+      if (excludeMastered && isMastered) continue;
+
+      const components = {
+        baseScore: latestRecord ? calculateBaseScore(latestRecord.masteryLevel) : 10,
+        decayBonus: latestRecord ? calculateDecayBonus(latestRecord.startTime, config) : 0,
+        recentStudyPenalty: calculateRecentStudyPenalty(kpRecords, config),
+        importanceWeight: calculateImportanceWeight(kp.importanceLevel, config),
+        improvementVelocity: calculateImprovementVelocity(kpRecords, config),
+      };
+
+      const finalScore = calculateFinalScore(components);
+      const reason = generateRecommendationReason(components);
+
+      scoredItems.push({
+        item: {
+          ...kp,
+          isMastered,
+          learningRecord: latestRecord
+            ? {
+                id: latestRecord.id,
+                masteryLevel: latestRecord.masteryLevel,
+                durationMinutes: latestRecord.durationMinutes,
+                startTime: latestRecord.startTime,
+                notes: latestRecord.notes,
+              }
+            : null,
+          recommendationReason: reason,
+        },
+        finalScore,
+        startTime: latestRecord?.startTime ?? new Date(0),
+        code: kp.code,
+      });
+    }
+
+    // Sort: unmastered first (by score), then mastered
+    scoredItems.sort((a, b) => {
+      const aMastered = a.item.isMastered ? 1 : 0;
+      const bMastered = b.item.isMastered ? 1 : 0;
+      if (aMastered !== bMastered) return aMastered - bMastered;
+      if (b.finalScore !== a.finalScore) return b.finalScore - a.finalScore;
+      return a.startTime.getTime() - b.startTime.getTime();
     });
 
-    return { level: targetLevel, total, items };
+    const total = scoredItems.length;
+    const limitedItems = scoredItems.slice(0, limit);
+
+    return {
+      level: targetLevel,
+      total,
+      items: limitedItems.map((s) => s.item),
+    };
   }
 
   /**
