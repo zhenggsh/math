@@ -326,4 +326,89 @@ describe('SmartLearningService', () => {
       expect(result.importanceStats).toEqual({ A: 10, B: 20, C: 30 });
     });
   });
+
+  describe('pre-filtering', () => {
+    it('should limit candidates when over 500', async () => {
+      const manyRecords = Array.from({ length: 600 }, (_, i) => ({
+        id: `lr-${i}`,
+        userId: mockUserId,
+        knowledgePointId: `kp-${i}`,
+        masteryLevel: MasteryLevel.C,
+        durationMinutes: 10,
+        startTime: new Date(Date.now() - i * 24 * 60 * 60 * 1000),
+        notes: null,
+        knowledgePoint: {
+          id: `kp-${i}`,
+          code: `${i}.1.1`,
+          level1: 'Chapter',
+          level2: 'Section',
+          level3: 'Point',
+          importanceLevel: ImportanceLevel.C,
+          definition: 'Definition',
+        },
+      }));
+
+      jest
+        .spyOn(prismaService.learningRecord, 'findMany')
+        .mockResolvedValue(manyRecords as any);
+
+      const result = await service.getWeakPoints(mockUserId, { limit: 20 });
+
+      expect(result.items.length).toBeLessThanOrEqual(20);
+    });
+  });
+
+  describe('zero-record fallback', () => {
+    it('should return empty for weak points when no records', async () => {
+      jest.spyOn(prismaService.learningRecord, 'findMany').mockResolvedValue([]);
+
+      const result = await service.getWeakPoints(mockUserId, {});
+
+      expect(result.items).toHaveLength(0);
+      expect(result.total).toBe(0);
+    });
+
+    it('should return all points for importance when no records', async () => {
+      jest
+        .spyOn(prismaService.learningRecord, 'findMany')
+        .mockResolvedValue([]);
+      jest
+        .spyOn(prismaService.knowledgePoint, 'findMany')
+        .mockResolvedValue(mockKnowledgePoints as any);
+      jest.spyOn(prismaService.knowledgePoint, 'count').mockResolvedValue(3);
+
+      const result = await service.getByImportance(mockUserId, {
+        level: ImportanceLevel.A,
+      });
+
+      expect(result.items.length).toBe(3);
+    });
+  });
+
+  describe('tie-breaking', () => {
+    it('should sort by importance level when scores tie', async () => {
+      const tiedRecords = [
+        {
+          ...mockLearningRecords[0],
+          masteryLevel: MasteryLevel.C,
+          startTime: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000),
+          knowledgePoint: { ...mockKnowledgePoints[0], importanceLevel: ImportanceLevel.B },
+        },
+        {
+          ...mockLearningRecords[1],
+          masteryLevel: MasteryLevel.C,
+          startTime: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
+          knowledgePoint: { ...mockKnowledgePoints[1], importanceLevel: ImportanceLevel.A },
+        },
+      ];
+
+      jest
+        .spyOn(prismaService.learningRecord, 'findMany')
+        .mockResolvedValue(tiedRecords as any);
+
+      const result = await service.getWeakPoints(mockUserId, {});
+
+      expect(result.items[0].knowledgePoint.importanceLevel).toBe(ImportanceLevel.A);
+    });
+  });
 });
