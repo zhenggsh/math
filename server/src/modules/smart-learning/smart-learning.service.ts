@@ -152,8 +152,16 @@ export class SmartLearningService {
     });
 
     // Pre-filtering: if >500 candidates, take oldest 200 first
-    if (records.length > 500) {
-      records = records.slice(0, 200);
+    const uniqueRecords = new Map<string, typeof records[0]>();
+    for (const r of records) {
+      if (!uniqueRecords.has(r.knowledgePointId)) {
+        uniqueRecords.set(r.knowledgePointId, r);
+      }
+    }
+    if (uniqueRecords.size > 500) {
+      records = Array.from(uniqueRecords.values()).slice(0, 200);
+    } else {
+      records = Array.from(uniqueRecords.values());
     }
 
     // Step 2: Get candidate IDs and batch fetch recent records
@@ -197,17 +205,17 @@ export class SmartLearningService {
       };
 
       const finalScore = calculateFinalScore(components);
-      const reason = generateRecommendationReason(components);
+      const reason = generateRecommendationReason(components, config);
 
       scoredItems.push({
         item: {
           knowledgePoint: record.knowledgePoint,
           learningRecord: {
-            id: record.id,
+            id: latestRecord.id,
             masteryLevel: latestRecord.masteryLevel,
-            durationMinutes: record.durationMinutes,
+            durationMinutes: latestRecord.durationMinutes,
             startTime: latestRecord.startTime,
-            notes: record.notes,
+            notes: latestRecord.notes,
           },
           priority: Math.round(finalScore),
           recommendationReason: reason,
@@ -323,7 +331,7 @@ export class SmartLearningService {
       };
 
       const finalScore = calculateFinalScore(components);
-      const reason = generateRecommendationReason(components);
+      const reason = generateRecommendationReason(components, config);
 
       scoredItems.push({
         item: {

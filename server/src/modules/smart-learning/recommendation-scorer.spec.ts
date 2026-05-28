@@ -48,6 +48,11 @@ describe('Recommendation Scorer', () => {
       const today = new Date();
       expect(calculateDecayBonus(today, mockConfig)).toBe(0);
     });
+
+    it('should clamp negative days to 0', () => {
+      const future = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000);
+      expect(calculateDecayBonus(future, mockConfig)).toBe(0);
+    });
   });
 
   describe('calculateRecentStudyPenalty', () => {
@@ -129,32 +134,32 @@ describe('Recommendation Scorer', () => {
   describe('generateRecommendationReason', () => {
     it('should prioritize recent study penalty', () => {
       const score = { baseScore: 100, decayBonus: 0, recentStudyPenalty: 15, importanceWeight: 1.0, improvementVelocity: 0 };
-      expect(generateRecommendationReason(score)).toBe('近期已学习过，建议先复习其他知识点');
+      expect(generateRecommendationReason(score, mockConfig)).toBe('近期已学习过，建议先复习其他知识点');
     });
 
-    it('should detect decay bonus', () => {
+    it('should detect decay bonus with computed days', () => {
       const score = { baseScore: 100, decayBonus: 20, recentStudyPenalty: 0, importanceWeight: 1.0, improvementVelocity: 0 };
-      expect(generateRecommendationReason(score)).toBe('距离上次学习已超过 10 天，建议复习');
+      expect(generateRecommendationReason(score, mockConfig)).toBe('距离上次学习已超过 10 天，建议复习');
     });
 
     it('should detect low mastery', () => {
       const score = { baseScore: 100, decayBonus: 0, recentStudyPenalty: 0, importanceWeight: 1.0, improvementVelocity: 0 };
-      expect(generateRecommendationReason(score)).toBe('掌握度较低，需要加强');
+      expect(generateRecommendationReason(score, mockConfig)).toBe('掌握度较低，需要加强');
     });
 
     it('should detect regression', () => {
       const score = { baseScore: 40, decayBonus: 0, recentStudyPenalty: 0, importanceWeight: 1.0, improvementVelocity: -10 };
-      expect(generateRecommendationReason(score)).toBe('近期掌握度下降，需要巩固');
+      expect(generateRecommendationReason(score, mockConfig)).toBe('近期掌握度下降，需要巩固');
     });
 
     it('should detect high importance', () => {
       const score = { baseScore: 40, decayBonus: 0, recentStudyPenalty: 0, importanceWeight: 1.5, improvementVelocity: 0 };
-      expect(generateRecommendationReason(score)).toBe('重要知识点，优先掌握');
+      expect(generateRecommendationReason(score, mockConfig)).toBe('重要知识点，优先掌握');
     });
 
     it('should return default reason', () => {
       const score = { baseScore: 20, decayBonus: 0, recentStudyPenalty: 0, importanceWeight: 1.0, improvementVelocity: 0 };
-      expect(generateRecommendationReason(score)).toBe('根据你的学习情况推荐');
+      expect(generateRecommendationReason(score, mockConfig)).toBe('根据你的学习情况推荐');
     });
   });
 

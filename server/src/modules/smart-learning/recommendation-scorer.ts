@@ -27,7 +27,7 @@ export function calculateDecayBonus(
   const daysSince = Math.floor(
     (Date.now() - latestStartTime.getTime()) / (24 * 60 * 60 * 1000),
   );
-  return Math.min(config.decayMax, daysSince * config.decayPerDay);
+  return Math.min(config.decayMax, Math.max(0, daysSince) * config.decayPerDay);
 }
 
 export function calculateRecentStudyPenalty(
@@ -88,12 +88,16 @@ export function calculateFinalScore(components: ScoreComponents): number {
   return weightedBase * components.importanceWeight;
 }
 
-export function generateRecommendationReason(components: ScoreComponents): string {
+export function generateRecommendationReason(
+  components: ScoreComponents,
+  config: RecommendationConfig,
+): string {
   if (components.recentStudyPenalty > 0) {
     return '近期已学习过，建议先复习其他知识点';
   }
   if (components.decayBonus >= 20) {
-    return '距离上次学习已超过 10 天，建议复习';
+    const days = Math.round(components.decayBonus / config.decayPerDay);
+    return `距离上次学习已超过 ${days} 天，建议复习`;
   }
   if (components.baseScore >= 70) {
     return '掌握度较低，需要加强';
