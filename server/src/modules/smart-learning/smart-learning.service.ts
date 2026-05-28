@@ -379,23 +379,32 @@ export class SmartLearningService {
     );
 
     // 使用 $queryRaw 实现随机排序
-    const knowledgePoints = await this.prisma.$queryRaw<
-      Array<{
-        id: string;
-        code: string;
-        level1: string;
-        level2: string | null;
-        level3: string | null;
-        importance_level: ImportanceLevel;
-        definition: string | null;
-      }>
-    >`
-      SELECT id, code, level1, level2, level3, importance_level, definition
-      FROM knowledge_points
-      ${textbookId ? this.prisma.$queryRaw`WHERE textbook_id = ${textbookId}` : this.prisma.$queryRaw``}
-      ORDER BY RANDOM()
-      LIMIT ${count}
-    `;
+    let knowledgePoints: Array<{
+      id: string;
+      code: string;
+      level1: string;
+      level2: string | null;
+      level3: string | null;
+      importance_level: ImportanceLevel;
+      definition: string | null;
+    }>;
+
+    if (textbookId) {
+      knowledgePoints = await this.prisma.$queryRaw`
+        SELECT id, code, level1, level2, level3, importance_level, definition
+        FROM knowledge_points
+        WHERE textbook_id = ${textbookId}
+        ORDER BY RANDOM()
+        LIMIT ${count}
+      `;
+    } else {
+      knowledgePoints = await this.prisma.$queryRaw`
+        SELECT id, code, level1, level2, level3, importance_level, definition
+        FROM knowledge_points
+        ORDER BY RANDOM()
+        LIMIT ${count}
+      `;
+    }
 
     const items: RandomItem[] = knowledgePoints.map((point) => ({
       id: point.id,
