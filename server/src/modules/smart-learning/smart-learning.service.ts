@@ -32,6 +32,7 @@ export interface WeakPointItem {
   };
   priority: number;
   recommendationReason: string;
+  improvementVelocity: number;
 }
 
 export interface ByImportanceItem {
@@ -51,6 +52,7 @@ export interface ByImportanceItem {
     notes: string | null;
   } | null;
   recommendationReason: string;
+  improvementVelocity: number;
 }
 
 export interface RandomItem {
@@ -219,6 +221,7 @@ export class SmartLearningService {
           },
           priority: Math.round(finalScore),
           recommendationReason: reason,
+          improvementVelocity: components.improvementVelocity,
         },
         finalScore,
         importanceLevel: record.knowledgePoint.importanceLevel,
@@ -347,6 +350,7 @@ export class SmartLearningService {
               }
             : null,
           recommendationReason: reason,
+          improvementVelocity: components.improvementVelocity,
         },
         finalScore,
         startTime: latestRecord?.startTime ?? new Date(0),

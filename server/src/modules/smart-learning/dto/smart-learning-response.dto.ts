@@ -53,6 +53,9 @@ export class WeakPointResponseDto {
 
   @ApiProperty()
   recommendationReason: string;
+
+  @ApiProperty()
+  improvementVelocity: number;
 }
 
 export class WeakPointsResponse {
@@ -93,6 +96,9 @@ export class ByImportanceResponseDto {
 
   @ApiProperty()
   recommendationReason: string;
+
+  @ApiProperty()
+  improvementVelocity: number;
 }
 
 export class ByImportanceResponse {
