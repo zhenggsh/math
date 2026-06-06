@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react'
+import React, { useCallback, useMemo } from 'react'
 import { Tabs, Skeleton, Collapse, Tag, Empty, Button, Tooltip } from 'antd'
 import { ReloadOutlined } from '@ant-design/icons'
 import type { RecommendationMode, UnifiedRecommendationItem } from '../../hooks/useRecommendations'
@@ -128,20 +128,21 @@ const RecommendationItem: React.FC<{
   item: UnifiedRecommendationItem
   isSelected: boolean
   showTrend: boolean
-  onClick: () => void
+  onClick: (item: UnifiedRecommendationItem) => void
 }> = ({ item, isSelected, showTrend, onClick }) => {
   return (
     <div
       className={`${styles.item} ${isSelected ? styles.itemSelected : ''}`}
-      onClick={onClick}
+      onClick={() => onClick(item)}
       role="button"
       tabIndex={0}
+      aria-pressed={isSelected}
       data-testid="recommendation-item"
       data-selected={isSelected}
       onKeyDown={e => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault()
-          onClick()
+          onClick(item)
         }
       }}
     >
@@ -174,6 +175,13 @@ export const SmartLearningNav: React.FC<SmartLearningNavProps> = ({
     if (mode !== 'weak') return []
     return groupByLevel1ThenLevel2(items)
   }, [mode, items])
+
+  const handleSelectItem = useCallback(
+    (item: UnifiedRecommendationItem) => {
+      onSelectItem(item)
+    },
+    [onSelectItem]
+  )
 
   const defaultActiveKeys = useMemo(() => {
     return groupedItems.slice(0, 2).map((_, index) => String(index))
@@ -243,7 +251,7 @@ export const SmartLearningNav: React.FC<SmartLearningNavProps> = ({
                           item={item}
                           isSelected={selectedId === item.id}
                           showTrend={true}
-                          onClick={() => onSelectItem(item)}
+                          onClick={handleSelectItem}
                         />
                       ))}
                     </div>
@@ -262,7 +270,7 @@ export const SmartLearningNav: React.FC<SmartLearningNavProps> = ({
                 item={item}
                 isSelected={selectedId === item.id}
                 showTrend={false}
-                onClick={() => onSelectItem(item)}
+                onClick={handleSelectItem}
               />
             ))}
           </div>
