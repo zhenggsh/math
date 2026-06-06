@@ -1,0 +1,57 @@
+.tracker {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fafafa;
+  padding: 12px 16px;
+  border-radius: 8px;
+}
+
+.content {
+  flex: 1;
+}
+
+.progressArea {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.progressText {
+  font-size: 14px;
+  color: #262626;
+}
+
+.countText {
+  font-size: 14px;
+  color: #262626;
+}
+
+.completed {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.completedIcon {
+  color: #52c41a;
+  font-size: 18px;
+}
+
+.completedText {
+  color: #52c41a;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.modalContent {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 0;
+}
+
+.modalLabel {
+  font-size: 14px;
+  color: #262626;
+}
