@@ -27,6 +27,7 @@ export interface WeakPointItem {
   }
   priority: number
   recommendationReason: string
+  improvementVelocity: number
 }
 
 export interface ByImportanceItem extends KnowledgePoint {
@@ -39,6 +40,7 @@ export interface ByImportanceItem extends KnowledgePoint {
     notes: string | null
   } | null
   recommendationReason: string
+  improvementVelocity: number
 }
 
 export interface LearningStats {
