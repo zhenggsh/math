@@ -79,11 +79,11 @@ export const StudyGoalTracker: React.FC<StudyGoalTrackerProps> = ({
         cancelText="取消"
       >
         <div className={styles.modalContent}>
-          <span className={styles.modalLabel}>每日复习目标数量（1-20）：</span>
+          <label className={styles.modalLabel} htmlFor="study-goal-input">每日复习目标数量（1-20）：</label>
           <InputNumber
+            id="study-goal-input"
             min={1}
             max={20}
-            defaultValue={goalCount}
             value={inputValue}
             onChange={value => setInputValue(value)}
             style={{ width: 80 }}
