@@ -39,11 +39,21 @@ const SmartLearningPage: React.FC = () => {
   const [goalCount, setGoalCount] = useState<number>(5)
   const [showNextCta, setShowNextCta] = useState<boolean>(false)
 
-  const { items, isLoading, refetch } = useRecommendations(mode)
+  const { items, isLoading, isError, error, refetch } = useRecommendations(mode)
   const { refresh } = useRefreshRecommendations()
+
+  // 推荐列表加载失败时提示错误
+  useEffect(() => {
+    if (isError && error) {
+      message.error('加载推荐列表失败')
+    }
+  }, [isError, error, message])
 
   // 自动选择第一个推荐项
   useEffect(() => {
+    if (isLoading) {
+      return
+    }
     if (items.length === 0) {
       setSelectedItem(null)
       return
@@ -54,7 +64,7 @@ const SmartLearningPage: React.FC = () => {
       }
       return prev
     })
-  }, [items, mode])
+  }, [items, mode, isLoading])
 
   // 加载选中项的内容
   useEffect(() => {
