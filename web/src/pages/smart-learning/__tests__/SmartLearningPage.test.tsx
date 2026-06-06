@@ -54,16 +54,17 @@ vi.mock('../../../components/Layout/ResizableLayout', () => ({
   ),
 }))
 
-const queryClient = new QueryClient({
-  defaultOptions: { queries: { retry: false } },
-})
-
-function Wrapper({ children }: { children: React.ReactNode }) {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <App>{children}</App>
-    </QueryClientProvider>
-  )
+function createWrapper() {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  })
+  return function Wrapper({ children }: { children: React.ReactNode }) {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <App>{children}</App>
+      </QueryClientProvider>
+    )
+  }
 }
 
 function createWeakPointItem(
@@ -116,10 +117,10 @@ function createKnowledgePointDetail(id: string, code: string) {
 describe('SmartLearningPage', () => {
   beforeEach(() => {
     vi.resetAllMocks()
-    queryClient.clear()
   })
 
   it('renders with weak points by default', async () => {
+    const Wrapper = createWrapper()
     mocks.mockGetWeakPoints.mockResolvedValue({
       total: 1,
       items: [createWeakPointItem('kp-1', '1.1.1', '第一章', '第一节', '知识点1')],
@@ -140,6 +141,7 @@ describe('SmartLearningPage', () => {
   })
 
   it('shows next recommendation CTA after feedback submit', async () => {
+    const Wrapper = createWrapper()
     mocks.mockGetWeakPoints.mockResolvedValue({
       total: 2,
       items: [
@@ -165,6 +167,7 @@ describe('SmartLearningPage', () => {
   })
 
   it('mode switching updates list', async () => {
+    const Wrapper = createWrapper()
     mocks.mockGetWeakPoints.mockResolvedValue({
       total: 1,
       items: [createWeakPointItem('kp-1', '1.1.1', '第一章', '第一节', '知识点1')],
@@ -203,9 +206,14 @@ describe('SmartLearningPage', () => {
     await waitFor(() => {
       expect(mocks.mockGetByImportance).toHaveBeenCalled()
     })
+
+    await waitFor(() => {
+      expect(screen.getByText(/知识点3/)).toBeInTheDocument()
+    })
   })
 
   it('auto-selects first item on load', async () => {
+    const Wrapper = createWrapper()
     mocks.mockGetWeakPoints.mockResolvedValue({
       total: 2,
       items: [
