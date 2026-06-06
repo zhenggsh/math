@@ -1,2 +1,2 @@
-export { KnowledgeOverview } from './KnowledgeOverview';
-export { default } from './KnowledgeOverview';
+export { KnowledgeOverview } from './KnowledgeOverview'
+export { default } from './KnowledgeOverview'

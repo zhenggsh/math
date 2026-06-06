@@ -23,8 +23,7 @@ vi.mock('../../../services/smartLearningApi', () => ({
 
 vi.mock('../../../services/knowledgeApi', () => ({
   knowledgeApi: {
-    getKnowledgePointDetail: (...args: unknown[]) =>
-      mocks.mockGetKnowledgePointDetail(...args),
+    getKnowledgePointDetail: (...args: unknown[]) => mocks.mockGetKnowledgePointDetail(...args),
     getKnowledgeTree: vi.fn(),
     searchKnowledgePoints: vi.fn(),
     saveKnowledgePointContent: vi.fn(),
@@ -47,9 +46,7 @@ vi.mock('../../../components/Layout/ResizableLayout', () => ({
     <div data-testid="resizable-layout">
       <div data-testid="left-panel">{props.leftPanel}</div>
       <div data-testid="center-panel">{props.centerPanel}</div>
-      {props.showBottomPanel && (
-        <div data-testid="bottom-panel">{props.bottomPanel}</div>
-      )}
+      {props.showBottomPanel && <div data-testid="bottom-panel">{props.bottomPanel}</div>}
     </div>
   ),
 }))
@@ -73,7 +70,7 @@ function createWeakPointItem(
   level1: string,
   level2: string,
   level3: string,
-  overrides: Record<string, unknown> = {},
+  overrides: Record<string, unknown> = {}
 ) {
   return {
     knowledgePoint: {
@@ -125,9 +122,7 @@ describe('SmartLearningPage', () => {
       total: 1,
       items: [createWeakPointItem('kp-1', '1.1.1', '第一章', '第一节', '知识点1')],
     })
-    mocks.mockGetKnowledgePointDetail.mockResolvedValue(
-      createKnowledgePointDetail('kp-1', '1.1.1'),
-    )
+    mocks.mockGetKnowledgePointDetail.mockResolvedValue(createKnowledgePointDetail('kp-1', '1.1.1'))
 
     render(<SmartLearningPage />, { wrapper: Wrapper })
 
@@ -149,9 +144,7 @@ describe('SmartLearningPage', () => {
         createWeakPointItem('kp-2', '1.1.2', '第一章', '第一节', '知识点2'),
       ],
     })
-    mocks.mockGetKnowledgePointDetail.mockResolvedValue(
-      createKnowledgePointDetail('kp-1', '1.1.1'),
-    )
+    mocks.mockGetKnowledgePointDetail.mockResolvedValue(createKnowledgePointDetail('kp-1', '1.1.1'))
 
     render(<SmartLearningPage />, { wrapper: Wrapper })
 
@@ -191,9 +184,7 @@ describe('SmartLearningPage', () => {
         },
       ],
     })
-    mocks.mockGetKnowledgePointDetail.mockResolvedValue(
-      createKnowledgePointDetail('kp-1', '1.1.1'),
-    )
+    mocks.mockGetKnowledgePointDetail.mockResolvedValue(createKnowledgePointDetail('kp-1', '1.1.1'))
 
     render(<SmartLearningPage />, { wrapper: Wrapper })
 
@@ -221,9 +212,7 @@ describe('SmartLearningPage', () => {
         createWeakPointItem('kp-2', '1.1.2', '第一章', '第一节', '知识点2'),
       ],
     })
-    mocks.mockGetKnowledgePointDetail.mockResolvedValue(
-      createKnowledgePointDetail('kp-1', '1.1.1'),
-    )
+    mocks.mockGetKnowledgePointDetail.mockResolvedValue(createKnowledgePointDetail('kp-1', '1.1.1'))
 
     render(<SmartLearningPage />, { wrapper: Wrapper })
 

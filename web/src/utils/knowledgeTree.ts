@@ -1,4 +1,4 @@
-import type { KnowledgePoint, KnowledgeTreeNode } from '../types/knowledge.types';
+import type { KnowledgePoint, KnowledgeTreeNode } from '../types/knowledge.types'
 
 /**
  * 将后端返回的扁平知识点列表转换为树形结构
@@ -9,17 +9,17 @@ import type { KnowledgePoint, KnowledgeTreeNode } from '../types/knowledge.types
 export function convertToTreeData(points: KnowledgePoint[]): KnowledgeTreeNode[] {
   // 按 code 层级排序，确保父节点在子节点之前处理
   const sorted = [...points].sort((a, b) => {
-    const levelDiff = a.code.split('.').length - b.code.split('.').length;
-    if (levelDiff !== 0) return levelDiff;
-    return a.code.localeCompare(b.code);
-  });
+    const levelDiff = a.code.split('.').length - b.code.split('.').length
+    if (levelDiff !== 0) return levelDiff
+    return a.code.localeCompare(b.code)
+  })
 
-  const codeToNode = new Map<string, KnowledgeTreeNode>();
-  const rootNodes: KnowledgeTreeNode[] = [];
+  const codeToNode = new Map<string, KnowledgeTreeNode>()
+  const rootNodes: KnowledgeTreeNode[] = []
 
   for (const point of sorted) {
-    const codeParts = point.code.split('.');
-    const level = codeParts.length;
+    const codeParts = point.code.split('.')
+    const level = codeParts.length
 
     const node: KnowledgeTreeNode = {
       key: point.id,
@@ -28,30 +28,30 @@ export function convertToTreeData(points: KnowledgePoint[]): KnowledgeTreeNode[]
       importanceLevel: point.importanceLevel,
       isLeaf: level >= 3,
       data: point,
-    };
+    }
 
-    codeToNode.set(point.code, node);
+    codeToNode.set(point.code, node)
 
     // 找父节点：去掉最后一段 code
     if (codeParts.length > 1) {
-      const parentCode = codeParts.slice(0, -1).join('.');
-      const parent = codeToNode.get(parentCode);
+      const parentCode = codeParts.slice(0, -1).join('.')
+      const parent = codeToNode.get(parentCode)
       if (parent) {
-        if (!parent.children) parent.children = [];
-        parent.children.push(node);
+        if (!parent.children) parent.children = []
+        parent.children.push(node)
         // 父节点不再是叶子
-        parent.isLeaf = false;
+        parent.isLeaf = false
       } else {
         // 父节点不存在（数据不完整），作为根节点
-        rootNodes.push(node);
+        rootNodes.push(node)
       }
     } else {
       // 一级节点，作为根
-      rootNodes.push(node);
+      rootNodes.push(node)
     }
   }
 
-  return rootNodes;
+  return rootNodes
 }
 
 /**
@@ -63,14 +63,14 @@ export function convertToTreeData(points: KnowledgePoint[]): KnowledgeTreeNode[]
 export function findNodeInTree(tree: KnowledgeTreeNode[], key: string): KnowledgeTreeNode | null {
   for (const node of tree) {
     if (node.key === key) {
-      return node;
+      return node
     }
     if (node.children) {
-      const found = findNodeInTree(node.children, key);
-      if (found) return found;
+      const found = findNodeInTree(node.children, key)
+      if (found) return found
     }
   }
-  return null;
+  return null
 }
 
 /**
@@ -79,19 +79,19 @@ export function findNodeInTree(tree: KnowledgeTreeNode[], key: string): Knowledg
  * @returns 所有节点 key 列表
  */
 export function getAllNodeKeys(tree: KnowledgeTreeNode[]): string[] {
-  const keys: string[] = [];
+  const keys: string[] = []
 
   function traverse(nodes: KnowledgeTreeNode[]) {
-    nodes.forEach((node) => {
-      keys.push(node.key);
+    nodes.forEach(node => {
+      keys.push(node.key)
       if (node.children) {
-        traverse(node.children);
+        traverse(node.children)
       }
-    });
+    })
   }
 
-  traverse(tree);
-  return keys;
+  traverse(tree)
+  return keys
 }
 
 /**
@@ -100,33 +100,37 @@ export function getAllNodeKeys(tree: KnowledgeTreeNode[]): string[] {
  * @param keyword 关键词
  * @returns 过滤后的树
  */
-export function filterTreeByKeyword(tree: KnowledgeTreeNode[], keyword: string): KnowledgeTreeNode[] {
-  if (!keyword.trim()) return tree;
+export function filterTreeByKeyword(
+  tree: KnowledgeTreeNode[],
+  keyword: string
+): KnowledgeTreeNode[] {
+  if (!keyword.trim()) return tree
 
-  const lowerKeyword = keyword.toLowerCase();
+  const lowerKeyword = keyword.toLowerCase()
 
   function filterNode(node: KnowledgeTreeNode): KnowledgeTreeNode | null {
-    const matches = node.title.toLowerCase().includes(lowerKeyword) ||
-                   node.code.toLowerCase().includes(lowerKeyword);
+    const matches =
+      node.title.toLowerCase().includes(lowerKeyword) ||
+      node.code.toLowerCase().includes(lowerKeyword)
 
     if (matches) {
-      return node;
+      return node
     }
 
     if (node.children) {
       const filteredChildren = node.children
-        .map((child) => filterNode(child))
-        .filter((child): child is KnowledgeTreeNode => child !== null);
+        .map(child => filterNode(child))
+        .filter((child): child is KnowledgeTreeNode => child !== null)
 
       if (filteredChildren.length > 0) {
-        return { ...node, children: filteredChildren };
+        return { ...node, children: filteredChildren }
       }
     }
 
-    return null;
+    return null
   }
 
   return tree
-    .map((node) => filterNode(node))
-    .filter((node): node is KnowledgeTreeNode => node !== null);
+    .map(node => filterNode(node))
+    .filter((node): node is KnowledgeTreeNode => node !== null)
 }

@@ -2,8 +2,8 @@ export const Role = {
   STUDENT: 'STUDENT',
   TEACHER: 'TEACHER',
   ADMIN: 'ADMIN',
-} as const;
-export type Role = (typeof Role)[keyof typeof Role];
+} as const
+export type Role = (typeof Role)[keyof typeof Role]
 
 export interface User {
   id: string
@@ -37,5 +37,3 @@ export interface AuthContextType {
   register: (data: RegisterRequest) => Promise<void>
   logout: () => void
 }
-
-

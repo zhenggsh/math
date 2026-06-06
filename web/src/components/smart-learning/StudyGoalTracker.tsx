@@ -17,10 +17,7 @@ export const StudyGoalTracker: React.FC<StudyGoalTrackerProps> = ({
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [inputValue, setInputValue] = useState<number | null>(goalCount)
 
-  const percent =
-    goalCount > 0
-      ? Math.min(100, Math.round((studiedCount / goalCount) * 100))
-      : 0
+  const percent = goalCount > 0 ? Math.min(100, Math.round((studiedCount / goalCount) * 100)) : 0
 
   const isCompleted = goalCount > 0 && studiedCount >= goalCount
 
@@ -56,9 +53,7 @@ export const StudyGoalTracker: React.FC<StudyGoalTrackerProps> = ({
             <Progress percent={percent} size="small" />
           </div>
         ) : (
-          <span className={styles.countText}>
-            今日已复习 {studiedCount} 个薄弱点
-          </span>
+          <span className={styles.countText}>今日已复习 {studiedCount} 个薄弱点</span>
         )}
       </div>
 
@@ -79,7 +74,9 @@ export const StudyGoalTracker: React.FC<StudyGoalTrackerProps> = ({
         cancelText="取消"
       >
         <div className={styles.modalContent}>
-          <label className={styles.modalLabel} htmlFor="study-goal-input">每日复习目标数量（1-20）：</label>
+          <label className={styles.modalLabel} htmlFor="study-goal-input">
+            每日复习目标数量（1-20）：
+          </label>
           <InputNumber
             id="study-goal-input"
             min={1}

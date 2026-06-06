@@ -1,17 +1,17 @@
-import React from 'react';
-import type { EChartsCoreOption } from 'echarts/core';
-import { EChartsWrapper } from './EChartsWrapper';
-import { ANT_DESIGN_COLORS } from '../../../types/analytics.types';
+import React from 'react'
+import type { EChartsCoreOption } from 'echarts/core'
+import { EChartsWrapper } from './EChartsWrapper'
+import { ANT_DESIGN_COLORS } from '../../../types/analytics.types'
 
 /**
  * PieChart Props
  */
 export interface PieChartProps {
-  data: Array<{ name: string; value: number }>;
-  title?: string;
-  loading?: boolean;
-  donut?: boolean;
-  showLegend?: boolean;
+  data: Array<{ name: string; value: number }>
+  title?: string
+  loading?: boolean
+  donut?: boolean
+  showLegend?: boolean
 }
 
 /**
@@ -77,9 +77,9 @@ export const PieChart: React.FC<PieChartProps> = ({
       ANT_DESIGN_COLORS.mastery.D,
       ANT_DESIGN_COLORS.mastery.E,
     ],
-  };
+  }
 
-  return <EChartsWrapper option={option} loading={loading} />;
-};
+  return <EChartsWrapper option={option} loading={loading} />
+}
 
-export default PieChart;
+export default PieChart

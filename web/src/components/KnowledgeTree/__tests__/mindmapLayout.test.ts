@@ -70,7 +70,9 @@ describe('mindmapLayout', () => {
   })
 
   it('balanced layout sets hasLeftChildren and hasRightChildren', () => {
-    const data = [createNode('root', [createNode('c1'), createNode('c2'), createNode('c3'), createNode('c4')])]
+    const data = [
+      createNode('root', [createNode('c1'), createNode('c2'), createNode('c3'), createNode('c4')]),
+    ]
     const result = calculateLayout(data, 3, new Set(), new Set(), 'balanced')
     const root = result.layout[0]
     expect(root.hasLeftChildren).toBe(true)
@@ -131,7 +133,12 @@ describe('mindmapLayout', () => {
       for (let j = i + 1; j < rects.length; j++) {
         const a = rects[i]
         const b = rects[j]
-        const overlap = !(a.x + a.w <= b.x || b.x + b.w <= a.x || a.y + a.h <= b.y || b.y + b.h <= a.y)
+        const overlap = !(
+          a.x + a.w <= b.x ||
+          b.x + b.w <= a.x ||
+          a.y + a.h <= b.y ||
+          b.y + b.h <= a.y
+        )
         expect(overlap).toBe(false)
       }
     }
@@ -166,12 +173,7 @@ describe('mindmapLayout', () => {
 
   it('independent left/right collapse: collapsing left does not hide right children', () => {
     const data = [
-      createNode('root', [
-        createNode('c1'),
-        createNode('c2'),
-        createNode('c3'),
-        createNode('c4'),
-      ]),
+      createNode('root', [createNode('c1'), createNode('c2'), createNode('c3'), createNode('c4')]),
     ]
     // Both expanded
     const expanded = calculateLayout(data, 3, new Set(), new Set(), 'balanced')

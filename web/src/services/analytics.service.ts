@@ -82,7 +82,7 @@ export async function getWeakPoints(limit = 10): Promise<WeakPoints> {
  */
 export async function getLearnedKnowledgePoints(): Promise<LearnedKnowledgePoints> {
   const response = await api.get<ApiResponse<LearnedKnowledgePoints>>(
-    '/analytics/student/learned-knowledge-points',
+    '/analytics/student/learned-knowledge-points'
   )
   return response.data.data
 }

@@ -1,17 +1,17 @@
-import React from 'react';
-import type { EChartsCoreOption } from 'echarts/core';
-import { EChartsWrapper } from './EChartsWrapper';
-import { ANT_DESIGN_COLORS } from '../../../types/analytics.types';
+import React from 'react'
+import type { EChartsCoreOption } from 'echarts/core'
+import { EChartsWrapper } from './EChartsWrapper'
+import { ANT_DESIGN_COLORS } from '../../../types/analytics.types'
 
 /**
  * LineChart Props
  */
 export interface LineChartProps {
-  data: Array<{ date: string; value: number; count?: number }>;
-  title?: string;
-  loading?: boolean;
-  showArea?: boolean;
-  yAxisName?: string;
+  data: Array<{ date: string; value: number; count?: number }>
+  title?: string
+  loading?: boolean
+  showArea?: boolean
+  yAxisName?: string
 }
 
 /**
@@ -38,12 +38,12 @@ export const LineChart: React.FC<LineChartProps> = ({
     tooltip: {
       trigger: 'axis',
       formatter: (params: unknown) => {
-        const p = params as Array<{ name: string; value: number; seriesName: string }>;
-        let result = `${p[0].name}<br/>`;
-        p.forEach((item) => {
-          result += `${item.seriesName}: ${item.value}<br/>`;
-        });
-        return result;
+        const p = params as Array<{ name: string; value: number; seriesName: string }>
+        let result = `${p[0].name}<br/>`
+        p.forEach(item => {
+          result += `${item.seriesName}: ${item.value}<br/>`
+        })
+        return result
       },
     },
     grid: {
@@ -55,11 +55,11 @@ export const LineChart: React.FC<LineChartProps> = ({
     xAxis: {
       type: 'category',
       boundaryGap: false,
-      data: data.map((d) => d.date),
+      data: data.map(d => d.date),
       axisLabel: {
         formatter: (value: string) => {
-          const date = new Date(value);
-          return `${date.getMonth() + 1}/${date.getDate()}`;
+          const date = new Date(value)
+          return `${date.getMonth() + 1}/${date.getDate()}`
         },
       },
     },
@@ -71,7 +71,7 @@ export const LineChart: React.FC<LineChartProps> = ({
       {
         name: '学习时长(分钟)',
         type: 'line',
-        data: data.map((d) => d.value),
+        data: data.map(d => d.value),
         smooth: true,
         symbol: 'circle',
         symbolSize: 8,
@@ -99,9 +99,9 @@ export const LineChart: React.FC<LineChartProps> = ({
           : undefined,
       },
     ],
-  };
+  }
 
-  return <EChartsWrapper option={option} loading={loading} />;
-};
+  return <EChartsWrapper option={option} loading={loading} />
+}
 
-export default LineChart;
+export default LineChart

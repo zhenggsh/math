@@ -7,15 +7,18 @@ const mocks = vi.hoisted(() => ({
   mockUseNavigate: vi.fn<[], () => void>(() => vi.fn()),
   mockGetKnowledgeTree: vi.fn<[], Promise<unknown>>(),
   mockGetKnowledgePointDetail: vi.fn<[], Promise<unknown>>(),
-  mockUseTextbook: vi.fn<[], {
-    selectedTextbookIds: string[]
-    textbooks: unknown[]
-    isLoading: boolean
-    selectTextbook: () => void
-    deselectTextbook: () => void
-    selectMultiple: () => void
-    clearSelection: () => void
-  }>(() => ({
+  mockUseTextbook: vi.fn<
+    [],
+    {
+      selectedTextbookIds: string[]
+      textbooks: unknown[]
+      isLoading: boolean
+      selectTextbook: () => void
+      deselectTextbook: () => void
+      selectMultiple: () => void
+      clearSelection: () => void
+    }
+  >(() => ({
     selectedTextbookIds: [],
     textbooks: [],
     isLoading: false,
@@ -26,7 +29,13 @@ const mocks = vi.hoisted(() => ({
   })),
 }))
 
-const { mockUseParams, mockUseNavigate, mockGetKnowledgeTree, mockGetKnowledgePointDetail, mockUseTextbook } = mocks
+const {
+  mockUseParams,
+  mockUseNavigate,
+  mockGetKnowledgeTree,
+  mockGetKnowledgePointDetail,
+  mockUseTextbook,
+} = mocks
 
 vi.mock('react-router-dom', () => ({
   useParams: () => mockUseParams(),
@@ -35,7 +44,12 @@ vi.mock('react-router-dom', () => ({
 }))
 
 vi.mock('../../../hooks/useAuth', () => ({
-  useAuth: vi.fn(() => ({ user: undefined, isAuthenticated: true, login: vi.fn(), logout: vi.fn() })),
+  useAuth: vi.fn(() => ({
+    user: undefined,
+    isAuthenticated: true,
+    login: vi.fn(),
+    logout: vi.fn(),
+  })),
 }))
 
 vi.mock('../../../hooks/useTextbook', () => ({

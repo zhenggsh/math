@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { Button, App } from 'antd'
 import { ExportOutlined } from '@ant-design/icons'
 import { ResizableLayout } from '../../components/Layout/ResizableLayout'
@@ -14,8 +14,7 @@ import {
   type RecommendationMode,
   type UnifiedRecommendationItem,
 } from '../../hooks/useRecommendations'
-import { knowledgeApi } from '../../services/knowledgeApi'
-import type { KnowledgePointDetail } from '../../types/knowledge.types'
+import { useKnowledgePointDetail } from '../../hooks/useKnowledgePointDetail'
 import styles from './SmartLearningPage.module.css'
 
 interface KnowledgeDetailState {
@@ -31,16 +30,50 @@ interface KnowledgeDetailState {
 const SmartLearningPage: React.FC = () => {
   const { message } = App.useApp()
   const [mode, setMode] = useState<RecommendationMode>('weak')
-  const [selectedItem, setSelectedItem] = useState<UnifiedRecommendationItem | null>(null)
-  const [content, setContent] = useState<string>('')
-  const [detail, setDetail] = useState<KnowledgeDetailState>({})
-  const [contentLoading, setContentLoading] = useState<boolean>(false)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
   const [studiedIds, setStudiedIds] = useState<Set<string>>(new Set())
   const [goalCount, setGoalCount] = useState<number>(5)
   const [showNextCta, setShowNextCta] = useState<boolean>(false)
 
   const { items, isLoading, isError, error, refetch } = useRecommendations(mode)
   const { refresh } = useRefreshRecommendations()
+
+  // 根据 selectedId 和 items 派生当前选中的推荐项
+  const selectedItem = useMemo<UnifiedRecommendationItem | null>(() => {
+    if (items.length === 0) {
+      return null
+    }
+    const found = items.find(item => item.id === selectedId)
+    return found ?? items[0]
+  }, [items, selectedId])
+
+  // 加载选中项的详情内容
+  const {
+    data: detailData,
+    isPending: contentLoading,
+    error: detailError,
+  } = useKnowledgePointDetail(selectedItem?.id)
+
+  const content = useMemo<string>(() => {
+    if (!selectedItem) {
+      return ''
+    }
+    if (detailData) {
+      return detailData.content || detailData.definition || '暂无内容'
+    }
+    return ''
+  }, [selectedItem, detailData])
+
+  const detail = useMemo<KnowledgeDetailState>(() => {
+    if (!detailData) {
+      return {}
+    }
+    return {
+      definition: detailData.definition,
+      characteristics: detailData.characteristics,
+      importanceLevel: detailData.importanceLevel,
+    }
+  }, [detailData])
 
   // 推荐列表加载失败时提示错误
   useEffect(() => {
@@ -49,60 +82,21 @@ const SmartLearningPage: React.FC = () => {
     }
   }, [isError, error, message])
 
-  // 自动选择第一个推荐项
+  // 详情加载失败时提示错误
   useEffect(() => {
-    if (isLoading) {
-      return
+    if (detailError) {
+      message.error('加载内容失败')
     }
-    if (items.length === 0) {
-      setSelectedItem(null)
-      return
-    }
-    setSelectedItem(prev => {
-      if (!prev || !items.find(item => item.id === prev.id)) {
-        return items[0]
-      }
-      return prev
-    })
-  }, [items, mode, isLoading])
-
-  // 加载选中项的内容
-  useEffect(() => {
-    if (!selectedItem) {
-      setContent('')
-      setDetail({})
-      setContentLoading(false)
-      return
-    }
-
-    setContentLoading(true)
-    knowledgeApi
-      .getKnowledgePointDetail(selectedItem.id)
-      .then((data: KnowledgePointDetail) => {
-        setContent(data.content || data.definition || '暂无内容')
-        setDetail({
-          definition: data.definition,
-          characteristics: data.characteristics,
-          importanceLevel: data.importanceLevel,
-        })
-      })
-      .catch(() => {
-        message.error('加载内容失败')
-        setContent('加载内容失败')
-        setDetail({})
-      })
-      .finally(() => {
-        setContentLoading(false)
-      })
-  }, [selectedItem, message])
+  }, [detailError, message])
 
   const handleModeChange = useCallback((newMode: RecommendationMode): void => {
     setMode(newMode)
+    setSelectedId(null)
     setShowNextCta(false)
   }, [])
 
   const handleSelectItem = useCallback((item: UnifiedRecommendationItem): void => {
-    setSelectedItem(item)
+    setSelectedId(item.id)
     setShowNextCta(false)
   }, [])
 
@@ -125,7 +119,7 @@ const SmartLearningPage: React.FC = () => {
     }
     const nextIndex = currentIndex + 1
     if (nextIndex >= 0 && nextIndex < items.length) {
-      setSelectedItem(items[nextIndex])
+      setSelectedId(items[nextIndex].id)
       setShowNextCta(false)
     }
   }, [isLastItem, currentIndex, items, mode, refresh, refetch])
@@ -217,14 +211,8 @@ const SmartLearningPage: React.FC = () => {
             )}
             {showNextCta && (
               <div className={styles.ctaArea}>
-                <Button
-                  type="primary"
-                  onClick={handleNext}
-                  className={styles.ctaButton}
-                >
-                  {isLastItem
-                    ? '已学完当前列表，刷新查看新推荐'
-                    : '下一个推荐'}
+                <Button type="primary" onClick={handleNext} className={styles.ctaButton}>
+                  {isLastItem ? '已学完当前列表，刷新查看新推荐' : '下一个推荐'}
                 </Button>
               </div>
             )}
@@ -235,10 +223,7 @@ const SmartLearningPage: React.FC = () => {
         defaultSizes={{ left: 320, center: 600, bottom: 220 }}
       />
       {selectedItem && (
-        <AIFab
-          knowledgePointId={selectedItem.id}
-          knowledgePointTitle={selectedItem.name}
-        />
+        <AIFab knowledgePointId={selectedItem.id} knowledgePointTitle={selectedItem.name} />
       )}
     </div>
   )

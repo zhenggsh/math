@@ -1,18 +1,18 @@
-import React from 'react';
-import { Card, Tag } from 'antd';
-import type { ImportanceLevel } from '../../types/knowledge.types';
-import styles from './KnowledgeOverview.module.css';
+import React from 'react'
+import { Card, Tag } from 'antd'
+import type { ImportanceLevel } from '../../types/knowledge.types'
+import styles from './KnowledgeOverview.module.css'
 
 const IMPORTANCE_COLORS: Record<ImportanceLevel, string> = {
   A: '#FF4D4F',
   B: '#FAAD14',
   C: '#1890FF',
-};
+}
 
 interface KnowledgeOverviewProps {
-  definition?: string;
-  characteristics?: string;
-  importanceLevel?: string;
+  definition?: string
+  characteristics?: string
+  importanceLevel?: string
 }
 
 export const KnowledgeOverview: React.FC<KnowledgeOverviewProps> = ({
@@ -21,7 +21,7 @@ export const KnowledgeOverview: React.FC<KnowledgeOverviewProps> = ({
   importanceLevel,
 }) => {
   if (!definition && !characteristics && !importanceLevel) {
-    return null;
+    return null
   }
 
   return (
@@ -52,7 +52,7 @@ export const KnowledgeOverview: React.FC<KnowledgeOverviewProps> = ({
         )}
       </div>
     </Card>
-  );
-};
+  )
+}
 
-export default KnowledgeOverview;
+export default KnowledgeOverview

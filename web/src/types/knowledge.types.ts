@@ -1,42 +1,42 @@
 /**
  * 知识点重要性级别
  */
-export type ImportanceLevel = 'A' | 'B' | 'C';
+export type ImportanceLevel = 'A' | 'B' | 'C'
 
 /**
  * 掌握程度
  */
-export type MasteryLevel = 'A' | 'B' | 'C' | 'D' | 'E';
+export type MasteryLevel = 'A' | 'B' | 'C' | 'D' | 'E'
 
 /**
  * 学习状态
  */
-export type LearningStatus = 'not_started' | 'learning' | 'mastered' | 'review_needed';
+export type LearningStatus = 'not_started' | 'learning' | 'mastered' | 'review_needed'
 
 /**
  * 知识点（后端返回的原始数据）
  */
 export interface KnowledgePoint {
   /** 唯一标识 */
-  id: string;
+  id: string
   /** 知识点编号 */
-  code: string;
+  code: string
   /** 一级知识点 */
-  level1: string;
+  level1: string
   /** 二级知识点 */
-  level2?: string;
+  level2?: string
   /** 三级知识点 */
-  level3?: string;
+  level3?: string
   /** 定义 */
-  definition?: string;
+  definition?: string
   /** 特性/运算方式 */
-  characteristics?: string;
+  characteristics?: string
   /** 重要性级别 */
-  importanceLevel: ImportanceLevel;
+  importanceLevel: ImportanceLevel
   /** 内容引用 */
-  contentRef?: string;
+  contentRef?: string
   /** 教材ID */
-  textbookId: string;
+  textbookId: string
 }
 
 /**
@@ -44,21 +44,21 @@ export interface KnowledgePoint {
  */
 export interface KnowledgeTreeNode {
   /** 节点唯一标识（使用 code） */
-  key: string;
+  key: string
   /** 节点标题 */
-  title: string;
+  title: string
   /** 知识点编号 */
-  code: string;
+  code: string
   /** 重要性级别 */
-  importanceLevel: ImportanceLevel;
+  importanceLevel: ImportanceLevel
   /** 学习状态 */
-  learningStatus?: LearningStatus;
+  learningStatus?: LearningStatus
   /** 子节点 */
-  children?: KnowledgeTreeNode[];
+  children?: KnowledgeTreeNode[]
   /** 是否叶子节点 */
-  isLeaf?: boolean;
+  isLeaf?: boolean
   /** 原始数据 */
-  data: KnowledgePoint;
+  data: KnowledgePoint
 }
 
 /**
@@ -66,21 +66,21 @@ export interface KnowledgeTreeNode {
  */
 export interface LearningRecord {
   /** 唯一标识 */
-  id: string;
+  id: string
   /** 开始时间 */
-  startTime: string;
+  startTime: string
   /** 学习时长（分钟） */
-  durationMinutes: number;
+  durationMinutes: number
   /** 掌握程度 */
-  masteryLevel: MasteryLevel;
+  masteryLevel: MasteryLevel
   /** 笔记 */
-  notes?: string;
+  notes?: string
   /** 用户ID */
-  userId: string;
+  userId: string
   /** 知识点ID */
-  knowledgePointId: string;
+  knowledgePointId: string
   /** 创建时间 */
-  createdAt: string;
+  createdAt: string
 }
 
 /**
@@ -88,11 +88,11 @@ export interface LearningRecord {
  */
 export interface KnowledgePointDetail extends KnowledgePoint {
   /** Markdown 内容 */
-  content?: string;
+  content?: string
   /** 学习记录 */
-  learningRecords?: LearningRecord[];
+  learningRecords?: LearningRecord[]
   /** 最近学习记录 */
-  latestRecord?: LearningRecord;
+  latestRecord?: LearningRecord
 }
 
 /**
@@ -100,9 +100,9 @@ export interface KnowledgePointDetail extends KnowledgePoint {
  */
 export interface KnowledgeTreeQuery {
   /** 教材ID */
-  textbookId: string;
+  textbookId: string
   /** 是否包含学习状态 */
-  includeStatus?: boolean;
+  includeStatus?: boolean
 }
 
 /**
@@ -110,11 +110,11 @@ export interface KnowledgeTreeQuery {
  */
 export interface KnowledgePointFilter {
   /** 教材ID */
-  textbookId?: string;
+  textbookId?: string
   /** 重要性级别 */
-  importanceLevel?: ImportanceLevel;
+  importanceLevel?: ImportanceLevel
   /** 学习状态 */
-  learningStatus?: LearningStatus;
+  learningStatus?: LearningStatus
   /** 搜索关键词 */
-  keyword?: string;
+  keyword?: string
 }

@@ -30,9 +30,7 @@ describe('knowledgeApi', () => {
 
   describe('getKnowledgeTree', () => {
     it('should fetch knowledge tree by textbookId', async () => {
-      const mockData = [
-        { id: 'kp-1', code: '1.1', level1: 'Algebra', importanceLevel: 'A' },
-      ]
+      const mockData = [{ id: 'kp-1', code: '1.1', level1: 'Algebra', importanceLevel: 'A' }]
       mockGet.mockResolvedValue({ data: { data: mockData } })
 
       const result = await knowledgeApi.getKnowledgeTree('tb-1')

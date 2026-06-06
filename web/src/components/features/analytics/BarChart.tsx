@@ -1,18 +1,18 @@
-import React from 'react';
-import type { EChartsCoreOption } from 'echarts/core';
-import { EChartsWrapper } from './EChartsWrapper';
-import { ANT_DESIGN_COLORS } from '../../../types/analytics.types';
+import React from 'react'
+import type { EChartsCoreOption } from 'echarts/core'
+import { EChartsWrapper } from './EChartsWrapper'
+import { ANT_DESIGN_COLORS } from '../../../types/analytics.types'
 
 /**
  * BarChart Props
  */
 export interface BarChartProps {
-  data: Array<{ name: string; value: number }>;
-  title?: string;
-  loading?: boolean;
-  horizontal?: boolean;
-  xAxisName?: string;
-  yAxisName?: string;
+  data: Array<{ name: string; value: number }>
+  title?: string
+  loading?: boolean
+  horizontal?: boolean
+  xAxisName?: string
+  yAxisName?: string
 }
 
 /**
@@ -54,7 +54,7 @@ export const BarChart: React.FC<BarChartProps> = ({
         }
       : {
           type: 'category',
-          data: data.map((d) => d.name),
+          data: data.map(d => d.name),
           axisLabel: {
             interval: 0,
             rotate: data.length > 10 ? 45 : 0,
@@ -64,7 +64,7 @@ export const BarChart: React.FC<BarChartProps> = ({
     yAxis: horizontal
       ? {
           type: 'category',
-          data: data.map((d) => d.name),
+          data: data.map(d => d.name),
           name: yAxisName,
         }
       : {
@@ -74,7 +74,7 @@ export const BarChart: React.FC<BarChartProps> = ({
     series: [
       {
         type: 'bar',
-        data: horizontal ? data.map((d) => d.value).reverse() : data.map((d) => d.value),
+        data: horizontal ? data.map(d => d.value).reverse() : data.map(d => d.value),
         itemStyle: {
           color: ANT_DESIGN_COLORS.primary,
           borderRadius: [4, 4, 0, 0],
@@ -86,9 +86,9 @@ export const BarChart: React.FC<BarChartProps> = ({
         },
       },
     ],
-  };
+  }
 
-  return <EChartsWrapper option={option} loading={loading} />;
-};
+  return <EChartsWrapper option={option} loading={loading} />
+}
 
-export default BarChart;
+export default BarChart

@@ -1,11 +1,7 @@
-import React, { useEffect, useRef } from 'react';
-import * as echarts from 'echarts/core';
-import type { EChartsCoreOption, ECharts } from 'echarts/core';
-import {
-  BarChart,
-  LineChart,
-  PieChart,
-} from 'echarts/charts';
+import React, { useEffect, useRef } from 'react'
+import * as echarts from 'echarts/core'
+import type { EChartsCoreOption, ECharts } from 'echarts/core'
+import { BarChart, LineChart, PieChart } from 'echarts/charts'
 import {
   GridComponent,
   TooltipComponent,
@@ -13,8 +9,8 @@ import {
   TitleComponent,
   ToolboxComponent,
   DataZoomComponent,
-} from 'echarts/components';
-import { CanvasRenderer } from 'echarts/renderers';
+} from 'echarts/components'
+import { CanvasRenderer } from 'echarts/renderers'
 
 // 注册必要的组件
 echarts.use([
@@ -28,16 +24,16 @@ echarts.use([
   ToolboxComponent,
   DataZoomComponent,
   CanvasRenderer,
-]);
+])
 
 /**
  * EChartsWrapper Props
  */
 export interface EChartsWrapperProps {
-  option: EChartsCoreOption;
-  style?: React.CSSProperties;
-  onClick?: (params: unknown) => void;
-  loading?: boolean;
+  option: EChartsCoreOption
+  style?: React.CSSProperties
+  onClick?: (params: unknown) => void
+  loading?: boolean
 }
 
 /**
@@ -50,40 +46,40 @@ export const EChartsWrapper: React.FC<EChartsWrapperProps> = ({
   onClick,
   loading = false,
 }) => {
-  const chartRef = useRef<HTMLDivElement>(null);
-  const chartInstance = useRef<ECharts | null>(null);
+  const chartRef = useRef<HTMLDivElement>(null)
+  const chartInstance = useRef<ECharts | null>(null)
 
   // 初始化图表
   useEffect(() => {
-    if (!chartRef.current) return;
+    if (!chartRef.current) return
 
-    chartInstance.current = echarts.init(chartRef.current);
+    chartInstance.current = echarts.init(chartRef.current)
 
     // 绑定点击事件
     if (onClick) {
-      chartInstance.current.on('click', onClick);
+      chartInstance.current.on('click', onClick)
     }
 
     // 响应式处理
     const handleResize = () => {
-      chartInstance.current?.resize();
-    };
+      chartInstance.current?.resize()
+    }
 
-    window.addEventListener('resize', handleResize);
+    window.addEventListener('resize', handleResize)
 
     return () => {
-      window.removeEventListener('resize', handleResize);
-      chartInstance.current?.dispose();
-      chartInstance.current = null;
-    };
-  }, [onClick]);
+      window.removeEventListener('resize', handleResize)
+      chartInstance.current?.dispose()
+      chartInstance.current = null
+    }
+  }, [onClick])
 
   // 更新配置
   useEffect(() => {
     if (chartInstance.current) {
-      chartInstance.current.setOption(option, true);
+      chartInstance.current.setOption(option, true)
     }
-  }, [option]);
+  }, [option])
 
   // 加载状态
   useEffect(() => {
@@ -94,12 +90,12 @@ export const EChartsWrapper: React.FC<EChartsWrapperProps> = ({
           color: '#1890FF',
           textColor: '#1890FF',
           maskColor: 'rgba(255, 255, 255, 0.8)',
-        });
+        })
       } else {
-        chartInstance.current.hideLoading();
+        chartInstance.current.hideLoading()
       }
     }
-  }, [loading]);
+  }, [loading])
 
   return (
     <div
@@ -110,7 +106,7 @@ export const EChartsWrapper: React.FC<EChartsWrapperProps> = ({
         ...style,
       }}
     />
-  );
-};
+  )
+}
 
-export default EChartsWrapper;
+export default EChartsWrapper

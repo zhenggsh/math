@@ -1,34 +1,34 @@
-import axios from 'axios';
-import { getToken } from './auth.service';
+import axios from 'axios'
+import { getToken } from './auth.service'
 import type {
   LearningRecord,
   CreateLearningRecordData,
   PaginatedLearningRecords,
-} from '../types/learning-record.types';
+} from '../types/learning-record.types'
 
-const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
 
 // 创建带认证的 axios 实例
 const api = axios.create({
   baseURL: `${API_URL}`,
-});
+})
 
 // 请求拦截器 - 添加 token
-api.interceptors.request.use((config) => {
-  const token = getToken();
+api.interceptors.request.use(config => {
+  const token = getToken()
   if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+    config.headers.Authorization = `Bearer ${token}`
   }
-  return config;
-});
+  return config
+})
 
 /**
  * API 响应格式
  */
 interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-  message?: string;
+  success: boolean
+  data: T
+  message?: string
 }
 
 /**
@@ -37,13 +37,10 @@ interface ApiResponse<T> {
  * @returns 创建的学习记录
  */
 export async function createLearningRecord(
-  data: CreateLearningRecordData,
+  data: CreateLearningRecordData
 ): Promise<LearningRecord> {
-  const response = await api.post<ApiResponse<LearningRecord>>(
-    '/learning-records',
-    data,
-  );
-  return response.data.data;
+  const response = await api.post<ApiResponse<LearningRecord>>('/learning-records', data)
+  return response.data.data
 }
 
 /**
@@ -56,18 +53,17 @@ export async function createLearningRecord(
 export async function getLearningRecords(
   knowledgePointId?: string,
   page = 1,
-  limit = 20,
+  limit = 20
 ): Promise<PaginatedLearningRecords> {
-  const params: Record<string, string | number> = { page, limit };
+  const params: Record<string, string | number> = { page, limit }
   if (knowledgePointId) {
-    params.knowledgePointId = knowledgePointId;
+    params.knowledgePointId = knowledgePointId
   }
 
-  const response = await api.get<ApiResponse<PaginatedLearningRecords>>(
-    '/learning-records',
-    { params },
-  );
-  return response.data.data;
+  const response = await api.get<ApiResponse<PaginatedLearningRecords>>('/learning-records', {
+    params,
+  })
+  return response.data.data
 }
 
 /**
@@ -76,10 +72,10 @@ export async function getLearningRecords(
  * @returns 该知识点的学习记录列表
  */
 export async function getLearningRecordsByKnowledgePoint(
-  knowledgePointId: string,
+  knowledgePointId: string
 ): Promise<LearningRecord[]> {
   const response = await api.get<ApiResponse<LearningRecord[]>>(
-    `/learning-records/knowledge-point/${knowledgePointId}`,
-  );
-  return response.data.data;
+    `/learning-records/knowledge-point/${knowledgePointId}`
+  )
+  return response.data.data
 }

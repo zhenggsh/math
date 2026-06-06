@@ -56,9 +56,7 @@ describe('ProgressionChart', () => {
   })
 
   it('renders with title', () => {
-    const { container } = render(
-      <ProgressionChart records={mockRecords} title="Progress Title" />
-    )
+    const { container } = render(<ProgressionChart records={mockRecords} title="Progress Title" />)
     expect(container).toBeTruthy()
   })
 
@@ -73,9 +71,7 @@ describe('ProgressionChart', () => {
   })
 
   it('handles single record', () => {
-    const singleRecord = [
-      { date: '2026-05-10', masteryLevel: 'D' as const, durationMinutes: 15 },
-    ]
+    const singleRecord = [{ date: '2026-05-10', masteryLevel: 'D' as const, durationMinutes: 15 }]
     const { container } = render(<ProgressionChart records={singleRecord} />)
     expect(container).toBeTruthy()
   })
@@ -95,8 +91,7 @@ describe('ProgressionChart', () => {
         date: '2026-05-10',
         masteryLevel: 'D' as const,
         durationMinutes: 15,
-        notes:
-          'This is a very long note that exceeds fifty characters in length for testing',
+        notes: 'This is a very long note that exceeds fifty characters in length for testing',
       },
     ]
     const { container } = render(<ProgressionChart records={notesRecord} />)

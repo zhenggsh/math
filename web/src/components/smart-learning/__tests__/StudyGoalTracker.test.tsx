@@ -16,40 +16,28 @@ describe('StudyGoalTracker', () => {
   it('displays progress with goal (X/Y format)', () => {
     render(<StudyGoalTracker {...defaultProps} />)
 
-    expect(
-      screen.getByText('今日已复习 3 / 5 个薄弱点')
-    ).toBeInTheDocument()
+    expect(screen.getByText('今日已复习 3 / 5 个薄弱点')).toBeInTheDocument()
     expect(screen.getByText('60%')).toBeInTheDocument()
   })
 
   it('displays count without goal', () => {
     render(<StudyGoalTracker {...defaultProps} goalCount={0} />)
 
-    expect(
-      screen.getByText('今日已复习 3 个薄弱点')
-    ).toBeInTheDocument()
-    expect(
-      screen.queryByText(/今日已复习.*\/.*个薄弱点/)
-    ).not.toBeInTheDocument()
+    expect(screen.getByText('今日已复习 3 个薄弱点')).toBeInTheDocument()
+    expect(screen.queryByText(/今日已复习.*\/.*个薄弱点/)).not.toBeInTheDocument()
   })
 
   it('shows completion state when goal reached', () => {
     render(<StudyGoalTracker {...defaultProps} studiedCount={5} />)
 
-    expect(
-      screen.getByText('今日目标达成！继续保持')
-    ).toBeInTheDocument()
-    expect(
-      screen.queryByText(/今日已复习/)
-    ).not.toBeInTheDocument()
+    expect(screen.getByText('今日目标达成！继续保持')).toBeInTheDocument()
+    expect(screen.queryByText(/今日已复习/)).not.toBeInTheDocument()
   })
 
   it('shows completion state when studied exceeds goal', () => {
     render(<StudyGoalTracker {...defaultProps} studiedCount={7} />)
 
-    expect(
-      screen.getByText('今日目标达成！继续保持')
-    ).toBeInTheDocument()
+    expect(screen.getByText('今日目标达成！继续保持')).toBeInTheDocument()
   })
 
   it('opens settings modal on button click', () => {
@@ -61,17 +49,13 @@ describe('StudyGoalTracker', () => {
     fireEvent.click(settingsButton)
 
     expect(screen.getByText('设定今日学习目标')).toBeInTheDocument()
-    expect(
-      screen.getByText('每日复习目标数量（1-20）：')
-    ).toBeInTheDocument()
+    expect(screen.getByText('每日复习目标数量（1-20）：')).toBeInTheDocument()
   })
 
   it('calls onGoalChange with new value on save', async () => {
     render(<StudyGoalTracker {...defaultProps} />)
 
-    fireEvent.click(
-      screen.getByRole('button', { name: '设定学习目标' })
-    )
+    fireEvent.click(screen.getByRole('button', { name: '设定学习目标' }))
 
     const input = screen.getByRole('spinbutton')
     fireEvent.change(input, { target: { value: '8' } })
@@ -90,9 +74,7 @@ describe('StudyGoalTracker', () => {
   it('does not call onGoalChange when cancel is clicked', () => {
     render(<StudyGoalTracker {...defaultProps} />)
 
-    fireEvent.click(
-      screen.getByRole('button', { name: '设定学习目标' })
-    )
+    fireEvent.click(screen.getByRole('button', { name: '设定学习目标' }))
 
     const input = screen.getByRole('spinbutton')
     fireEvent.change(input, { target: { value: '10' } })
@@ -105,9 +87,7 @@ describe('StudyGoalTracker', () => {
   it('initializes modal with current goalCount', () => {
     render(<StudyGoalTracker {...defaultProps} goalCount={7} />)
 
-    fireEvent.click(
-      screen.getByRole('button', { name: '设定学习目标' })
-    )
+    fireEvent.click(screen.getByRole('button', { name: '设定学习目标' }))
 
     const input = screen.getByRole('spinbutton') as HTMLInputElement
     expect(input.value).toBe('7')
