@@ -257,7 +257,7 @@ describe('AnalyticsService', () => {
             level3: null,
           },
           masteryLevel: 'A',
-          createdAt: new Date('2026-05-15'),
+          startTime: new Date('2026-05-15'),
         },
         {
           knowledgePoint: {
@@ -268,7 +268,7 @@ describe('AnalyticsService', () => {
             level3: null,
           },
           masteryLevel: 'C',
-          createdAt: new Date('2026-05-12'),
+          startTime: new Date('2026-05-12'),
         },
         {
           knowledgePoint: {
@@ -279,7 +279,7 @@ describe('AnalyticsService', () => {
             level3: null,
           },
           masteryLevel: 'E',
-          createdAt: new Date('2026-05-10'),
+          startTime: new Date('2026-05-10'),
         },
       ] as never);
 
@@ -293,7 +293,9 @@ describe('AnalyticsService', () => {
     });
 
     it('should return empty array when no learning records', async () => {
-      jest.spyOn(prismaService.learningRecord, 'findMany').mockResolvedValue([] as never);
+      jest
+        .spyOn(prismaService.learningRecord, 'findMany')
+        .mockResolvedValue([] as never);
 
       const result = await service.getLearnedKnowledgePoints(mockUserId);
 
@@ -301,11 +303,14 @@ describe('AnalyticsService', () => {
     });
 
     it('should filter by userId', async () => {
-      jest.spyOn(prismaService.learningRecord, 'findMany').mockResolvedValue([] as never);
+      jest
+        .spyOn(prismaService.learningRecord, 'findMany')
+        .mockResolvedValue([] as never);
 
       await service.getLearnedKnowledgePoints('user-specific');
 
-      const findManyCall = jest.spyOn(prismaService.learningRecord, 'findMany').mock.calls[0];
+      const findManyCall = jest.spyOn(prismaService.learningRecord, 'findMany')
+        .mock.calls[0];
       expect(findManyCall[0].where.userId).toBe('user-specific');
     });
   });
