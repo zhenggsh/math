@@ -10,6 +10,7 @@ import type {
   StudentComparison,
   KnowledgePointProgress,
   LearnedKnowledgePoints,
+  TextbookSummary,
 } from '../types/analytics.types'
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
@@ -40,17 +41,20 @@ interface ApiResponse<T> {
 /**
  * 获取学生学习概览
  */
-export async function getStudentOverview(): Promise<StudentOverview> {
-  const response = await api.get<ApiResponse<StudentOverview>>('/analytics/student/overview')
+export async function getStudentOverview(textbookId?: string): Promise<StudentOverview> {
+  const response = await api.get<ApiResponse<StudentOverview>>('/analytics/student/overview', {
+    params: textbookId ? { textbookId } : undefined,
+  })
   return response.data.data
 }
 
 /**
  * 获取掌握程度分布
  */
-export async function getMasteryDistribution(): Promise<MasteryDistribution> {
+export async function getMasteryDistribution(textbookId?: string): Promise<MasteryDistribution> {
   const response = await api.get<ApiResponse<MasteryDistribution>>(
-    '/analytics/student/mastery-distribution'
+    '/analytics/student/mastery-distribution',
+    { params: textbookId ? { textbookId } : undefined }
   )
   return response.data.data
 }
@@ -59,9 +63,11 @@ export async function getMasteryDistribution(): Promise<MasteryDistribution> {
  * 获取学习趋势
  * @param days 查询天数（默认30）
  */
-export async function getLearningTrend(days = 30): Promise<LearningTrend> {
+export async function getLearningTrend(days = 30, textbookId?: string): Promise<LearningTrend> {
+  const params: Record<string, unknown> = { days }
+  if (textbookId) params.textbookId = textbookId
   const response = await api.get<ApiResponse<LearningTrend>>('/analytics/student/learning-trend', {
-    params: { days },
+    params,
   })
   return response.data.data
 }
@@ -70,9 +76,11 @@ export async function getLearningTrend(days = 30): Promise<LearningTrend> {
  * 获取薄弱知识点
  * @param limit 返回数量限制（默认10）
  */
-export async function getWeakPoints(limit = 10): Promise<WeakPoints> {
+export async function getWeakPoints(limit = 10, textbookId?: string): Promise<WeakPoints> {
+  const params: Record<string, unknown> = { limit }
+  if (textbookId) params.textbookId = textbookId
   const response = await api.get<ApiResponse<WeakPoints>>('/analytics/student/weak-points', {
-    params: { limit },
+    params,
   })
   return response.data.data
 }
@@ -80,9 +88,24 @@ export async function getWeakPoints(limit = 10): Promise<WeakPoints> {
 /**
  * 获取已学知识点列表（所有掌握度级别）
  */
-export async function getLearnedKnowledgePoints(): Promise<LearnedKnowledgePoints> {
+export async function getLearnedKnowledgePoints(
+  textbookId?: string
+): Promise<LearnedKnowledgePoints> {
   const response = await api.get<ApiResponse<LearnedKnowledgePoints>>(
-    '/analytics/student/learned-knowledge-points'
+    '/analytics/student/learned-knowledge-points',
+    { params: textbookId ? { textbookId } : undefined }
+  )
+  return response.data.data
+}
+
+/**
+ * 获取教材学习概览
+ * @param textbookId 教材ID
+ */
+export async function getTextbookSummary(textbookId: string): Promise<TextbookSummary> {
+  const response = await api.get<ApiResponse<TextbookSummary>>(
+    '/analytics/student/textbook-summary',
+    { params: { textbookId } }
   )
   return response.data.data
 }
