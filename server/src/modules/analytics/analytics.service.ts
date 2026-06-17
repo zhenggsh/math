@@ -288,8 +288,8 @@ export class AnalyticsService {
     const learnedPoints: LearnedKnowledgePointDto[] = [];
     for (const [, records] of grouped) {
       if (records.length === 0) continue;
-      const latest = records[records.length - 1];
-      const previous = records.length > 1 ? records[records.length - 2] : latest;
+      const latest = records[0];
+      const previous = records.length > 1 ? records[1] : latest;
       learnedPoints.push({
         knowledgePointId: latest.knowledge_point_id,
         code: latest.code,
