@@ -42,8 +42,6 @@ const mockWeak: WeakPoints = {
   ],
 }
 
-interface LocationDisplayProps {}
-
 function LocationDisplay(): React.JSX.Element {
   const location = useLocation()
   return <div data-testid="location">{`${location.pathname}${location.search}`}</div>
