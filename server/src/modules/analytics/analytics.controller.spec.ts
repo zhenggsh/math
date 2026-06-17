@@ -14,6 +14,8 @@ import type {
   ClassOverviewDto,
   KnowledgeHeatDto,
   StudentComparisonDto,
+  LearnedKnowledgePointsDto,
+  TextbookSummaryDto,
 } from './interfaces/stats.interfaces';
 import type { Response } from 'express';
 
@@ -28,6 +30,7 @@ describe('AnalyticsController', () => {
     getLearningTrend: jest.fn(),
     getWeakPoints: jest.fn(),
     getLearnedKnowledgePoints: jest.fn(),
+    getTextbookSummary: jest.fn(),
     getKnowledgePointProgress: jest.fn(),
     getClassOverview: jest.fn(),
     getKnowledgeHeat: jest.fn(),
@@ -77,11 +80,32 @@ describe('AnalyticsController', () => {
 
       mockAnalyticsService.getStudentOverview.mockResolvedValue(mockData);
 
-      const result = await controller.getStudentOverview(mockUserId);
+      const result = await controller.getStudentOverview(mockUserId, {});
 
       expect(result).toEqual({ success: true, data: mockData });
       expect(mockAnalyticsService.getStudentOverview).toHaveBeenCalledWith(
         mockUserId,
+        undefined,
+      );
+    });
+
+    it('should pass textbookId parameter to service', async (): Promise<void> => {
+      const mockData: StudentOverviewDto = {
+        totalLearningCount: 5,
+        totalDurationMinutes: 150,
+        uniqueKnowledgePoints: 3,
+      };
+
+      mockAnalyticsService.getStudentOverview.mockResolvedValue(mockData);
+
+      const result = await controller.getStudentOverview(mockUserId, {
+        textbookId: 'textbook-1',
+      });
+
+      expect(result).toEqual({ success: true, data: mockData });
+      expect(mockAnalyticsService.getStudentOverview).toHaveBeenCalledWith(
+        mockUserId,
+        'textbook-1',
       );
     });
   });
@@ -98,11 +122,27 @@ describe('AnalyticsController', () => {
 
       mockAnalyticsService.getMasteryDistribution.mockResolvedValue(mockData);
 
-      const result = await controller.getMasteryDistribution(mockUserId);
+      const result = await controller.getMasteryDistribution(mockUserId, {});
 
       expect(result).toEqual({ success: true, data: mockData });
       expect(mockAnalyticsService.getMasteryDistribution).toHaveBeenCalledWith(
         mockUserId,
+        undefined,
+      );
+    });
+
+    it('should pass textbookId parameter to service', async (): Promise<void> => {
+      const mockData: MasteryDistributionDto = { distribution: [] };
+
+      mockAnalyticsService.getMasteryDistribution.mockResolvedValue(mockData);
+
+      await controller.getMasteryDistribution(mockUserId, {
+        textbookId: 'textbook-1',
+      });
+
+      expect(mockAnalyticsService.getMasteryDistribution).toHaveBeenCalledWith(
+        mockUserId,
+        'textbook-1',
       );
     });
   });
@@ -123,6 +163,7 @@ describe('AnalyticsController', () => {
       expect(mockAnalyticsService.getLearningTrend).toHaveBeenCalledWith(
         mockUserId,
         30,
+        undefined,
       );
     });
 
@@ -136,6 +177,24 @@ describe('AnalyticsController', () => {
       expect(mockAnalyticsService.getLearningTrend).toHaveBeenCalledWith(
         mockUserId,
         7,
+        undefined,
+      );
+    });
+
+    it('should pass textbookId parameter to service', async (): Promise<void> => {
+      const mockData: LearningTrendDto = { trend: [] };
+
+      mockAnalyticsService.getLearningTrend.mockResolvedValue(mockData);
+
+      await controller.getLearningTrend(mockUserId, {
+        days: 30,
+        textbookId: 'textbook-1',
+      });
+
+      expect(mockAnalyticsService.getLearningTrend).toHaveBeenCalledWith(
+        mockUserId,
+        30,
+        'textbook-1',
       );
     });
   });
@@ -163,6 +222,7 @@ describe('AnalyticsController', () => {
       expect(mockAnalyticsService.getWeakPoints).toHaveBeenCalledWith(
         mockUserId,
         10,
+        undefined,
       );
     });
 
@@ -176,13 +236,31 @@ describe('AnalyticsController', () => {
       expect(mockAnalyticsService.getWeakPoints).toHaveBeenCalledWith(
         mockUserId,
         5,
+        undefined,
+      );
+    });
+
+    it('should pass textbookId parameter to service', async (): Promise<void> => {
+      const mockData: WeakPointsDto = { weakPoints: [] };
+
+      mockAnalyticsService.getWeakPoints.mockResolvedValue(mockData);
+
+      await controller.getWeakPoints(mockUserId, {
+        limit: 10,
+        textbookId: 'textbook-1',
+      });
+
+      expect(mockAnalyticsService.getWeakPoints).toHaveBeenCalledWith(
+        mockUserId,
+        10,
+        'textbook-1',
       );
     });
   });
 
   describe('GET student/learned-knowledge-points', () => {
     it('should return learned knowledge points', async (): Promise<void> => {
-      const mockData = {
+      const mockData: LearnedKnowledgePointsDto = {
         learnedKnowledgePoints: [
           {
             knowledgePointId: 'kp-1',
@@ -190,16 +268,82 @@ describe('AnalyticsController', () => {
             name: '集合 > 集合的含义',
             lastMasteryLevel: 'C',
             lastLearningDate: '2026-04-01',
+            lastTwoMasteryLevels: ['C', 'C'],
           },
         ],
       };
 
-      mockAnalyticsService.getLearnedKnowledgePoints.mockResolvedValue(mockData);
+      mockAnalyticsService.getLearnedKnowledgePoints.mockResolvedValue(
+        mockData,
+      );
 
-      const result = await controller.getLearnedKnowledgePoints(mockUserId);
+      const result = await controller.getLearnedKnowledgePoints(mockUserId, {});
 
       expect(result).toEqual({ success: true, data: mockData });
-      expect(mockAnalyticsService.getLearnedKnowledgePoints).toHaveBeenCalledWith(mockUserId);
+      expect(
+        mockAnalyticsService.getLearnedKnowledgePoints,
+      ).toHaveBeenCalledWith(mockUserId, undefined);
+    });
+
+    it('should pass textbookId parameter to service', async (): Promise<void> => {
+      const mockData: LearnedKnowledgePointsDto = {
+        learnedKnowledgePoints: [],
+      };
+
+      mockAnalyticsService.getLearnedKnowledgePoints.mockResolvedValue(
+        mockData,
+      );
+
+      await controller.getLearnedKnowledgePoints(mockUserId, {
+        textbookId: 'textbook-1',
+      });
+
+      expect(
+        mockAnalyticsService.getLearnedKnowledgePoints,
+      ).toHaveBeenCalledWith(mockUserId, 'textbook-1');
+    });
+  });
+
+  describe('GET student/textbook-summary', () => {
+    it('should return textbook summary', async (): Promise<void> => {
+      const mockData: TextbookSummaryDto = {
+        textbookId: 'textbook-1',
+        textbookName: '高中数学必修一',
+        totalKnowledgePoints: 50,
+        learnedKnowledgePoints: 20,
+        unlearnedKnowledgePoints: 30,
+        masteryDistribution: [
+          { level: MasteryLevel.A, count: 5, percentage: 25 },
+          { level: MasteryLevel.B, count: 10, percentage: 50 },
+          { level: MasteryLevel.C, count: 5, percentage: 25 },
+          { level: MasteryLevel.D, count: 0, percentage: 0 },
+          { level: MasteryLevel.E, count: 0, percentage: 0 },
+        ],
+        importanceDistribution: [
+          { level: 'A', count: 15 },
+          { level: 'B', count: 25 },
+          { level: 'C', count: 10 },
+        ],
+      };
+
+      mockAnalyticsService.getTextbookSummary.mockResolvedValue(mockData);
+
+      const result = await controller.getTextbookSummary(mockUserId, {
+        textbookId: 'textbook-1',
+      });
+
+      expect(result).toEqual({ success: true, data: mockData });
+      expect(mockAnalyticsService.getTextbookSummary).toHaveBeenCalledWith(
+        mockUserId,
+        'textbook-1',
+      );
+    });
+
+    it('should throw BadRequestException when textbookId is missing', async (): Promise<void> => {
+      await expect(
+        controller.getTextbookSummary(mockUserId, {}),
+      ).rejects.toThrow('textbookId 不能为空');
+      expect(mockAnalyticsService.getTextbookSummary).not.toHaveBeenCalled();
     });
   });
 
@@ -222,20 +366,20 @@ describe('AnalyticsController', () => {
         ],
       };
 
-      mockAnalyticsService.getKnowledgePointProgress.mockResolvedValue(mockData);
-
-      const result = await controller.getKnowledgePointProgress(
-        mockUserId,
-        { knowledgePointId: 'kp-1', startDate: '2026-01-01', endDate: '2026-12-31' },
+      mockAnalyticsService.getKnowledgePointProgress.mockResolvedValue(
+        mockData,
       );
+
+      const result = await controller.getKnowledgePointProgress(mockUserId, {
+        knowledgePointId: 'kp-1',
+        startDate: '2026-01-01',
+        endDate: '2026-12-31',
+      });
 
       expect(result).toEqual({ success: true, data: mockData });
-      expect(mockAnalyticsService.getKnowledgePointProgress).toHaveBeenCalledWith(
-        mockUserId,
-        'kp-1',
-        '2026-01-01',
-        '2026-12-31',
-      );
+      expect(
+        mockAnalyticsService.getKnowledgePointProgress,
+      ).toHaveBeenCalledWith(mockUserId, 'kp-1', '2026-01-01', '2026-12-31');
     });
 
     it('should call service without date range when not provided', async (): Promise<void> => {
@@ -247,20 +391,18 @@ describe('AnalyticsController', () => {
         progressRecords: [],
       };
 
-      mockAnalyticsService.getKnowledgePointProgress.mockResolvedValue(mockData);
-
-      const result = await controller.getKnowledgePointProgress(
-        mockUserId,
-        { knowledgePointId: 'kp-1' },
+      mockAnalyticsService.getKnowledgePointProgress.mockResolvedValue(
+        mockData,
       );
+
+      const result = await controller.getKnowledgePointProgress(mockUserId, {
+        knowledgePointId: 'kp-1',
+      });
 
       expect(result).toEqual({ success: true, data: mockData });
-      expect(mockAnalyticsService.getKnowledgePointProgress).toHaveBeenCalledWith(
-        mockUserId,
-        'kp-1',
-        undefined,
-        undefined,
-      );
+      expect(
+        mockAnalyticsService.getKnowledgePointProgress,
+      ).toHaveBeenCalledWith(mockUserId, 'kp-1', undefined, undefined);
     });
   });
 

@@ -7,6 +7,7 @@ import {
   ValidationPipe,
   Body,
   Res,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -24,6 +25,7 @@ import { AnalyticsService } from './analytics.service';
 import { ExportService } from './export.service';
 import { ExportDataDto } from './dto/export.dto';
 import {
+  TextbookIdQueryDto,
   LearningTrendQueryDto,
   WeakPointsQueryDto,
   KnowledgePointProgressQueryDto,
@@ -31,6 +33,7 @@ import {
   KnowledgeHeatQueryDto,
   StudentComparisonQueryDto,
 } from './dto/query-params.dto';
+import { TextbookSummaryResponseDto } from './dto/textbook-summary.dto';
 import type {
   StudentOverviewDto,
   MasteryDistributionDto,
@@ -41,6 +44,7 @@ import type {
   KnowledgeHeatDto,
   StudentComparisonDto,
   LearnedKnowledgePointsDto,
+  TextbookSummaryDto,
 } from './interfaces/stats.interfaces';
 import type { Response } from 'express';
 
@@ -64,11 +68,13 @@ export class AnalyticsController {
   @Get('student/overview')
   @Roles(Role.STUDENT)
   @ApiOperation({ summary: '学生学习概览' })
+  @ApiQuery({ name: 'textbookId', required: false, description: '教材ID' })
   @ApiResponse({ status: 200, description: '获取成功' })
   async getStudentOverview(
     @CurrentUser('userId') userId: string,
+    @Query(new ValidationPipe({ transform: true })) query: TextbookIdQueryDto,
   ): Promise<{ success: boolean; data: StudentOverviewDto }> {
-    const data = await this.service.getStudentOverview(userId);
+    const data = await this.service.getStudentOverview(userId, query.textbookId);
     return { success: true, data };
   }
 
@@ -78,11 +84,13 @@ export class AnalyticsController {
   @Get('student/mastery-distribution')
   @Roles(Role.STUDENT)
   @ApiOperation({ summary: '掌握程度分布' })
+  @ApiQuery({ name: 'textbookId', required: false, description: '教材ID' })
   @ApiResponse({ status: 200, description: '获取成功' })
   async getMasteryDistribution(
     @CurrentUser('userId') userId: string,
+    @Query(new ValidationPipe({ transform: true })) query: TextbookIdQueryDto,
   ): Promise<{ success: boolean; data: MasteryDistributionDto }> {
-    const data = await this.service.getMasteryDistribution(userId);
+    const data = await this.service.getMasteryDistribution(userId, query.textbookId);
     return { success: true, data };
   }
 
@@ -93,13 +101,14 @@ export class AnalyticsController {
   @Roles(Role.STUDENT)
   @ApiOperation({ summary: '学习趋势' })
   @ApiQuery({ name: 'days', required: false, description: '查询天数' })
+  @ApiQuery({ name: 'textbookId', required: false, description: '教材ID' })
   @ApiResponse({ status: 200, description: '获取成功' })
   async getLearningTrend(
     @CurrentUser('userId') userId: string,
     @Query(new ValidationPipe({ transform: true }))
     query: LearningTrendQueryDto,
   ): Promise<{ success: boolean; data: LearningTrendDto }> {
-    const data = await this.service.getLearningTrend(userId, query.days || 30);
+    const data = await this.service.getLearningTrend(userId, query.days || 30, query.textbookId);
     return { success: true, data };
   }
 
@@ -110,12 +119,13 @@ export class AnalyticsController {
   @Roles(Role.STUDENT)
   @ApiOperation({ summary: '薄弱知识点' })
   @ApiQuery({ name: 'limit', required: false, description: '返回数量限制' })
+  @ApiQuery({ name: 'textbookId', required: false, description: '教材ID' })
   @ApiResponse({ status: 200, description: '获取成功' })
   async getWeakPoints(
     @CurrentUser('userId') userId: string,
     @Query(new ValidationPipe({ transform: true })) query: WeakPointsQueryDto,
   ): Promise<{ success: boolean; data: WeakPointsDto }> {
-    const data = await this.service.getWeakPoints(userId, query.limit || 10);
+    const data = await this.service.getWeakPoints(userId, query.limit || 10, query.textbookId);
     return { success: true, data };
   }
 
@@ -125,11 +135,33 @@ export class AnalyticsController {
   @Get('student/learned-knowledge-points')
   @Roles(Role.STUDENT)
   @ApiOperation({ summary: '已学知识点列表' })
+  @ApiQuery({ name: 'textbookId', required: false, description: '教材ID' })
   @ApiResponse({ status: 200, description: '获取成功' })
   async getLearnedKnowledgePoints(
     @CurrentUser('userId') userId: string,
+    @Query(new ValidationPipe({ transform: true })) query: TextbookIdQueryDto,
   ): Promise<{ success: boolean; data: LearnedKnowledgePointsDto }> {
-    const data = await this.service.getLearnedKnowledgePoints(userId);
+    const data = await this.service.getLearnedKnowledgePoints(userId, query.textbookId);
+    return { success: true, data };
+  }
+
+  /**
+   * 教材维度总览
+   */
+  @Get('student/textbook-summary')
+  @Roles(Role.STUDENT)
+  @ApiOperation({ summary: '教材维度总览' })
+  @ApiQuery({ name: 'textbookId', required: true, description: '教材ID' })
+  @ApiResponse({ status: 200, description: '获取成功', type: TextbookSummaryResponseDto })
+  @ApiResponse({ status: 404, description: '教材不存在' })
+  async getTextbookSummary(
+    @CurrentUser('userId') userId: string,
+    @Query(new ValidationPipe({ transform: true })) query: TextbookIdQueryDto,
+  ): Promise<{ success: boolean; data: TextbookSummaryDto }> {
+    if (!query.textbookId) {
+      throw new BadRequestException('textbookId 不能为空');
+    }
+    const data = await this.service.getTextbookSummary(userId, query.textbookId);
     return { success: true, data };
   }
 
@@ -144,9 +176,15 @@ export class AnalyticsController {
   @ApiResponse({ status: 200, description: '获取成功' })
   async getKnowledgePointProgress(
     @CurrentUser('userId') userId: string,
-    @Query(new ValidationPipe({ transform: true })) query: KnowledgePointProgressQueryDto,
+    @Query(new ValidationPipe({ transform: true }))
+    query: KnowledgePointProgressQueryDto,
   ): Promise<{ success: boolean; data: KnowledgePointProgressDto }> {
-    const data = await this.service.getKnowledgePointProgress(userId, query.knowledgePointId, query.startDate, query.endDate);
+    const data = await this.service.getKnowledgePointProgress(
+      userId,
+      query.knowledgePointId,
+      query.startDate,
+      query.endDate,
+    );
     return { success: true, data };
   }
 
