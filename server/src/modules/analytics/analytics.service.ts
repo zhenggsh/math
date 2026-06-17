@@ -26,18 +26,28 @@ export class AnalyticsService {
   /**
    * 获取学生学习概览
    */
-  async getStudentOverview(userId: string): Promise<StudentOverviewDto> {
-    this.logger.log(`Getting student overview for user: ${userId}`);
+  async getStudentOverview(
+    userId: string,
+    textbookId?: string,
+  ): Promise<StudentOverviewDto> {
+    this.logger.log(
+      `Getting student overview for user: ${userId}, textbook: ${textbookId || 'all'}`,
+    );
+
+    const recordWhere: Record<string, unknown> = { userId };
+    if (textbookId) {
+      recordWhere.knowledgePoint = { textbookId };
+    }
 
     const [totalResult, uniqueKpResult] = await Promise.all([
       this.prisma.learningRecord.aggregate({
-        where: { userId },
+        where: recordWhere,
         _count: { id: true },
         _sum: { durationMinutes: true },
       }),
       this.prisma.learningRecord.groupBy({
         by: ['knowledgePointId'],
-        where: { userId },
+        where: recordWhere,
         _count: { knowledgePointId: true },
       }),
     ]);
