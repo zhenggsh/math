@@ -1,11 +1,21 @@
-import { IsOptional, IsInt, IsString, IsNotEmpty, Min, Max } from 'class-validator';
+import { IsOptional, IsInt, IsString, IsNotEmpty, IsUUID, Min, Max } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
 /**
+ * 教材ID查询参数
+ */
+export class TextbookIdQueryDto {
+  @ApiPropertyOptional({ description: '教材ID', example: '550e8400-e29b-41d4-a716-446655440000' })
+  @IsOptional()
+  @IsUUID()
+  textbookId?: string;
+}
+
+/**
  * 学习趋势查询参数
  */
-export class LearningTrendQueryDto {
+export class LearningTrendQueryDto extends TextbookIdQueryDto {
   @ApiPropertyOptional({
     description: '查询天数（默认30天）',
     example: 30,
@@ -22,7 +32,7 @@ export class LearningTrendQueryDto {
 /**
  * 薄弱知识点查询参数
  */
-export class WeakPointsQueryDto {
+export class WeakPointsQueryDto extends TextbookIdQueryDto {
   @ApiPropertyOptional({
     description: '返回数量限制（默认10）',
     example: 10,
