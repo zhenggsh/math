@@ -16,6 +16,7 @@ describe('AnalyticsService', () => {
         {
           provide: PrismaService,
           useValue: {
+            $queryRawUnsafe: jest.fn(),
             learningRecord: {
               aggregate: jest.fn(),
               groupBy: jest.fn(),
@@ -271,39 +272,66 @@ describe('AnalyticsService', () => {
 
   describe('getLearnedKnowledgePoints', () => {
     it('should return all learned knowledge points sorted by mastery level', async () => {
-      jest.spyOn(prismaService.learningRecord, 'findMany').mockResolvedValue([
+      jest.spyOn(prismaService, '$queryRawUnsafe').mockResolvedValue([
         {
-          knowledgePoint: {
-            id: 'kp-a',
-            code: '1.1.1',
-            level1: '集合',
-            level2: '集合的含义',
-            level3: null,
-          },
-          masteryLevel: 'A',
-          startTime: new Date('2026-05-15'),
+          knowledge_point_id: 'kp-a',
+          code: '1.1.1',
+          level1: '集合',
+          level2: '集合的含义',
+          level3: null,
+          mastery_level: 'B',
+          start_time: new Date('2026-05-14'),
+          rn: 1n,
         },
         {
-          knowledgePoint: {
-            id: 'kp-c',
-            code: '1.2.1',
-            level1: '逻辑',
-            level2: '命题',
-            level3: null,
-          },
-          masteryLevel: 'C',
-          startTime: new Date('2026-05-12'),
+          knowledge_point_id: 'kp-a',
+          code: '1.1.1',
+          level1: '集合',
+          level2: '集合的含义',
+          level3: null,
+          mastery_level: 'A',
+          start_time: new Date('2026-05-15'),
+          rn: 2n,
         },
         {
-          knowledgePoint: {
-            id: 'kp-e',
-            code: '1.3.1',
-            level1: '函数',
-            level2: '概念',
-            level3: null,
-          },
-          masteryLevel: 'E',
-          startTime: new Date('2026-05-10'),
+          knowledge_point_id: 'kp-c',
+          code: '1.2.1',
+          level1: '逻辑',
+          level2: '命题',
+          level3: null,
+          mastery_level: 'D',
+          start_time: new Date('2026-05-11'),
+          rn: 1n,
+        },
+        {
+          knowledge_point_id: 'kp-c',
+          code: '1.2.1',
+          level1: '逻辑',
+          level2: '命题',
+          level3: null,
+          mastery_level: 'C',
+          start_time: new Date('2026-05-12'),
+          rn: 2n,
+        },
+        {
+          knowledge_point_id: 'kp-e',
+          code: '1.3.1',
+          level1: '函数',
+          level2: '概念',
+          level3: null,
+          mastery_level: 'E',
+          start_time: new Date('2026-05-09'),
+          rn: 1n,
+        },
+        {
+          knowledge_point_id: 'kp-e',
+          code: '1.3.1',
+          level1: '函数',
+          level2: '概念',
+          level3: null,
+          mastery_level: 'E',
+          start_time: new Date('2026-05-10'),
+          rn: 2n,
         },
       ] as never);
 
@@ -312,14 +340,24 @@ describe('AnalyticsService', () => {
       expect(result.learnedKnowledgePoints).toHaveLength(3);
       // Should be sorted E -> C -> A
       expect(result.learnedKnowledgePoints[0].lastMasteryLevel).toBe('E');
+      expect(result.learnedKnowledgePoints[0].lastTwoMasteryLevels).toEqual([
+        'E',
+        'E',
+      ]);
       expect(result.learnedKnowledgePoints[1].lastMasteryLevel).toBe('C');
+      expect(result.learnedKnowledgePoints[1].lastTwoMasteryLevels).toEqual([
+        'D',
+        'C',
+      ]);
       expect(result.learnedKnowledgePoints[2].lastMasteryLevel).toBe('A');
+      expect(result.learnedKnowledgePoints[2].lastTwoMasteryLevels).toEqual([
+        'B',
+        'A',
+      ]);
     });
 
     it('should return empty array when no learning records', async () => {
-      jest
-        .spyOn(prismaService.learningRecord, 'findMany')
-        .mockResolvedValue([] as never);
+      jest.spyOn(prismaService, '$queryRawUnsafe').mockResolvedValue([] as never);
 
       const result = await service.getLearnedKnowledgePoints(mockUserId);
 
@@ -327,15 +365,26 @@ describe('AnalyticsService', () => {
     });
 
     it('should filter by userId', async () => {
-      jest
-        .spyOn(prismaService.learningRecord, 'findMany')
-        .mockResolvedValue([] as never);
+      jest.spyOn(prismaService, '$queryRawUnsafe').mockResolvedValue([] as never);
 
       await service.getLearnedKnowledgePoints('user-specific');
 
-      const findManyCall = jest.spyOn(prismaService.learningRecord, 'findMany')
-        .mock.calls[0];
-      expect(findManyCall[0].where.userId).toBe('user-specific');
+      expect(prismaService.$queryRawUnsafe).toHaveBeenCalledWith(
+        expect.stringContaining('lr.user_id = $1'),
+        'user-specific',
+      );
+    });
+
+    it('should filter by textbookId when provided', async () => {
+      jest.spyOn(prismaService, '$queryRawUnsafe').mockResolvedValue([] as never);
+
+      await service.getLearnedKnowledgePoints(mockUserId, 'tb-1');
+
+      expect(prismaService.$queryRawUnsafe).toHaveBeenCalledWith(
+        expect.stringContaining('kp."textbook_id" = $2'),
+        mockUserId,
+        'tb-1',
+      );
     });
   });
 

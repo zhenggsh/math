@@ -12,7 +12,19 @@ import type {
   StudentComparisonDto,
   KnowledgePointProgressDto,
   LearnedKnowledgePointsDto,
+  LearnedKnowledgePointDto,
 } from './interfaces/stats.interfaces';
+
+interface RawLastTwoRecord {
+  knowledge_point_id: string;
+  code: string;
+  level1: string;
+  level2: string | null;
+  level3: string | null;
+  mastery_level: string;
+  start_time: Date;
+  rn: bigint;
+}
 
 /**
  * 数据分析服务
@@ -231,59 +243,63 @@ export class AnalyticsService {
    */
   async getLearnedKnowledgePoints(
     userId: string,
+    textbookId?: string,
   ): Promise<LearnedKnowledgePointsDto> {
-    this.logger.log(`Getting learned knowledge points for user: ${userId}`);
+    this.logger.log(`Getting learned knowledge points for user: ${userId}, textbook: ${textbookId || 'all'}`);
 
-    // TODO: replace with raw SQL window function in Task 10
-    // 获取用户每个知识点的最近学习记录（最多两次），用于展示最新掌握度及变化趋势
-    const records = await this.prisma.learningRecord.findMany({
-      where: { userId },
-      orderBy: { startTime: 'desc' },
-      include: {
-        knowledgePoint: {
-          select: {
-            id: true,
-            code: true,
-            level1: true,
-            level2: true,
-            level3: true,
-          },
-        },
-      },
-    });
+    const textbookFilter = textbookId ? 'AND kp."textbook_id" = $2' : '';
+    const params: (string | number)[] = [userId];
+    if (textbookId) params.push(textbookId);
 
-    // 按知识点分组并取最近两次记录
-    const recordsByKnowledgePoint = new Map<string, typeof records>();
-    for (const record of records) {
-      const key = record.knowledgePointId ?? record.knowledgePoint.id;
-      const list = recordsByKnowledgePoint.get(key) ?? [];
-      if (list.length < 2) {
-        list.push(record);
-        recordsByKnowledgePoint.set(key, list);
-      }
+    const query = `
+      WITH ranked AS (
+        SELECT
+          lr."knowledge_point_id",
+          kp.code,
+          kp.level1,
+          kp.level2,
+          kp.level3,
+          lr.mastery_level,
+          lr.start_time,
+          ROW_NUMBER() OVER (
+            PARTITION BY lr."knowledge_point_id"
+            ORDER BY lr.start_time DESC
+          ) AS rn
+        FROM learning_records lr
+        JOIN knowledge_points kp ON kp.id = lr."knowledge_point_id"
+        WHERE lr.user_id = $1
+          ${textbookFilter}
+      )
+      SELECT *
+      FROM ranked
+      WHERE rn <= 2
+      ORDER BY "knowledge_point_id", rn ASC
+    `;
+
+    const rawRows = await this.prisma.$queryRawUnsafe<RawLastTwoRecord[]>(query, ...params);
+
+    const grouped = new Map<string, RawLastTwoRecord[]>();
+    for (const row of rawRows) {
+      const list = grouped.get(row.knowledge_point_id) || [];
+      list.push(row);
+      grouped.set(row.knowledge_point_id, list);
     }
 
-    const learnedPoints = Array.from(recordsByKnowledgePoint.values()).map(
-      ([latest, previous]) => ({
-        knowledgePointId: latest.knowledgePoint.id,
-        code: latest.knowledgePoint.code,
-        name: [
-          latest.knowledgePoint.level1,
-          latest.knowledgePoint.level2,
-          latest.knowledgePoint.level3,
-        ]
-          .filter(Boolean)
-          .join(' > '),
-        lastMasteryLevel: latest.masteryLevel as 'A' | 'B' | 'C' | 'D' | 'E',
-        lastLearningDate: latest.startTime.toISOString(),
-        lastTwoMasteryLevels: [
-          (previous ?? latest).masteryLevel,
-          latest.masteryLevel,
-        ] as [string, string],
-      }),
-    );
+    const learnedPoints: LearnedKnowledgePointDto[] = [];
+    for (const [, records] of grouped) {
+      if (records.length === 0) continue;
+      const latest = records[records.length - 1];
+      const previous = records.length > 1 ? records[records.length - 2] : latest;
+      learnedPoints.push({
+        knowledgePointId: latest.knowledge_point_id,
+        code: latest.code,
+        name: formatKnowledgePointName(latest.level1, latest.level2, latest.level3),
+        lastMasteryLevel: latest.mastery_level as 'A' | 'B' | 'C' | 'D' | 'E',
+        lastLearningDate: latest.start_time.toISOString(),
+        lastTwoMasteryLevels: [previous.mastery_level, latest.mastery_level],
+      });
+    }
 
-    // 按掌握度从低到高排序 (E > D > C > B > A)
     const levelOrder = { E: 0, D: 1, C: 2, B: 3, A: 4 };
     learnedPoints.sort(
       (a, b) => levelOrder[a.lastMasteryLevel] - levelOrder[b.lastMasteryLevel],
