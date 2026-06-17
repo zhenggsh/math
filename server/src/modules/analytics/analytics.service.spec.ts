@@ -131,7 +131,7 @@ describe('AnalyticsService', () => {
       jest
         .spyOn(prismaService.learningRecord, 'findMany')
         .mockResolvedValue([
-          { durationMinutes: 30, createdAt: mockDate },
+          { durationMinutes: 30, startTime: mockDate },
         ] as never);
 
       const result = await service.getLearningTrend(mockUserId, 7);

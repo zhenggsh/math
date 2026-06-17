@@ -108,25 +108,31 @@ export class AnalyticsService {
   async getLearningTrend(
     userId: string,
     days: number,
+    textbookId?: string,
   ): Promise<LearningTrendDto> {
     this.logger.log(
-      `Getting learning trend for user: ${userId}, days: ${days}`,
+      `Getting learning trend for user: ${userId}, days: ${days}, textbook: ${textbookId || 'all'}`,
     );
 
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
     startDate.setHours(0, 0, 0, 0);
 
+    const where: Prisma.LearningRecordWhereInput = {
+      userId,
+      startTime: { gte: startDate },
+    };
+    if (textbookId) {
+      where.knowledgePoint = { textbookId };
+    }
+
     const records = await this.prisma.learningRecord.findMany({
-      where: {
-        userId,
-        createdAt: { gte: startDate },
-      },
+      where,
       select: {
         durationMinutes: true,
-        createdAt: true,
+        startTime: true,
       },
-      orderBy: { createdAt: 'asc' },
+      orderBy: { startTime: 'asc' },
     });
 
     // 按日期分组聚合
@@ -136,7 +142,7 @@ export class AnalyticsService {
     >();
 
     for (const record of records) {
-      const date = record.createdAt.toISOString().split('T')[0];
+      const date = record.startTime.toISOString().split('T')[0];
       const current = trendMap.get(date) || { durationMinutes: 0, count: 0 };
       trendMap.set(date, {
         durationMinutes: current.durationMinutes + record.durationMinutes,
