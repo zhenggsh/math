@@ -24,6 +24,19 @@ export interface MasteryDistribution {
 }
 
 /**
+ * 教材学习概览
+ */
+export interface TextbookSummary {
+  textbookId: string
+  textbookName: string
+  totalKnowledgePoints: number
+  learnedKnowledgePoints: number
+  unlearnedKnowledgePoints: number
+  masteryDistribution: MasteryDistributionItem[]
+  importanceDistribution: Array<{ level: 'A' | 'B' | 'C'; count: number }>
+}
+
+/**
  * 学习趋势项
  */
 export interface LearningTrendItem {
@@ -153,6 +166,7 @@ export interface LearnedKnowledgePoint {
   name: string
   lastMasteryLevel: 'A' | 'B' | 'C' | 'D' | 'E'
   lastLearningDate: string
+  lastTwoMasteryLevels: [string, string]
 }
 
 /**
@@ -188,4 +202,13 @@ export const ANT_DESIGN_COLORS = {
     D: '#FA8C16',
     E: '#F5222D',
   },
+}
+
+/**
+ * 分析请求参数
+ */
+export interface AnalyticsRequestParams {
+  textbookId?: string
+  days?: number
+  limit?: number
 }
