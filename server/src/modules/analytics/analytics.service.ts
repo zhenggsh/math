@@ -64,23 +64,35 @@ export class AnalyticsService {
    */
   async getMasteryDistribution(
     userId: string,
+    textbookId?: string,
   ): Promise<MasteryDistributionDto> {
-    this.logger.log(`Getting mastery distribution for user: ${userId}`);
+    this.logger.log(
+      `Getting mastery distribution for user: ${userId}, textbook: ${textbookId || 'all'}`,
+    );
 
-    const distribution = await this.prisma.learningRecord.groupBy({
-      by: ['masteryLevel'],
-      where: { userId },
-      _count: { id: true },
+    const where: Prisma.LearningRecordWhereInput = { userId };
+    if (textbookId) {
+      where.knowledgePoint = { textbookId };
+    }
+
+    const latestRecords = await this.prisma.learningRecord.findMany({
+      where,
+      distinct: ['knowledgePointId'],
+      orderBy: { startTime: 'desc' },
+      select: { masteryLevel: true },
     });
 
-    const total = distribution.reduce((sum, d) => sum + d._count.id, 0);
+    const levelCounts: Record<string, number> = { A: 0, B: 0, C: 0, D: 0, E: 0 };
+    for (const record of latestRecords) {
+      levelCounts[record.masteryLevel]++;
+    }
 
+    const total = latestRecords.length;
     const levels: MasteryLevel[] = ['A', 'B', 'C', 'D', 'E'];
 
     return {
       distribution: levels.map((level) => {
-        const item = distribution.find((d) => d.masteryLevel === level);
-        const count = item?._count.id || 0;
+        const count = levelCounts[level] || 0;
         return {
           level,
           count,
