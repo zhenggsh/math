@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, type RenderResult } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { vi } from 'vitest'
 import { TextbookProvider } from '../../../contexts/TextbookContext'
@@ -64,7 +64,7 @@ beforeEach(() => {
   mocks.mockGetToken.mockReturnValue('dummy-token')
 })
 
-const renderPage = (textbooks: Textbook[] = [], storageSelection: string | null = null) => {
+const renderPage = (textbooks: Textbook[] = [], storageSelection: string | null = null): RenderResult => {
   mocks.mockGetTextbooks.mockResolvedValue(textbooks)
   if (storageSelection !== null) {
     localStorage.setItem('mathtong:selected-textbooks', storageSelection)
