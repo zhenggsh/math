@@ -141,6 +141,23 @@ describe('AnalyticsService', () => {
       expect(todayEntry).toBeDefined();
       expect(todayEntry!.durationMinutes).toBe(30);
     });
+
+    it('should filter learning trend by textbookId', async () => {
+      const findManySpy = jest
+        .spyOn(prismaService.learningRecord, 'findMany')
+        .mockResolvedValue([] as never);
+
+      await service.getLearningTrend(mockUserId, 7, 'tb-1');
+
+      expect(findManySpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            userId: mockUserId,
+            knowledgePoint: { textbookId: 'tb-1' },
+          }),
+        }),
+      );
+    });
   });
 
   describe('getWeakPoints', () => {
