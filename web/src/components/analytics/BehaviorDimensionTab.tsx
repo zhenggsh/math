@@ -27,7 +27,7 @@ export const BehaviorDimensionTab: React.FC<BehaviorDimensionTabProps> = ({
   return (
     <div className={styles.container}>
       <div className={styles.toolbar}>
-        <Radio.Group value={days} onChange={e => onDaysChange(e.target.value)}>
+        <Radio.Group value={days} onChange={e => onDaysChange(Number(e.target.value))}>
           <Radio.Button value={7}>近7天</Radio.Button>
           <Radio.Button value={30}>近30天</Radio.Button>
           <Radio.Button value={90}>近90天</Radio.Button>
