@@ -1,4 +1,3 @@
-import React from 'react'
 import { render, screen } from '@testing-library/react'
 import { TextbookDimensionTab } from '../TextbookDimensionTab'
 import type { TextbookSummary } from '../../../types/analytics.types'

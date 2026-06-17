@@ -1,4 +1,3 @@
-import React from 'react'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { BehaviorDimensionTab } from '../BehaviorDimensionTab'
 import type { LearningTrend } from '../../../types/analytics.types'
