@@ -192,13 +192,14 @@ export class AnalyticsService {
   /**
    * 获取已学知识点列表（包含所有掌握度级别）
    */
-  async getLearnedKnowledgePoints(userId: string): Promise<LearnedKnowledgePointsDto> {
+  async getLearnedKnowledgePoints(
+    userId: string,
+  ): Promise<LearnedKnowledgePointsDto> {
     this.logger.log(`Getting learned knowledge points for user: ${userId}`);
 
-    // 获取用户每个知识点的最新学习记录
-    const latestRecords = await this.prisma.learningRecord.findMany({
+    // 获取用户每个知识点的最近学习记录（最多两次），用于展示最新掌握度及变化趋势
+    const records = await this.prisma.learningRecord.findMany({
       where: { userId },
-      distinct: ['knowledgePointId'],
       orderBy: { createdAt: 'desc' },
       include: {
         knowledgePoint: {
@@ -213,15 +214,36 @@ export class AnalyticsService {
       },
     });
 
-    const learnedPoints = latestRecords.map((record) => ({
-      knowledgePointId: record.knowledgePoint.id,
-      code: record.knowledgePoint.code,
-      name: [record.knowledgePoint.level1, record.knowledgePoint.level2, record.knowledgePoint.level3]
-        .filter(Boolean)
-        .join(' > '),
-      lastMasteryLevel: record.masteryLevel as 'A' | 'B' | 'C' | 'D' | 'E',
-      lastLearningDate: record.createdAt.toISOString(),
-    }));
+    // 按知识点分组并取最近两次记录
+    const recordsByKnowledgePoint = new Map<string, typeof records>();
+    for (const record of records) {
+      const key = record.knowledgePointId ?? record.knowledgePoint.id;
+      const list = recordsByKnowledgePoint.get(key) ?? [];
+      if (list.length < 2) {
+        list.push(record);
+        recordsByKnowledgePoint.set(key, list);
+      }
+    }
+
+    const learnedPoints = Array.from(recordsByKnowledgePoint.values()).map(
+      ([latest, previous]) => ({
+        knowledgePointId: latest.knowledgePoint.id,
+        code: latest.knowledgePoint.code,
+        name: [
+          latest.knowledgePoint.level1,
+          latest.knowledgePoint.level2,
+          latest.knowledgePoint.level3,
+        ]
+          .filter(Boolean)
+          .join(' > '),
+        lastMasteryLevel: latest.masteryLevel as 'A' | 'B' | 'C' | 'D' | 'E',
+        lastLearningDate: latest.createdAt.toISOString(),
+        lastTwoMasteryLevels: [
+          (previous ?? latest).masteryLevel,
+          latest.masteryLevel,
+        ] as [string, string],
+      }),
+    );
 
     // 按掌握度从低到高排序 (E > D > C > B > A)
     const levelOrder = { E: 0, D: 1, C: 2, B: 3, A: 4 };

@@ -26,6 +26,19 @@ export interface MasteryDistributionDto {
 }
 
 /**
+ * 教材学习概览
+ */
+export interface TextbookSummaryDto {
+  textbookId: string;
+  textbookName: string;
+  totalKnowledgePoints: number;
+  learnedKnowledgePoints: number;
+  unlearnedKnowledgePoints: number;
+  masteryDistribution: MasteryDistributionItem[];
+  importanceDistribution: Array<{ level: 'A' | 'B' | 'C'; count: number }>;
+}
+
+/**
  * 学习趋势项
  */
 export interface LearningTrendItem {
@@ -114,6 +127,7 @@ export interface LearnedKnowledgePointDto {
   name: string;
   lastMasteryLevel: 'A' | 'B' | 'C' | 'D' | 'E';
   lastLearningDate: string;
+  lastTwoMasteryLevels: [string, string];
 }
 
 /**
