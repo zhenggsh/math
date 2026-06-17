@@ -197,10 +197,11 @@ export class AnalyticsService {
   ): Promise<LearnedKnowledgePointsDto> {
     this.logger.log(`Getting learned knowledge points for user: ${userId}`);
 
+    // TODO: replace with raw SQL window function in Task 10
     // 获取用户每个知识点的最近学习记录（最多两次），用于展示最新掌握度及变化趋势
     const records = await this.prisma.learningRecord.findMany({
       where: { userId },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { startTime: 'desc' },
       include: {
         knowledgePoint: {
           select: {
@@ -237,7 +238,7 @@ export class AnalyticsService {
           .filter(Boolean)
           .join(' > '),
         lastMasteryLevel: latest.masteryLevel as 'A' | 'B' | 'C' | 'D' | 'E',
-        lastLearningDate: latest.createdAt.toISOString(),
+        lastLearningDate: latest.startTime.toISOString(),
         lastTwoMasteryLevels: [
           (previous ?? latest).masteryLevel,
           latest.masteryLevel,
