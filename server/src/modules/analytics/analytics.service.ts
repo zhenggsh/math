@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MasteryLevel, Role, Prisma } from '@prisma/client';
+import { formatKnowledgePointName } from './analytics.utils';
 import type {
   StudentOverviewDto,
   MasteryDistributionDto,
@@ -166,17 +167,27 @@ export class AnalyticsService {
   /**
    * 获取薄弱知识点
    */
-  async getWeakPoints(userId: string, limit: number): Promise<WeakPointsDto> {
-    this.logger.log(`Getting weak points for user: ${userId}, limit: ${limit}`);
+  async getWeakPoints(
+    userId: string,
+    limit: number,
+    textbookId?: string,
+  ): Promise<WeakPointsDto> {
+    this.logger.log(
+      `Getting weak points for user: ${userId}, limit: ${limit}, textbook: ${textbookId || 'all'}`,
+    );
 
-    // 获取用户最新的每个知识点的学习记录
+    const where: Prisma.LearningRecordWhereInput = {
+      userId,
+      masteryLevel: { in: [MasteryLevel.D, MasteryLevel.E] },
+    };
+    if (textbookId) {
+      where.knowledgePoint = { textbookId };
+    }
+
     const latestRecords = await this.prisma.learningRecord.findMany({
-      where: {
-        userId,
-        masteryLevel: { in: [MasteryLevel.D, MasteryLevel.E] },
-      },
+      where,
       distinct: ['knowledgePointId'],
-      orderBy: { createdAt: 'desc' },
+      orderBy: { startTime: 'desc' },
       take: limit,
       include: {
         knowledgePoint: {
@@ -195,16 +206,14 @@ export class AnalyticsService {
     const weakPoints = latestRecords.map((record) => ({
       knowledgePointId: record.knowledgePoint.id,
       code: record.knowledgePoint.code,
-      name: [
+      name: formatKnowledgePointName(
         record.knowledgePoint.level1,
         record.knowledgePoint.level2,
         record.knowledgePoint.level3,
-      ]
-        .filter(Boolean)
-        .join(' > '),
+      ),
       importanceLevel: record.knowledgePoint.importanceLevel,
       lastMasteryLevel: record.masteryLevel as 'D' | 'E',
-      lastLearningDate: record.createdAt.toISOString(),
+      lastLearningDate: record.startTime.toISOString(),
     }));
 
     // 按重要性级别排序 (A > B > C)

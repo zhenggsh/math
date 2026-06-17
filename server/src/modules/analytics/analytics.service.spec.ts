@@ -173,7 +173,7 @@ describe('AnalyticsService', () => {
             importanceLevel: 'B',
           },
           masteryLevel: 'D',
-          createdAt: new Date(),
+          startTime: new Date(),
         },
         {
           knowledgePoint: {
@@ -185,7 +185,7 @@ describe('AnalyticsService', () => {
             importanceLevel: 'A',
           },
           masteryLevel: 'E',
-          createdAt: new Date(),
+          startTime: new Date(),
         },
       ] as never);
 
