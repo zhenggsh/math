@@ -23,7 +23,6 @@ interface RawLastTwoRecord {
   level3: string | null;
   mastery_level: string;
   start_time: Date;
-  rn: bigint;
 }
 
 /**
@@ -95,7 +94,13 @@ export class AnalyticsService {
       select: { masteryLevel: true },
     });
 
-    const levelCounts: Record<string, number> = { A: 0, B: 0, C: 0, D: 0, E: 0 };
+    const levelCounts: Record<string, number> = {
+      A: 0,
+      B: 0,
+      C: 0,
+      D: 0,
+      E: 0,
+    };
     for (const record of latestRecords) {
       levelCounts[record.masteryLevel]++;
     }
@@ -245,13 +250,15 @@ export class AnalyticsService {
     userId: string,
     textbookId?: string,
   ): Promise<LearnedKnowledgePointsDto> {
-    this.logger.log(`Getting learned knowledge points for user: ${userId}, textbook: ${textbookId || 'all'}`);
+    this.logger.log(
+      `Getting learned knowledge points for user: ${userId}, textbook: ${textbookId || 'all'}`,
+    );
 
-    const textbookFilter = textbookId ? 'AND kp."textbook_id" = $2' : '';
-    const params: (string | number)[] = [userId];
-    if (textbookId) params.push(textbookId);
+    const textbookFilter = textbookId
+      ? Prisma.sql`AND kp."textbook_id" = ${textbookId}`
+      : Prisma.sql``;
 
-    const query = `
+    const query = Prisma.sql`
       WITH ranked AS (
         SELECT
           lr."knowledge_point_id",
@@ -267,7 +274,7 @@ export class AnalyticsService {
           ) AS rn
         FROM learning_records lr
         JOIN knowledge_points kp ON kp.id = lr."knowledge_point_id"
-        WHERE lr.user_id = $1
+        WHERE lr.user_id = ${userId}
           ${textbookFilter}
       )
       SELECT *
@@ -276,7 +283,7 @@ export class AnalyticsService {
       ORDER BY "knowledge_point_id", rn ASC
     `;
 
-    const rawRows = await this.prisma.$queryRawUnsafe<RawLastTwoRecord[]>(query, ...params);
+    const rawRows = await this.prisma.$queryRaw<RawLastTwoRecord[]>(query);
 
     const grouped = new Map<string, RawLastTwoRecord[]>();
     for (const row of rawRows) {
@@ -293,7 +300,11 @@ export class AnalyticsService {
       learnedPoints.push({
         knowledgePointId: latest.knowledge_point_id,
         code: latest.code,
-        name: formatKnowledgePointName(latest.level1, latest.level2, latest.level3),
+        name: formatKnowledgePointName(
+          latest.level1,
+          latest.level2,
+          latest.level3,
+        ),
         lastMasteryLevel: latest.mastery_level as 'A' | 'B' | 'C' | 'D' | 'E',
         lastLearningDate: latest.start_time.toISOString(),
         lastTwoMasteryLevels: [previous.mastery_level, latest.mastery_level],

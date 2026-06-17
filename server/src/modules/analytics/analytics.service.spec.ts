@@ -16,7 +16,7 @@ describe('AnalyticsService', () => {
         {
           provide: PrismaService,
           useValue: {
-            $queryRawUnsafe: jest.fn(),
+            $queryRaw: jest.fn(),
             learningRecord: {
               aggregate: jest.fn(),
               groupBy: jest.fn(),
@@ -84,18 +84,20 @@ describe('AnalyticsService', () => {
 
   describe('getMasteryDistribution', () => {
     it('should return mastery distribution', async () => {
-      jest.spyOn(prismaService.learningRecord, 'findMany').mockResolvedValue([
-        { masteryLevel: MasteryLevel.A },
-        { masteryLevel: MasteryLevel.A },
-        { masteryLevel: MasteryLevel.A },
-        { masteryLevel: MasteryLevel.A },
-        { masteryLevel: MasteryLevel.A },
-        { masteryLevel: MasteryLevel.B },
-        { masteryLevel: MasteryLevel.B },
-        { masteryLevel: MasteryLevel.B },
-        { masteryLevel: MasteryLevel.C },
-        { masteryLevel: MasteryLevel.C },
-      ] as never);
+      jest
+        .spyOn(prismaService.learningRecord, 'findMany')
+        .mockResolvedValue([
+          { masteryLevel: MasteryLevel.A },
+          { masteryLevel: MasteryLevel.A },
+          { masteryLevel: MasteryLevel.A },
+          { masteryLevel: MasteryLevel.A },
+          { masteryLevel: MasteryLevel.A },
+          { masteryLevel: MasteryLevel.B },
+          { masteryLevel: MasteryLevel.B },
+          { masteryLevel: MasteryLevel.B },
+          { masteryLevel: MasteryLevel.C },
+          { masteryLevel: MasteryLevel.C },
+        ] as never);
 
       const result = await service.getMasteryDistribution(mockUserId);
 
@@ -272,7 +274,7 @@ describe('AnalyticsService', () => {
 
   describe('getLearnedKnowledgePoints', () => {
     it('should return all learned knowledge points sorted by mastery level', async () => {
-      jest.spyOn(prismaService, '$queryRawUnsafe').mockResolvedValue([
+      jest.spyOn(prismaService, '$queryRaw').mockResolvedValue([
         {
           knowledge_point_id: 'kp-a',
           code: '1.1.1',
@@ -281,7 +283,6 @@ describe('AnalyticsService', () => {
           level3: null,
           mastery_level: 'A',
           start_time: new Date('2026-05-15'),
-          rn: 1n,
         },
         {
           knowledge_point_id: 'kp-a',
@@ -291,7 +292,6 @@ describe('AnalyticsService', () => {
           level3: null,
           mastery_level: 'B',
           start_time: new Date('2026-05-14'),
-          rn: 2n,
         },
         {
           knowledge_point_id: 'kp-c',
@@ -301,7 +301,6 @@ describe('AnalyticsService', () => {
           level3: null,
           mastery_level: 'C',
           start_time: new Date('2026-05-12'),
-          rn: 1n,
         },
         {
           knowledge_point_id: 'kp-c',
@@ -311,7 +310,6 @@ describe('AnalyticsService', () => {
           level3: null,
           mastery_level: 'D',
           start_time: new Date('2026-05-11'),
-          rn: 2n,
         },
         {
           knowledge_point_id: 'kp-e',
@@ -321,7 +319,6 @@ describe('AnalyticsService', () => {
           level3: null,
           mastery_level: 'E',
           start_time: new Date('2026-05-10'),
-          rn: 1n,
         },
         {
           knowledge_point_id: 'kp-e',
@@ -331,7 +328,6 @@ describe('AnalyticsService', () => {
           level3: null,
           mastery_level: 'E',
           start_time: new Date('2026-05-09'),
-          rn: 2n,
         },
       ] as never);
 
@@ -357,7 +353,7 @@ describe('AnalyticsService', () => {
     });
 
     it('should return empty array when no learning records', async () => {
-      jest.spyOn(prismaService, '$queryRawUnsafe').mockResolvedValue([] as never);
+      jest.spyOn(prismaService, '$queryRaw').mockResolvedValue([] as never);
 
       const result = await service.getLearnedKnowledgePoints(mockUserId);
 
@@ -365,25 +361,32 @@ describe('AnalyticsService', () => {
     });
 
     it('should filter by userId', async () => {
-      jest.spyOn(prismaService, '$queryRawUnsafe').mockResolvedValue([] as never);
+      jest.spyOn(prismaService, '$queryRaw').mockResolvedValue([] as never);
 
       await service.getLearnedKnowledgePoints('user-specific');
 
-      expect(prismaService.$queryRawUnsafe).toHaveBeenCalledWith(
-        expect.stringContaining('lr.user_id = $1'),
-        'user-specific',
+      expect(prismaService.$queryRaw).toHaveBeenCalledWith(
+        expect.objectContaining({
+          strings: expect.arrayContaining([
+            expect.stringContaining('lr.user_id ='),
+          ]),
+          values: expect.arrayContaining(['user-specific']),
+        }),
       );
     });
 
     it('should filter by textbookId when provided', async () => {
-      jest.spyOn(prismaService, '$queryRawUnsafe').mockResolvedValue([] as never);
+      jest.spyOn(prismaService, '$queryRaw').mockResolvedValue([] as never);
 
       await service.getLearnedKnowledgePoints(mockUserId, 'tb-1');
 
-      expect(prismaService.$queryRawUnsafe).toHaveBeenCalledWith(
-        expect.stringContaining('kp."textbook_id" = $2'),
-        mockUserId,
-        'tb-1',
+      expect(prismaService.$queryRaw).toHaveBeenCalledWith(
+        expect.objectContaining({
+          strings: expect.arrayContaining([
+            expect.stringContaining('kp."textbook_id" ='),
+          ]),
+          values: expect.arrayContaining([mockUserId, 'tb-1']),
+        }),
       );
     });
   });
