@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MasteryLevel, Role, Prisma } from '@prisma/client';
 import { formatKnowledgePointName } from './analytics.utils';
@@ -13,6 +13,7 @@ import type {
   KnowledgePointProgressDto,
   LearnedKnowledgePointsDto,
   LearnedKnowledgePointDto,
+  TextbookSummaryDto,
 } from './interfaces/stats.interfaces';
 
 interface RawLastTwoRecord {
@@ -317,6 +318,71 @@ export class AnalyticsService {
     );
 
     return { learnedKnowledgePoints: learnedPoints };
+  }
+
+  /**
+   * 获取教材学习概览
+   */
+  async getTextbookSummary(
+    userId: string,
+    textbookId: string,
+  ): Promise<TextbookSummaryDto> {
+    this.logger.log(
+      `Getting textbook summary for user: ${userId}, textbook: ${textbookId}`,
+    );
+
+    const textbook = await this.prisma.textbook.findUnique({
+      where: { id: textbookId },
+      select: { id: true, name: true },
+    });
+
+    if (!textbook) {
+      throw new NotFoundException(`教材 ${textbookId} 不存在`);
+    }
+
+    const [totalKnowledgePoints, learnedAgg, importanceAgg] = await Promise.all([
+      this.prisma.knowledgePoint.count({ where: { textbookId } }),
+      this.prisma.learningRecord.groupBy({
+        by: ['knowledgePointId'],
+        where: { userId, knowledgePoint: { textbookId } },
+        _count: { knowledgePointId: true },
+      }),
+      this.prisma.knowledgePoint.groupBy({
+        by: ['importanceLevel'],
+        where: { textbookId },
+        _count: { id: true },
+      }),
+    ]);
+
+    const learnedKnowledgePoints = learnedAgg.length;
+    const masteryDistribution = await this.getMasteryDistribution(
+      userId,
+      textbookId,
+    );
+
+    const importanceDistribution = [
+      { level: 'A' as const, count: 0 },
+      { level: 'B' as const, count: 0 },
+      { level: 'C' as const, count: 0 },
+    ];
+    for (const item of importanceAgg) {
+      const target = importanceDistribution.find(
+        (d) => d.level === item.importanceLevel,
+      );
+      if (target) {
+        target.count = item._count.id;
+      }
+    }
+
+    return {
+      textbookId: textbook.id,
+      textbookName: textbook.name,
+      totalKnowledgePoints,
+      learnedKnowledgePoints,
+      unlearnedKnowledgePoints: totalKnowledgePoints - learnedKnowledgePoints,
+      masteryDistribution: masteryDistribution.distribution,
+      importanceDistribution,
+    };
   }
 
   /**

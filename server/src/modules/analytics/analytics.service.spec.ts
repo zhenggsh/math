@@ -25,9 +25,14 @@ describe('AnalyticsService', () => {
             },
             knowledgePoint: {
               findMany: jest.fn(),
+              count: jest.fn(),
+              groupBy: jest.fn(),
             },
             user: {
               count: jest.fn(),
+              findUnique: jest.fn(),
+            },
+            textbook: {
               findUnique: jest.fn(),
             },
           },
@@ -388,6 +393,64 @@ describe('AnalyticsService', () => {
           values: expect.arrayContaining([mockUserId, 'tb-1']),
         }),
       );
+    });
+  });
+
+  describe('getTextbookSummary', () => {
+    it('should throw NotFoundException when textbook does not exist', async () => {
+      jest.spyOn(prismaService.textbook, 'findUnique').mockResolvedValue(null);
+
+      await expect(
+        service.getTextbookSummary(mockUserId, 'missing-tb'),
+      ).rejects.toThrow('教材 missing-tb 不存在');
+    });
+
+    it('should return textbook summary for learned and unlearned points', async () => {
+      jest.spyOn(prismaService.textbook, 'findUnique').mockResolvedValue({
+        id: 'tb-1',
+        name: 'Test Textbook',
+      } as never);
+      jest.spyOn(prismaService.knowledgePoint, 'count').mockResolvedValue(10);
+      jest
+        .spyOn(prismaService.learningRecord, 'groupBy')
+        .mockResolvedValue([
+          { knowledgePointId: 'kp-1', _count: { knowledgePointId: 1 } },
+          { knowledgePointId: 'kp-2', _count: { knowledgePointId: 1 } },
+          { knowledgePointId: 'kp-3', _count: { knowledgePointId: 1 } },
+        ] as never);
+      jest
+        .spyOn(prismaService.knowledgePoint, 'groupBy')
+        .mockResolvedValue([
+          { importanceLevel: 'A', _count: { id: 4 } },
+          { importanceLevel: 'B', _count: { id: 3 } },
+          { importanceLevel: 'C', _count: { id: 3 } },
+        ] as never);
+      jest
+        .spyOn(prismaService.learningRecord, 'findMany')
+        .mockResolvedValue([
+          { masteryLevel: MasteryLevel.A },
+          { masteryLevel: MasteryLevel.A },
+          { masteryLevel: MasteryLevel.B },
+        ] as never);
+
+      const result = await service.getTextbookSummary(mockUserId, 'tb-1');
+
+      expect(result.textbookId).toBe('tb-1');
+      expect(result.textbookName).toBe('Test Textbook');
+      expect(result.totalKnowledgePoints).toBe(10);
+      expect(result.learnedKnowledgePoints).toBe(3);
+      expect(result.unlearnedKnowledgePoints).toBe(7);
+      expect(result.importanceDistribution).toEqual([
+        { level: 'A', count: 4 },
+        { level: 'B', count: 3 },
+        { level: 'C', count: 3 },
+      ]);
+      expect(result.masteryDistribution).toHaveLength(5);
+      expect(result.masteryDistribution[0]).toEqual({
+        level: 'A',
+        count: 2,
+        percentage: expect.closeTo(66.7, 1),
+      });
     });
   });
 
