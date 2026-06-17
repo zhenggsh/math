@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, Select, Radio, Button, Empty, Tag } from 'antd'
-import { RiseOutlined, FallOutlined, MinusOutlined, BookOutlined } from '@ant-design/icons'
+import { BookOutlined } from '@ant-design/icons'
 import { ProgressionChart } from '../features/analytics'
 import type {
   LearnedKnowledgePoints,
@@ -22,18 +22,6 @@ export interface KnowledgePointDimensionTabProps {
   onSelect: (id: string) => void
 }
 
-export const TREND_ICONS = {
-  progressing: <RiseOutlined />,
-  regressing: <FallOutlined />,
-  flat: <MinusOutlined />,
-}
-
-const TREND_LABELS = {
-  progressing: '进步中',
-  regressing: '退步中',
-  flat: '持平',
-}
-
 export const KnowledgePointDimensionTab: React.FC<KnowledgePointDimensionTabProps> = ({
   learned,
   weakPoints,
@@ -50,7 +38,7 @@ export const KnowledgePointDimensionTab: React.FC<KnowledgePointDimensionTabProp
     [weakPoints]
   )
 
-  const trend = (levels: [string, string]): keyof typeof TREND_LABELS => {
+  const trend = (levels: [string, string]): 'progressing' | 'regressing' | 'flat' => {
     const previous = getMasteryLevelOrder(levels[0])
     const latest = getMasteryLevelOrder(levels[1])
     if (latest > previous) return 'progressing'
@@ -68,7 +56,13 @@ export const KnowledgePointDimensionTab: React.FC<KnowledgePointDimensionTabProp
   return (
     <div className={styles.container}>
       <div className={styles.toolbar}>
-        <Radio.Group value={filter} onChange={e => setFilter(e.target.value)}>
+        <Radio.Group
+          value={filter}
+          onChange={e => {
+            const value = e.target.value as FilterType
+            setFilter(value)
+          }}
+        >
           <Radio.Button value="all">全部</Radio.Button>
           <Radio.Button value="progressing">进步中</Radio.Button>
           <Radio.Button value="regressing">退步中</Radio.Button>
@@ -131,9 +125,11 @@ export const KnowledgePointDimensionTab: React.FC<KnowledgePointDimensionTabProp
                   <Button
                     type="link"
                     icon={<BookOutlined />}
-                    onClick={() =>
-                      navigate(`/smart-learning?focusKnowledgePointId=${point.knowledgePointId}`)
-                    }
+                    onClick={() => {
+                      void navigate(
+                        `/smart-learning?focusKnowledgePointId=${point.knowledgePointId}`
+                      )
+                    }}
                   >
                     去学习
                   </Button>
