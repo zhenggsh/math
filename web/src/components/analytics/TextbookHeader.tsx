@@ -9,12 +9,7 @@ export interface TextbookHeaderProps {
 
 export const TextbookHeader: React.FC<TextbookHeaderProps> = ({ textbookName }) => {
   if (!textbookName) {
-    return (
-      <Empty
-        description="请先在全局教材选择器中选择一本教材"
-        className={styles.empty}
-      />
-    )
+    return <Empty description="请先在全局教材选择器中选择一本教材" className={styles.empty} />
   }
 
   return (
