@@ -83,10 +83,17 @@ describe('AnalyticsService', () => {
 
   describe('getMasteryDistribution', () => {
     it('should return mastery distribution', async () => {
-      jest.spyOn(prismaService.learningRecord, 'groupBy').mockResolvedValue([
-        { masteryLevel: MasteryLevel.A, _count: { id: 5 } },
-        { masteryLevel: MasteryLevel.B, _count: { id: 3 } },
-        { masteryLevel: MasteryLevel.C, _count: { id: 2 } },
+      jest.spyOn(prismaService.learningRecord, 'findMany').mockResolvedValue([
+        { masteryLevel: MasteryLevel.A },
+        { masteryLevel: MasteryLevel.A },
+        { masteryLevel: MasteryLevel.A },
+        { masteryLevel: MasteryLevel.A },
+        { masteryLevel: MasteryLevel.A },
+        { masteryLevel: MasteryLevel.B },
+        { masteryLevel: MasteryLevel.B },
+        { masteryLevel: MasteryLevel.B },
+        { masteryLevel: MasteryLevel.C },
+        { masteryLevel: MasteryLevel.C },
       ] as never);
 
       const result = await service.getMasteryDistribution(mockUserId);
@@ -106,7 +113,7 @@ describe('AnalyticsService', () => {
 
     it('should handle empty distribution', async () => {
       jest
-        .spyOn(prismaService.learningRecord, 'groupBy')
+        .spyOn(prismaService.learningRecord, 'findMany')
         .mockResolvedValue([] as never);
 
       const result = await service.getMasteryDistribution(mockUserId);
