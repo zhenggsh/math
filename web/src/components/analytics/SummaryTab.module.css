@@ -1,0 +1,9 @@
+.card {
+  margin-top: 8px;
+}
+
+.summary {
+  font-size: 16px;
+  line-height: 1.8;
+  white-space: pre-wrap;
+}
