@@ -4,6 +4,8 @@ import {
   getMasteryDistribution,
   getLearningTrend,
   getWeakPoints,
+  getLearnedKnowledgePoints,
+  getTextbookSummary,
   getClassOverview,
   getKnowledgeHeat,
   getStudentComparison,
@@ -46,7 +48,26 @@ describe('analytics.service', () => {
     })
 
     const result = await getStudentOverview()
-    expect(mockAxiosInstance.get).toHaveBeenCalledWith('/analytics/student/overview')
+    expect(mockAxiosInstance.get).toHaveBeenCalledWith('/analytics/student/overview', {
+      params: undefined,
+    })
+    expect(result).toEqual(mockData)
+  })
+
+  it('getStudentOverview passes textbookId param', async () => {
+    const mockData = {
+      totalLearningCount: 10,
+      totalDurationMinutes: 60,
+      uniqueKnowledgePoints: 5,
+    }
+    mockAxiosInstance.get.mockResolvedValue({
+      data: { success: true, data: mockData },
+    })
+
+    const result = await getStudentOverview('tb-1')
+    expect(mockAxiosInstance.get).toHaveBeenCalledWith('/analytics/student/overview', {
+      params: { textbookId: 'tb-1' },
+    })
     expect(result).toEqual(mockData)
   })
 
@@ -57,7 +78,22 @@ describe('analytics.service', () => {
     })
 
     const result = await getMasteryDistribution()
-    expect(mockAxiosInstance.get).toHaveBeenCalledWith('/analytics/student/mastery-distribution')
+    expect(mockAxiosInstance.get).toHaveBeenCalledWith('/analytics/student/mastery-distribution', {
+      params: undefined,
+    })
+    expect(result).toEqual(mockData)
+  })
+
+  it('getMasteryDistribution passes textbookId param', async () => {
+    const mockData = { distribution: [] }
+    mockAxiosInstance.get.mockResolvedValue({
+      data: { success: true, data: mockData },
+    })
+
+    const result = await getMasteryDistribution('tb-1')
+    expect(mockAxiosInstance.get).toHaveBeenCalledWith('/analytics/student/mastery-distribution', {
+      params: { textbookId: 'tb-1' },
+    })
     expect(result).toEqual(mockData)
   })
 
@@ -84,6 +120,56 @@ describe('analytics.service', () => {
     expect(mockAxiosInstance.get).toHaveBeenCalledWith('/analytics/student/weak-points', {
       params: { limit: 10 },
     })
+    expect(result).toEqual(mockData)
+  })
+
+  it('getLearnedKnowledgePoints makes correct GET request', async () => {
+    const mockData = { learnedKnowledgePoints: [] }
+    mockAxiosInstance.get.mockResolvedValue({
+      data: { success: true, data: mockData },
+    })
+
+    const result = await getLearnedKnowledgePoints()
+    expect(mockAxiosInstance.get).toHaveBeenCalledWith(
+      '/analytics/student/learned-knowledge-points',
+      { params: undefined }
+    )
+    expect(result).toEqual(mockData)
+  })
+
+  it('getLearnedKnowledgePoints passes textbookId param', async () => {
+    const mockData = { learnedKnowledgePoints: [] }
+    mockAxiosInstance.get.mockResolvedValue({
+      data: { success: true, data: mockData },
+    })
+
+    const result = await getLearnedKnowledgePoints('tb-1')
+    expect(mockAxiosInstance.get).toHaveBeenCalledWith(
+      '/analytics/student/learned-knowledge-points',
+      { params: { textbookId: 'tb-1' } }
+    )
+    expect(result).toEqual(mockData)
+  })
+
+  it('getTextbookSummary makes correct GET request', async () => {
+    const mockData = {
+      textbookId: 'tb-1',
+      textbookName: 'Math',
+      totalKnowledgePoints: 10,
+      learnedKnowledgePoints: 5,
+      unlearnedKnowledgePoints: 5,
+      masteryDistribution: [],
+      importanceDistribution: [],
+    }
+    mockAxiosInstance.get.mockResolvedValue({
+      data: { success: true, data: mockData },
+    })
+
+    const result = await getTextbookSummary('tb-1')
+    expect(mockAxiosInstance.get).toHaveBeenCalledWith(
+      '/analytics/student/textbook-summary',
+      { params: { textbookId: 'tb-1' } }
+    )
     expect(result).toEqual(mockData)
   })
 
