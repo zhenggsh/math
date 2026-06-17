@@ -4,6 +4,7 @@ import {
   type WeakPointItem,
   type ByImportanceItem,
 } from '../services/smartLearningApi'
+import { useTextbook } from './useTextbook'
 import type { KnowledgePoint } from '../types/knowledge.types'
 
 export type RecommendationMode = 'weak' | 'importance' | 'random'
@@ -11,6 +12,7 @@ export type RecommendationMode = 'weak' | 'importance' | 'random'
 export interface UnifiedRecommendationItem {
   id: string
   code: string
+  textbookId: string
   level1: string
   level2?: string
   level3?: string
@@ -39,6 +41,7 @@ function toUnifiedWeakItem(item: WeakPointItem): UnifiedRecommendationItem {
   return {
     id: knowledgePoint.id,
     code: knowledgePoint.code,
+    textbookId: knowledgePoint.textbookId,
     level1: knowledgePoint.level1,
     level2: knowledgePoint.level2,
     level3: knowledgePoint.level3,
@@ -56,6 +59,7 @@ function toUnifiedImportanceItem(item: ByImportanceItem): UnifiedRecommendationI
   return {
     id: item.id,
     code: item.code,
+    textbookId: item.textbookId,
     level1: item.level1,
     level2: item.level2,
     level3: item.level3,
@@ -76,6 +80,7 @@ function toUnifiedRandomItem(item: KnowledgePoint): UnifiedRecommendationItem {
   return {
     id: item.id,
     code: item.code,
+    textbookId: item.textbookId,
     level1: item.level1,
     level2: item.level2,
     level3: item.level3,
@@ -86,19 +91,27 @@ function toUnifiedRandomItem(item: KnowledgePoint): UnifiedRecommendationItem {
 }
 
 export function useRecommendations(mode: RecommendationMode) {
+  const { selectedTextbookIds } = useTextbook()
+
   const queryResult = useQuery({
-    queryKey: [QUERY_KEY, mode],
+    queryKey: [QUERY_KEY, mode, selectedTextbookIds],
     queryFn: async () => {
+      let rawItems: UnifiedRecommendationItem[]
       if (mode === 'weak') {
         const response = await smartLearningApi.getWeakPoints()
-        return response.items.map(toUnifiedWeakItem)
-      }
-      if (mode === 'importance') {
+        rawItems = response.items.map(toUnifiedWeakItem)
+      } else if (mode === 'importance') {
         const response = await smartLearningApi.getByImportance()
-        return response.items.map(toUnifiedImportanceItem)
+        rawItems = response.items.map(toUnifiedImportanceItem)
+      } else {
+        const response = await smartLearningApi.getRandomPoints()
+        rawItems = response.items.map(toUnifiedRandomItem)
       }
-      const response = await smartLearningApi.getRandomPoints()
-      return response.items.map(toUnifiedRandomItem)
+
+      if (selectedTextbookIds.length === 0) {
+        return []
+      }
+      return rawItems.filter(item => selectedTextbookIds.includes(item.textbookId))
     },
     staleTime: 5 * 60 * 1000,
   })

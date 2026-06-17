@@ -2,6 +2,7 @@ import React, { createContext, useState, useEffect, useCallback, useMemo } from 
 import type { Textbook } from '../types/textbook.types'
 import { getTextbooks } from '../services/textbook.service'
 import { getToken } from '../services/auth.service'
+import { useAuth } from '../hooks/useAuth'
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const TextbookContext = createContext<TextbookContextType | undefined>(undefined)
@@ -27,9 +28,16 @@ export const TextbookProvider: React.FC<TextbookProviderProps> = ({ children }) 
   const [isLoading, setIsLoading] = useState(true)
   const [selectedTextbookIds, setSelectedTextbookIds] = useState<string[]>([])
   const [isHydrated, setIsHydrated] = useState(false)
+  const { isAuthenticated } = useAuth()
 
   useEffect(() => {
     const loadTextbooks = async (): Promise<void> => {
+      if (!isAuthenticated) {
+        setTextbooks([])
+        setIsLoading(false)
+        return
+      }
+
       const token = getToken()
       if (!token) {
         setIsLoading(false)
@@ -83,7 +91,7 @@ export const TextbookProvider: React.FC<TextbookProviderProps> = ({ children }) 
     }
 
     void loadTextbooks()
-  }, [])
+  }, [isAuthenticated])
 
   const selectTextbook = useCallback((id: string): void => {
     setSelectedTextbookIds(prev => {

@@ -35,7 +35,6 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const location = useLocation()
   const { user, isAuthenticated, logout } = useAuth()
 
-  const isLearningPage = location.pathname.startsWith('/learning')
   const {
     selectedTextbookIds,
     textbooks,
@@ -152,7 +151,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 
       <Content
         style={{
-          padding: isLearningPage ? 0 : 24,
+          padding: 24,
           background: '#f0f2f5',
           display: 'flex',
           flexDirection: 'column',

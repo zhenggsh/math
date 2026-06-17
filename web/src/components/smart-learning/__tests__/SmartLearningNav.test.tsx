@@ -91,6 +91,7 @@ describe('SmartLearningNav', () => {
     onSelectItem: vi.fn(),
     isLoading: false,
     onRefresh: vi.fn(),
+    selectedTextbookIds: ['tb-1'],
   }
 
   beforeEach(() => {
@@ -221,5 +222,60 @@ describe('SmartLearningNav', () => {
     fireEvent.click(refreshButton)
 
     expect(onRefresh).toHaveBeenCalledTimes(1)
+  })
+
+  it('should render StudyGoalTracker in weak mode when onGoalChange is provided', () => {
+    render(
+      <SmartLearningNav
+        {...defaultProps}
+        studiedCount={2}
+        goalCount={5}
+        onGoalChange={vi.fn()}
+      />
+    )
+
+    expect(screen.getByText(/今日已复习 2 \/ 5 个薄弱点/)).toBeInTheDocument()
+  })
+
+  it('should not render StudyGoalTracker in importance mode', () => {
+    render(
+      <SmartLearningNav
+        {...defaultProps}
+        mode="importance"
+        items={mockImportanceItems}
+        studiedCount={2}
+        goalCount={5}
+        onGoalChange={vi.fn()}
+      />
+    )
+
+    expect(screen.queryByText(/今日已复习/)).not.toBeInTheDocument()
+  })
+
+  it('should not render StudyGoalTracker when onGoalChange is not provided', () => {
+    render(<SmartLearningNav {...defaultProps} />)
+
+    expect(screen.queryByText(/今日已复习/)).not.toBeInTheDocument()
+  })
+
+  it('should show empty textbook state when no textbook is selected', () => {
+    render(<SmartLearningNav {...defaultProps} selectedTextbookIds={[]} />)
+
+    expect(screen.getByText('请先选择教材')).toBeInTheDocument()
+    expect(screen.queryByText('恭喜！暂无薄弱知识点')).not.toBeInTheDocument()
+  })
+
+  it('should hide StudyGoalTracker when no textbook is selected', () => {
+    render(
+      <SmartLearningNav
+        {...defaultProps}
+        selectedTextbookIds={[]}
+        studiedCount={2}
+        goalCount={5}
+        onGoalChange={vi.fn()}
+      />
+    )
+
+    expect(screen.queryByText(/今日已复习/)).not.toBeInTheDocument()
   })
 })

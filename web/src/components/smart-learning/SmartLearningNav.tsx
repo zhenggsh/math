@@ -2,6 +2,7 @@ import React, { useCallback, useMemo } from 'react'
 import { Tabs, Skeleton, Collapse, Tag, Empty, Button, Tooltip } from 'antd'
 import { ReloadOutlined } from '@ant-design/icons'
 import type { RecommendationMode, UnifiedRecommendationItem } from '../../hooks/useRecommendations'
+import { StudyGoalTracker } from './StudyGoalTracker'
 import styles from './SmartLearningNav.module.css'
 
 export interface SmartLearningNavProps {
@@ -12,6 +13,10 @@ export interface SmartLearningNavProps {
   onSelectItem: (item: UnifiedRecommendationItem) => void
   isLoading: boolean
   onRefresh: () => void
+  selectedTextbookIds?: string[]
+  studiedCount?: number
+  goalCount?: number
+  onGoalChange?: (count: number) => void
 }
 
 interface Level2Group {
@@ -170,6 +175,10 @@ export const SmartLearningNav: React.FC<SmartLearningNavProps> = ({
   onSelectItem,
   isLoading,
   onRefresh,
+  selectedTextbookIds,
+  studiedCount,
+  goalCount,
+  onGoalChange,
 }) => {
   const groupedItems = useMemo(() => {
     if (mode !== 'weak') return []
@@ -187,8 +196,12 @@ export const SmartLearningNav: React.FC<SmartLearningNavProps> = ({
     return groupedItems.slice(0, 2).map((_, index) => String(index))
   }, [groupedItems])
 
-  const isWeakModeEmpty = mode === 'weak' && !isLoading && items.length === 0
-  const isOtherModeEmpty = mode !== 'weak' && !isLoading && items.length === 0
+  const hasTextbookSelection = (selectedTextbookIds ?? []).length > 0
+  const isTextbookEmpty = !isLoading && !hasTextbookSelection
+  const isWeakModeEmpty =
+    mode === 'weak' && !isLoading && hasTextbookSelection && items.length === 0
+  const isOtherModeEmpty =
+    mode !== 'weak' && !isLoading && hasTextbookSelection && items.length === 0
 
   return (
     <div className={styles.container}>
@@ -211,11 +224,25 @@ export const SmartLearningNav: React.FC<SmartLearningNavProps> = ({
         </Tooltip>
       </div>
 
+      {mode === 'weak' && onGoalChange !== undefined && hasTextbookSelection && (
+        <div className={styles.goalTracker}>
+          <StudyGoalTracker
+            studiedCount={studiedCount ?? 0}
+            goalCount={goalCount ?? 5}
+            onGoalChange={onGoalChange}
+          />
+        </div>
+      )}
+
       <div className={styles.listArea}>
         {isLoading && (
           <div className={styles.loading}>
             <Skeleton active paragraph={{ rows: 6 }} />
           </div>
+        )}
+
+        {isTextbookEmpty && (
+          <Empty description="请先选择教材" image={Empty.PRESENTED_IMAGE_SIMPLE} />
         )}
 
         {isWeakModeEmpty && (

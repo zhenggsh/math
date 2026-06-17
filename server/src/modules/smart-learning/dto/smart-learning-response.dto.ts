@@ -9,6 +9,9 @@ class KnowledgePointDto {
   code: string;
 
   @ApiProperty()
+  textbookId: string;
+
+  @ApiProperty()
   level1: string;
 
   @ApiProperty({ nullable: true })
@@ -72,6 +75,9 @@ export class ByImportanceResponseDto {
 
   @ApiProperty()
   code: string;
+
+  @ApiProperty()
+  textbookId: string;
 
   @ApiProperty()
   level1: string;

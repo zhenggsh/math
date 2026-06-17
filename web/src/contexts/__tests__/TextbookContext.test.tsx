@@ -30,6 +30,7 @@ const mockTextbooks: Textbook[] = [
 const mocks = vi.hoisted(() => ({
   mockGetTextbooks: vi.fn<[], Promise<Textbook[]>>(),
   mockGetToken: vi.fn<[], string | null>(),
+  mockIsAuthenticated: true,
 }))
 
 vi.mock('../../services/textbook.service', () => ({
@@ -38,6 +39,10 @@ vi.mock('../../services/textbook.service', () => ({
 
 vi.mock('../../services/auth.service', () => ({
   getToken: () => mocks.mockGetToken(),
+}))
+
+vi.mock('../../hooks/useAuth', () => ({
+  useAuth: () => ({ isAuthenticated: mocks.mockIsAuthenticated }),
 }))
 
 const TestConsumer: React.FC = () => {

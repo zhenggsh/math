@@ -26,7 +26,7 @@ export interface FeedbackPanelProps {
 
 /**
  * 学习反馈面板组件
- * 上下两栏紧凑布局：上栏为学习反馈，下栏为功能区
+ * 顶部一行紧凑布局：掌握程度、学习历史、提交、学习时长全部在同一行，下方仅保留备注输入区
  */
 export const FeedbackPanel: React.FC<FeedbackPanelProps> = ({
   knowledgePointId,
@@ -131,50 +131,51 @@ export const FeedbackPanel: React.FC<FeedbackPanelProps> = ({
         }
         className={styles.feedbackForm}
       >
-        {/* 上栏 — 学习反馈 */}
-        <div className={styles.upperSection}>
-          <div className={styles.ratingRow}>
-            <Title level={5} className={styles.sectionTitle}>
-              学习反馈
-            </Title>
-            <Form.Item
-              name="masteryLevel"
-              rules={[{ required: true, message: '请选择掌握程度' }]}
-              className={styles.masteryItem}
-            >
-              <MasteryRating size="small" />
-            </Form.Item>
-          </div>
+        {/* 顶部一行：标题、掌握程度、操作按钮、学习时长 */}
+        <div className={styles.ratingRow}>
+          <Title level={5} className={styles.sectionTitle}>
+            学习反馈
+          </Title>
+          <Form.Item
+            name="masteryLevel"
+            rules={[{ required: true, message: '请选择掌握程度' }]}
+            className={styles.masteryItem}
+          >
+            <MasteryRating size="small" />
+          </Form.Item>
 
-          <div ref={textareaContainerRef} className={styles.textareaContainer}>
-            <Form.Item name="notes" className={styles.notesItem}>
-              <TextArea
-                placeholder="记录今天的学习心得、疑问或需要注意的地方..."
-                maxLength={500}
-                showCount
-                rows={textAreaRows}
-              />
-            </Form.Item>
+          <div className={styles.actionGroup}>
+            <Button
+              icon={<HistoryOutlined />}
+              onClick={() => setHistoryModalOpen(true)}
+              size="small"
+            >
+              学习历史
+            </Button>
+
+            <Button
+              type="primary"
+              htmlType="submit"
+              loading={submitting}
+              icon={<SaveOutlined />}
+              size="small"
+            >
+              提交
+            </Button>
+
+            <LearningTimer startTime={startTime} onDurationChange={handleDurationChange} />
           </div>
         </div>
 
-        {/* 下栏 — 功能区 */}
-        <div className={styles.lowerSection}>
-          <Button icon={<HistoryOutlined />} onClick={() => setHistoryModalOpen(true)} size="small">
-            学习历史
-          </Button>
-
-          <Button
-            type="primary"
-            htmlType="submit"
-            loading={submitting}
-            icon={<SaveOutlined />}
-            size="small"
-          >
-            提交
-          </Button>
-
-          <LearningTimer startTime={startTime} onDurationChange={handleDurationChange} />
+        <div ref={textareaContainerRef} className={styles.textareaContainer}>
+          <Form.Item name="notes" className={styles.notesItem}>
+            <TextArea
+              placeholder="记录今天的学习心得、疑问或需要注意的地方..."
+              maxLength={500}
+              showCount
+              rows={textAreaRows}
+            />
+          </Form.Item>
         </div>
       </Form>
 

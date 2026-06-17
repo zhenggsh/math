@@ -2,6 +2,7 @@ import React from 'react'
 import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { BrowserRouter } from 'react-router-dom'
 import { App } from 'antd'
 import SmartLearningPage from '../SmartLearningPage'
 
@@ -10,6 +11,7 @@ const mocks = vi.hoisted(() => ({
   mockGetByImportance: vi.fn(),
   mockGetRandomPoints: vi.fn(),
   mockGetKnowledgePointDetail: vi.fn(),
+  mockSelectedTextbookIds: ['tb-1'],
 }))
 
 vi.mock('../../../services/smartLearningApi', () => ({
@@ -36,6 +38,18 @@ vi.mock('../../../components/learning/FeedbackPanel', () => ({
   ),
 }))
 
+vi.mock('../../../hooks/useTextbook', () => ({
+  useTextbook: () => ({
+    selectedTextbookIds: mocks.mockSelectedTextbookIds,
+    textbooks: [{ id: 'tb-1', name: 'Test Textbook' }],
+    isLoading: false,
+    selectTextbook: vi.fn(),
+    deselectTextbook: vi.fn(),
+    selectMultiple: vi.fn(),
+    clearSelection: vi.fn(),
+  }),
+}))
+
 vi.mock('../../../components/Layout/ResizableLayout', () => ({
   ResizableLayout: (props: {
     leftPanel?: React.ReactNode
@@ -57,9 +71,11 @@ function createWrapper() {
   })
   return function Wrapper({ children }: { children: React.ReactNode }) {
     return (
-      <QueryClientProvider client={queryClient}>
-        <App>{children}</App>
-      </QueryClientProvider>
+      <BrowserRouter>
+        <QueryClientProvider client={queryClient}>
+          <App>{children}</App>
+        </QueryClientProvider>
+      </BrowserRouter>
     )
   }
 }
@@ -199,7 +215,12 @@ describe('SmartLearningPage', () => {
     })
 
     await waitFor(() => {
-      expect(screen.getByText(/知识点3/)).toBeInTheDocument()
+      expect(screen.getAllByTestId('recommendation-item').length).toBe(1)
+    })
+
+    await waitFor(() => {
+      const items = screen.getAllByTestId('recommendation-item')
+      expect(items[0]).toHaveTextContent(/知识点3/)
     })
   })
 
@@ -225,5 +246,53 @@ describe('SmartLearningPage', () => {
     await waitFor(() => {
       expect(mocks.mockGetKnowledgePointDetail).toHaveBeenCalledWith('kp-1')
     })
+  })
+
+  it('renders breadcrumb and content toolbar aligned with LearningPage', async () => {
+    const Wrapper = createWrapper()
+    mocks.mockGetWeakPoints.mockResolvedValue({
+      total: 1,
+      items: [createWeakPointItem('kp-1', '1.1.1', '第一章', '第一节', '知识点1')],
+    })
+    mocks.mockGetKnowledgePointDetail.mockResolvedValue(createKnowledgePointDetail('kp-1', '1.1.1'))
+
+    render(<SmartLearningPage />, { wrapper: Wrapper })
+
+    await waitFor(() => {
+      expect(screen.getByText('Home')).toBeInTheDocument()
+    })
+
+    await waitFor(() => {
+      expect(screen.getByText('SmartLearning')).toBeInTheDocument()
+    })
+
+    await waitFor(() => {
+      const breadcrumb = document.querySelector('.ant-breadcrumb')
+      expect(breadcrumb).toHaveTextContent(/第一章/)
+      expect(breadcrumb).toHaveTextContent(/第一节/)
+      expect(breadcrumb).toHaveTextContent(/知识点1/)
+    })
+
+    expect(screen.getByText('Preview')).toBeInTheDocument()
+    expect(screen.getByText('Raw')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /导出/ })).toBeInTheDocument()
+  })
+
+  it('renders StudyGoalTracker inside left nav for weak mode only', async () => {
+    const Wrapper = createWrapper()
+    mocks.mockGetWeakPoints.mockResolvedValue({
+      total: 1,
+      items: [createWeakPointItem('kp-1', '1.1.1', '第一章', '第一节', '知识点1')],
+    })
+    mocks.mockGetKnowledgePointDetail.mockResolvedValue(createKnowledgePointDetail('kp-1', '1.1.1'))
+
+    render(<SmartLearningPage />, { wrapper: Wrapper })
+
+    await waitFor(() => {
+      expect(screen.getByText(/今日已复习/)).toBeInTheDocument()
+    })
+
+    const leftPanel = screen.getByTestId('left-panel')
+    expect(leftPanel).toHaveTextContent(/今日已复习/)
   })
 })

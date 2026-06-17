@@ -9,6 +9,14 @@ const mockGetWeakPoints = vi.fn()
 const mockGetByImportance = vi.fn()
 const mockGetRandomPoints = vi.fn()
 
+let mockSelectedTextbookIds: string[] = ['tb-1']
+
+vi.mock('../../hooks/useTextbook', () => ({
+  useTextbook: () => ({
+    selectedTextbookIds: mockSelectedTextbookIds,
+  }),
+}))
+
 vi.mock('../../services/smartLearningApi', () => ({
   smartLearningApi: {
     getWeakPoints: (...args: unknown[]) => mockGetWeakPoints(...args),
@@ -29,6 +37,7 @@ function createWrapper() {
 describe('useRecommendations', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockSelectedTextbookIds = ['tb-1']
   })
 
   it('should return unified items for weak mode with improvementVelocity and daysSinceLastStudy', async () => {
@@ -133,6 +142,167 @@ describe('useRecommendations', () => {
       recommendationReason: 'Important topic',
       improvementVelocity: 0.8,
     })
+  })
+
+  it('should filter items by selected textbook ids', async () => {
+    mockGetWeakPoints.mockResolvedValue({
+      total: 2,
+      items: [
+        {
+          knowledgePoint: {
+            id: 'kp-1',
+            code: '1.1',
+            level1: 'Algebra',
+            level2: 'Equations',
+            level3: 'Linear',
+            importanceLevel: 'A',
+            textbookId: 'tb-1',
+          },
+          learningRecord: {
+            id: 'lr-1',
+            masteryLevel: 'C',
+            durationMinutes: 30,
+            startTime: '2024-01-01T00:00:00.000Z',
+            notes: null,
+          },
+          priority: 1,
+          recommendationReason: 'Needs practice',
+          improvementVelocity: 0.5,
+        },
+        {
+          knowledgePoint: {
+            id: 'kp-2',
+            code: '2.1',
+            level1: 'Geometry',
+            level2: 'Shapes',
+            level3: 'Triangles',
+            importanceLevel: 'A',
+            textbookId: 'tb-2',
+          },
+          learningRecord: {
+            id: 'lr-2',
+            masteryLevel: 'D',
+            durationMinutes: 20,
+            startTime: '2024-01-01T00:00:00.000Z',
+            notes: null,
+          },
+          priority: 2,
+          recommendationReason: 'Weak area',
+          improvementVelocity: -0.2,
+        },
+      ],
+    })
+
+    const { result } = renderHook(() => useRecommendations('weak'), {
+      wrapper: createWrapper(),
+    })
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false))
+
+    expect(result.current.items).toHaveLength(1)
+    expect(result.current.items[0].id).toBe('kp-1')
+    expect(result.current.items[0].textbookId).toBe('tb-1')
+  })
+
+  it('should return empty array when no textbook is selected', async () => {
+    mockSelectedTextbookIds = []
+    mockGetWeakPoints.mockResolvedValue({
+      total: 1,
+      items: [
+        {
+          knowledgePoint: {
+            id: 'kp-1',
+            code: '1.1',
+            level1: 'Algebra',
+            level2: 'Equations',
+            level3: 'Linear',
+            importanceLevel: 'A',
+            textbookId: 'tb-1',
+          },
+          learningRecord: {
+            id: 'lr-1',
+            masteryLevel: 'C',
+            durationMinutes: 30,
+            startTime: '2024-01-01T00:00:00.000Z',
+            notes: null,
+          },
+          priority: 1,
+          recommendationReason: 'Needs practice',
+          improvementVelocity: 0.5,
+        },
+      ],
+    })
+
+    const { result } = renderHook(() => useRecommendations('weak'), {
+      wrapper: createWrapper(),
+    })
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false))
+
+    expect(result.current.items).toEqual([])
+  })
+
+  it('should refilter when selectedTextbookIds change', async () => {
+    mockGetWeakPoints.mockResolvedValue({
+      total: 2,
+      items: [
+        {
+          knowledgePoint: {
+            id: 'kp-1',
+            code: '1.1',
+            level1: 'Algebra',
+            level2: 'Equations',
+            level3: 'Linear',
+            importanceLevel: 'A',
+            textbookId: 'tb-1',
+          },
+          learningRecord: {
+            id: 'lr-1',
+            masteryLevel: 'C',
+            durationMinutes: 30,
+            startTime: '2024-01-01T00:00:00.000Z',
+            notes: null,
+          },
+          priority: 1,
+          recommendationReason: 'Needs practice',
+          improvementVelocity: 0.5,
+        },
+        {
+          knowledgePoint: {
+            id: 'kp-2',
+            code: '2.1',
+            level1: 'Geometry',
+            level2: 'Shapes',
+            level3: 'Triangles',
+            importanceLevel: 'A',
+            textbookId: 'tb-2',
+          },
+          learningRecord: {
+            id: 'lr-2',
+            masteryLevel: 'D',
+            durationMinutes: 20,
+            startTime: '2024-01-01T00:00:00.000Z',
+            notes: null,
+          },
+          priority: 2,
+          recommendationReason: 'Weak area',
+          improvementVelocity: -0.2,
+        },
+      ],
+    })
+
+    const { result, rerender } = renderHook(() => useRecommendations('weak'), {
+      wrapper: createWrapper(),
+    })
+
+    await waitFor(() => expect(result.current.items).toHaveLength(1))
+    expect(result.current.items[0].id).toBe('kp-1')
+
+    mockSelectedTextbookIds = ['tb-2']
+    rerender()
+
+    await waitFor(() => expect(result.current.items).toHaveLength(1))
+    expect(result.current.items[0].id).toBe('kp-2')
   })
 })
 
