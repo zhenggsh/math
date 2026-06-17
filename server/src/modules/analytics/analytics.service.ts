@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { MasteryLevel, Role } from '@prisma/client';
+import { MasteryLevel, Role, Prisma } from '@prisma/client';
 import type {
   StudentOverviewDto,
   MasteryDistributionDto,
@@ -34,7 +34,7 @@ export class AnalyticsService {
       `Getting student overview for user: ${userId}, textbook: ${textbookId || 'all'}`,
     );
 
-    const recordWhere: Record<string, unknown> = { userId };
+    const recordWhere: Prisma.LearningRecordWhereInput = { userId };
     if (textbookId) {
       recordWhere.knowledgePoint = { textbookId };
     }
