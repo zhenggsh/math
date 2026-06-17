@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import { SummaryTab } from '../SummaryTab'
-import type { TextbookSummary, WeakPoints, LearningTrend } from '../../../types/analytics.types'
+import type { TextbookSummary } from '../../../types/analytics.types'
 
 const mockSummary: TextbookSummary = {
   textbookId: 'tb-1',
