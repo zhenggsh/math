@@ -143,6 +143,7 @@ const RecommendationItem: React.FC<{
       tabIndex={0}
       aria-pressed={isSelected}
       data-testid="recommendation-item"
+      data-kp-id={item.id}
       data-selected={isSelected}
       onKeyDown={e => {
         if (e.key === 'Enter' || e.key === ' ') {

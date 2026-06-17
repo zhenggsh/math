@@ -12,7 +12,7 @@ import {
   EyeOutlined,
   CodeOutlined,
 } from '@ant-design/icons'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ResizableLayout } from '../../components/Layout/ResizableLayout'
 import { SmartLearningNav } from '../../components/smart-learning/SmartLearningNav'
 import { MarkdownPreview } from '../../components/MarkdownPreview'
@@ -42,6 +42,8 @@ interface KnowledgeDetailState {
 const SmartLearningPage: React.FC = () => {
   const { message } = App.useApp()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const focusId = searchParams.get('focusKnowledgePointId')
   const [mode, setMode] = useState<RecommendationMode>('weak')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [studiedIds, setStudiedIds] = useState<Set<string>>(new Set())
@@ -117,6 +119,26 @@ const SmartLearningPage: React.FC = () => {
       setSelectedId(items[0].id)
     }
   }, [items, selectedId])
+
+  // 根据 URL 参数自动聚焦到指定知识点
+  useEffect(() => {
+    if (!focusId || isLoading || items.length === 0) return
+
+    const exists = items.some(item => item.id === focusId)
+    if (exists) {
+      setSelectedId(focusId)
+      const element = document.querySelector(`[data-kp-id="${focusId}"]`)
+      element?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      return
+    }
+
+    if (mode !== 'weak') {
+      setMode('weak')
+      return
+    }
+
+    message.info('该知识点不在当前推荐列表中')
+  }, [focusId, items, isLoading, mode, message])
 
   const handleModeChange = useCallback((newMode: RecommendationMode): void => {
     setMode(newMode)
