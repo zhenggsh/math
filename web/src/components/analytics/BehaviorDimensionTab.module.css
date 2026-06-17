@@ -1,0 +1,16 @@
+.container {
+  padding-top: 8px;
+}
+
+.toolbar {
+  margin-bottom: 16px;
+  text-align: right;
+}
+
+.statsRow {
+  margin-bottom: 24px;
+}
+
+.chartCard {
+  margin-bottom: 16px;
+}
