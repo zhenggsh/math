@@ -40,7 +40,7 @@ export const SummaryTab: React.FC<SummaryTabProps> = ({
       mostRecentLearningDate: mostRecentDate,
       topWeakPointName: weakPoints?.weakPoints[0]?.name,
     })
-  }, [summary, weakPoints, mostRecentDate])
+  }, [summary, weakPoints, mostRecentDate, totalDurationMinutes])
 
   return (
     <Card title="学习总结与建议" loading={loading} className={styles.card}>
