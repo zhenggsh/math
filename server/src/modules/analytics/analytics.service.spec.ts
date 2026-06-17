@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { NotFoundException } from '@nestjs/common';
 import { AnalyticsService } from './analytics.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MasteryLevel } from '@prisma/client';
@@ -85,6 +86,27 @@ describe('AnalyticsService', () => {
         uniqueKnowledgePoints: 0,
       });
     });
+
+    it('should filter overview by textbookId', async () => {
+      jest.spyOn(prismaService.learningRecord, 'aggregate').mockResolvedValue({
+        _count: { id: 5 },
+        _sum: { durationMinutes: 100 },
+      } as never);
+      jest.spyOn(prismaService.learningRecord, 'groupBy').mockResolvedValue([
+        { knowledgePointId: 'kp-1', _count: { knowledgePointId: 1 } },
+      ] as never);
+
+      await service.getStudentOverview(mockUserId, 'tb-1');
+
+      expect(prismaService.learningRecord.aggregate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            userId: mockUserId,
+            knowledgePoint: { textbookId: 'tb-1' },
+          }),
+        }),
+      );
+    });
   });
 
   describe('getMasteryDistribution', () => {
@@ -129,6 +151,23 @@ describe('AnalyticsService', () => {
       expect(
         result.distribution.every((d) => d.count === 0 && d.percentage === 0),
       ).toBe(true);
+    });
+
+    it('should filter mastery distribution by textbookId', async () => {
+      const findManySpy = jest
+        .spyOn(prismaService.learningRecord, 'findMany')
+        .mockResolvedValue([] as never);
+
+      await service.getMasteryDistribution(mockUserId, 'tb-1');
+
+      expect(findManySpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            userId: mockUserId,
+            knowledgePoint: { textbookId: 'tb-1' },
+          }),
+        }),
+      );
     });
   });
 
@@ -201,6 +240,24 @@ describe('AnalyticsService', () => {
 
       expect(result.weakPoints).toHaveLength(2);
       expect(result.weakPoints[0].importanceLevel).toBe('A');
+    });
+
+    it('should filter weak points by textbookId', async () => {
+      const findManySpy = jest
+        .spyOn(prismaService.learningRecord, 'findMany')
+        .mockResolvedValue([] as never);
+
+      await service.getWeakPoints(mockUserId, 10, 'tb-1');
+
+      expect(findManySpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            userId: mockUserId,
+            masteryLevel: { in: [MasteryLevel.D, MasteryLevel.E] },
+            knowledgePoint: { textbookId: 'tb-1' },
+          }),
+        }),
+      );
     });
   });
 
@@ -398,11 +455,11 @@ describe('AnalyticsService', () => {
 
   describe('getTextbookSummary', () => {
     it('should throw NotFoundException when textbook does not exist', async () => {
-      jest.spyOn(prismaService.textbook, 'findUnique').mockResolvedValue(null);
+      jest.spyOn(prismaService.textbook, 'findUnique').mockResolvedValue(null as never);
 
       await expect(
         service.getTextbookSummary(mockUserId, 'missing-tb'),
-      ).rejects.toThrow('教材 missing-tb 不存在');
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should return textbook summary for learned and unlearned points', async () => {
@@ -411,20 +468,16 @@ describe('AnalyticsService', () => {
         name: 'Test Textbook',
       } as never);
       jest.spyOn(prismaService.knowledgePoint, 'count').mockResolvedValue(10);
-      jest
-        .spyOn(prismaService.learningRecord, 'groupBy')
-        .mockResolvedValue([
-          { knowledgePointId: 'kp-1', _count: { knowledgePointId: 1 } },
-          { knowledgePointId: 'kp-2', _count: { knowledgePointId: 1 } },
-          { knowledgePointId: 'kp-3', _count: { knowledgePointId: 1 } },
-        ] as never);
-      jest
-        .spyOn(prismaService.knowledgePoint, 'groupBy')
-        .mockResolvedValue([
-          { importanceLevel: 'A', _count: { id: 4 } },
-          { importanceLevel: 'B', _count: { id: 3 } },
-          { importanceLevel: 'C', _count: { id: 3 } },
-        ] as never);
+      jest.spyOn(prismaService.learningRecord, 'groupBy').mockResolvedValue([
+        { knowledgePointId: 'kp-1', _count: { knowledgePointId: 1 } },
+        { knowledgePointId: 'kp-2', _count: { knowledgePointId: 1 } },
+        { knowledgePointId: 'kp-3', _count: { knowledgePointId: 1 } },
+      ] as never);
+      jest.spyOn(prismaService.knowledgePoint, 'groupBy').mockResolvedValue([
+        { importanceLevel: 'A', _count: { id: 4 } },
+        { importanceLevel: 'B', _count: { id: 3 } },
+        { importanceLevel: 'C', _count: { id: 3 } },
+      ] as never);
       jest
         .spyOn(prismaService.learningRecord, 'findMany')
         .mockResolvedValue([
