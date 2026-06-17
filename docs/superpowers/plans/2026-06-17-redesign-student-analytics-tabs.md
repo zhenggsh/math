@@ -522,6 +522,7 @@ interface RawLastTwoRecord {
   level2: string | null;
   level3: string | null;
   mastery_level: string;
+  start_time: Date;
   rn: bigint;
 }
 
@@ -531,9 +532,11 @@ async getLearnedKnowledgePoints(
 ): Promise<LearnedKnowledgePointsDto> {
   this.logger.log(`Getting learned knowledge points for user: ${userId}, textbook: ${textbookId || 'all'}`);
 
-  const textbookFilter = textbookId ? `AND kp."textbook_id" = ${textbookId}` : '';
+  const textbookFilter = textbookId ? 'AND kp."textbook_id" = $2' : '';
+  const params: (string | number)[] = [userId];
+  if (textbookId) params.push(textbookId);
 
-  const rawRows = await this.prisma.$queryRaw<RawLastTwoRecord[]>`
+  const query = `
     WITH ranked AS (
       SELECT
         lr."knowledge_point_id",
@@ -542,13 +545,14 @@ async getLearnedKnowledgePoints(
         kp.level2,
         kp.level3,
         lr.mastery_level,
+        lr.start_time,
         ROW_NUMBER() OVER (
           PARTITION BY lr."knowledge_point_id"
           ORDER BY lr.start_time DESC
         ) AS rn
       FROM learning_records lr
       JOIN knowledge_points kp ON kp.id = lr."knowledge_point_id"
-      WHERE lr.user_id = ${userId}
+      WHERE lr.user_id = $1
         ${textbookFilter}
     )
     SELECT *
@@ -556,6 +560,8 @@ async getLearnedKnowledgePoints(
     WHERE rn <= 2
     ORDER BY "knowledge_point_id", rn ASC
   `;
+
+  const rawRows = await this.prisma.$queryRawUnsafe<RawLastTwoRecord[]>(query, ...params);
 
   const grouped = new Map<string, RawLastTwoRecord[]>();
   for (const row of rawRows) {
@@ -1768,6 +1774,7 @@ export interface SummaryTabProps {
   summary: TextbookSummary | null
   weakPoints: WeakPoints | null
   learningTrend: LearningTrend | null
+  totalDurationMinutes: number
   loading: boolean
 }
 
@@ -1775,6 +1782,7 @@ export const SummaryTab: React.FC<SummaryTabProps> = ({
   summary,
   weakPoints,
   learningTrend,
+  totalDurationMinutes,
   loading,
 }) => {
   const mostRecentDate = React.useMemo(() => {
@@ -1794,7 +1802,7 @@ export const SummaryTab: React.FC<SummaryTabProps> = ({
       totalKnowledgePoints: summary.totalKnowledgePoints,
       learnedCount: summary.learnedKnowledgePoints,
       weakPointCount: weakPoints?.weakPoints.length || 0,
-      totalDurationMinutes: 0,
+      totalDurationMinutes,
       mostRecentLearningDate: mostRecentDate,
       topWeakPointName: weakPoints?.weakPoints[0]?.name,
     })
@@ -1942,6 +1950,7 @@ import { ErrorBoundary } from 'react-error-boundary'
 import { useTextbook } from '../../hooks/useTextbook'
 import {
   useTextbookSummary,
+  useStudentOverview,
   useLearningTrend,
   useWeakPoints,
   useLearnedKnowledgePoints,
@@ -1953,15 +1962,7 @@ import { BehaviorDimensionTab } from '../../components/analytics/BehaviorDimensi
 import { KnowledgePointDimensionTab } from '../../components/analytics/KnowledgePointDimensionTab'
 import { SummaryTab } from '../../components/analytics/SummaryTab'
 import { TabErrorFallback } from '../../components/analytics/TabErrorFallback'
-import { getMasteryLevelOrder } from '../../components/analytics/utils'
 import styles from './StudentAnalyticsPage.module.css'
-
-const TABS = [
-  { key: 'textbook', label: '教材维度' },
-  { key: 'behavior', label: '学习行为维度' },
-  { key: 'knowledge', label: '知识点维度' },
-  { key: 'summary', label: '总结与建议' },
-]
 
 export const StudentAnalyticsPage: React.FC = () => {
   const [activeKey, setActiveKey] = useState('textbook')
@@ -1970,6 +1971,7 @@ export const StudentAnalyticsPage: React.FC = () => {
   const textbookId = selectedTextbookIds[0]
 
   const summaryQuery = useTextbookSummary(textbookId)
+  const overviewQuery = useStudentOverview(textbookId)
   const trendQuery = useLearningTrend(days, textbookId)
   const weakQuery = useWeakPoints(textbookId)
   const learnedQuery = useLearnedKnowledgePoints(textbookId)
@@ -2003,6 +2005,7 @@ export const StudentAnalyticsPage: React.FC = () => {
 
   const isInitialLoading =
     summaryQuery.isLoading ||
+    overviewQuery.isLoading ||
     trendQuery.isLoading ||
     weakQuery.isLoading ||
     learnedQuery.isLoading
@@ -2017,7 +2020,7 @@ export const StudentAnalyticsPage: React.FC = () => {
           <Spin size="large" description="加载分析数据..." />
         </div>
       ) : (
-        <Tabs activeKey={activeKey} onChange={setActiveKey} items={TABS} className={styles.tabs}>
+        <Tabs activeKey={activeKey} onChange={setActiveKey} className={styles.tabs}>
           <Tabs.TabPane tab="教材维度" key="textbook">
             <ErrorBoundary FallbackComponent={TabErrorFallback} onReset={summaryQuery.refetch}>
               <TextbookDimensionTab data={summaryQuery.data || null} loading={summaryQuery.isLoading} />
@@ -2054,6 +2057,7 @@ export const StudentAnalyticsPage: React.FC = () => {
                 summary={summaryQuery.data || null}
                 weakPoints={weakQuery.data || null}
                 learningTrend={trendQuery.data || null}
+                totalDurationMinutes={overviewQuery.data?.totalDurationMinutes || 0}
                 loading={summaryQuery.isLoading}
               />
             </ErrorBoundary>
@@ -2299,7 +2303,7 @@ const mockSummary: TextbookSummary = {
 }
 
 it('renders encouraging text when no weak points', () => {
-  render(<SummaryTab summary={mockSummary} weakPoints={{ weakPoints: [] }} learningTrend={null} loading={false} />)
+  render(<SummaryTab summary={mockSummary} weakPoints={{ weakPoints: [] }} learningTrend={null} totalDurationMinutes={120} loading={false} />)
   expect(screen.getByText(/学习状态良好/)).toBeInTheDocument()
 })
 ```
@@ -2333,6 +2337,7 @@ const queryClient = new QueryClient({
 
 vi.mock('../../../services/analytics.service', () => ({
   getTextbookSummary: vi.fn(),
+  getStudentOverview: vi.fn(),
   getLearningTrend: vi.fn(),
   getWeakPoints: vi.fn(),
   getLearnedKnowledgePoints: vi.fn(),
@@ -2360,6 +2365,7 @@ it('defaults to textbook dimension tab', async () => {
     masteryDistribution: [],
     importanceDistribution: [],
   })
+  vi.mocked(analyticsService.getStudentOverview).mockResolvedValue({ totalLearningCount: 0, totalDurationMinutes: 0, uniqueKnowledgePoints: 0 })
   vi.mocked(analyticsService.getLearningTrend).mockResolvedValue({ trend: [] })
   vi.mocked(analyticsService.getWeakPoints).mockResolvedValue({ weakPoints: [] })
   vi.mocked(analyticsService.getLearnedKnowledgePoints).mockResolvedValue({ learnedKnowledgePoints: [] })
