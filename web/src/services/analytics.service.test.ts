@@ -166,10 +166,9 @@ describe('analytics.service', () => {
     })
 
     const result = await getTextbookSummary('tb-1')
-    expect(mockAxiosInstance.get).toHaveBeenCalledWith(
-      '/analytics/student/textbook-summary',
-      { params: { textbookId: 'tb-1' } }
-    )
+    expect(mockAxiosInstance.get).toHaveBeenCalledWith('/analytics/student/textbook-summary', {
+      params: { textbookId: 'tb-1' },
+    })
     expect(result).toEqual(mockData)
   })
 

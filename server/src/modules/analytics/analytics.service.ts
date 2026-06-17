@@ -340,19 +340,21 @@ export class AnalyticsService {
       throw new NotFoundException(`教材 ${textbookId} 不存在`);
     }
 
-    const [totalKnowledgePoints, learnedAgg, importanceAgg] = await Promise.all([
-      this.prisma.knowledgePoint.count({ where: { textbookId } }),
-      this.prisma.learningRecord.groupBy({
-        by: ['knowledgePointId'],
-        where: { userId, knowledgePoint: { textbookId } },
-        _count: { knowledgePointId: true },
-      }),
-      this.prisma.knowledgePoint.groupBy({
-        by: ['importanceLevel'],
-        where: { textbookId },
-        _count: { id: true },
-      }),
-    ]);
+    const [totalKnowledgePoints, learnedAgg, importanceAgg] = await Promise.all(
+      [
+        this.prisma.knowledgePoint.count({ where: { textbookId } }),
+        this.prisma.learningRecord.groupBy({
+          by: ['knowledgePointId'],
+          where: { userId, knowledgePoint: { textbookId } },
+          _count: { knowledgePointId: true },
+        }),
+        this.prisma.knowledgePoint.groupBy({
+          by: ['importanceLevel'],
+          where: { textbookId },
+          _count: { id: true },
+        }),
+      ],
+    );
 
     const learnedKnowledgePoints = learnedAgg.length;
     const masteryDistribution = await this.getMasteryDistribution(

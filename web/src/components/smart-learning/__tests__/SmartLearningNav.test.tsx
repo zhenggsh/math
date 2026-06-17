@@ -226,12 +226,7 @@ describe('SmartLearningNav', () => {
 
   it('should render StudyGoalTracker in weak mode when onGoalChange is provided', () => {
     render(
-      <SmartLearningNav
-        {...defaultProps}
-        studiedCount={2}
-        goalCount={5}
-        onGoalChange={vi.fn()}
-      />
+      <SmartLearningNav {...defaultProps} studiedCount={2} goalCount={5} onGoalChange={vi.fn()} />
     )
 
     expect(screen.getByText(/今日已复习 2 \/ 5 个薄弱点/)).toBeInTheDocument()

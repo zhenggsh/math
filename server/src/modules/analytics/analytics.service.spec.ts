@@ -92,9 +92,11 @@ describe('AnalyticsService', () => {
         _count: { id: 5 },
         _sum: { durationMinutes: 100 },
       } as never);
-      jest.spyOn(prismaService.learningRecord, 'groupBy').mockResolvedValue([
-        { knowledgePointId: 'kp-1', _count: { knowledgePointId: 1 } },
-      ] as never);
+      jest
+        .spyOn(prismaService.learningRecord, 'groupBy')
+        .mockResolvedValue([
+          { knowledgePointId: 'kp-1', _count: { knowledgePointId: 1 } },
+        ] as never);
 
       await service.getStudentOverview(mockUserId, 'tb-1');
 
@@ -455,7 +457,9 @@ describe('AnalyticsService', () => {
 
   describe('getTextbookSummary', () => {
     it('should throw NotFoundException when textbook does not exist', async () => {
-      jest.spyOn(prismaService.textbook, 'findUnique').mockResolvedValue(null as never);
+      jest
+        .spyOn(prismaService.textbook, 'findUnique')
+        .mockResolvedValue(null as never);
 
       await expect(
         service.getTextbookSummary(mockUserId, 'missing-tb'),

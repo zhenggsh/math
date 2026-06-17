@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { Button, App, Breadcrumb, Segmented, Dropdown } from 'antd'
 import type { MenuProps } from 'antd'
 import {
@@ -44,6 +44,7 @@ const SmartLearningPage: React.FC = () => {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const focusId = searchParams.get('focusKnowledgePointId')
+  const hasNotifiedMissingRef = useRef(false)
   const [mode, setMode] = useState<RecommendationMode>('weak')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [studiedIds, setStudiedIds] = useState<Set<string>>(new Set())
@@ -122,10 +123,15 @@ const SmartLearningPage: React.FC = () => {
 
   // 根据 URL 参数自动聚焦到指定知识点
   useEffect(() => {
-    if (!focusId || isLoading || items.length === 0) return
+    if (!focusId) {
+      hasNotifiedMissingRef.current = false
+      return
+    }
+    if (isLoading || items.length === 0) return
 
     const exists = items.some(item => item.id === focusId)
     if (exists) {
+      hasNotifiedMissingRef.current = false
       setSelectedId(focusId)
       const element = document.querySelector(`[data-kp-id="${focusId}"]`)
       element?.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -137,7 +143,10 @@ const SmartLearningPage: React.FC = () => {
       return
     }
 
-    message.info('该知识点不在当前推荐列表中')
+    if (!hasNotifiedMissingRef.current) {
+      hasNotifiedMissingRef.current = true
+      message.info('该知识点不在当前推荐列表中')
+    }
   }, [focusId, items, isLoading, mode, message])
 
   const handleModeChange = useCallback((newMode: RecommendationMode): void => {

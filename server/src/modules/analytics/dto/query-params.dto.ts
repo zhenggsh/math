@@ -1,4 +1,12 @@
-import { IsOptional, IsInt, IsString, IsNotEmpty, IsUUID, Min, Max } from 'class-validator';
+import {
+  IsOptional,
+  IsInt,
+  IsString,
+  IsNotEmpty,
+  IsUUID,
+  Min,
+  Max,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
@@ -6,7 +14,10 @@ import { Type } from 'class-transformer';
  * 教材ID查询参数
  */
 export class TextbookIdQueryDto {
-  @ApiPropertyOptional({ description: '教材ID', example: '550e8400-e29b-41d4-a716-446655440000' })
+  @ApiPropertyOptional({
+    description: '教材ID',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
   @IsOptional()
   @IsUUID()
   textbookId?: string;
@@ -85,12 +96,18 @@ export class KnowledgePointProgressQueryDto {
   @IsNotEmpty()
   knowledgePointId: string;
 
-  @ApiPropertyOptional({ description: '开始日期（可选）', example: '2026-01-01' })
+  @ApiPropertyOptional({
+    description: '开始日期（可选）',
+    example: '2026-01-01',
+  })
   @IsOptional()
   @IsString()
   startDate?: string;
 
-  @ApiPropertyOptional({ description: '结束日期（可选）', example: '2026-12-31' })
+  @ApiPropertyOptional({
+    description: '结束日期（可选）',
+    example: '2026-12-31',
+  })
   @IsOptional()
   @IsString()
   endDate?: string;

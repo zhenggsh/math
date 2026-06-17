@@ -74,7 +74,10 @@ export class AnalyticsController {
     @CurrentUser('userId') userId: string,
     @Query(new ValidationPipe({ transform: true })) query: TextbookIdQueryDto,
   ): Promise<{ success: boolean; data: StudentOverviewDto }> {
-    const data = await this.service.getStudentOverview(userId, query.textbookId);
+    const data = await this.service.getStudentOverview(
+      userId,
+      query.textbookId,
+    );
     return { success: true, data };
   }
 
@@ -90,7 +93,10 @@ export class AnalyticsController {
     @CurrentUser('userId') userId: string,
     @Query(new ValidationPipe({ transform: true })) query: TextbookIdQueryDto,
   ): Promise<{ success: boolean; data: MasteryDistributionDto }> {
-    const data = await this.service.getMasteryDistribution(userId, query.textbookId);
+    const data = await this.service.getMasteryDistribution(
+      userId,
+      query.textbookId,
+    );
     return { success: true, data };
   }
 
@@ -108,7 +114,11 @@ export class AnalyticsController {
     @Query(new ValidationPipe({ transform: true }))
     query: LearningTrendQueryDto,
   ): Promise<{ success: boolean; data: LearningTrendDto }> {
-    const data = await this.service.getLearningTrend(userId, query.days || 30, query.textbookId);
+    const data = await this.service.getLearningTrend(
+      userId,
+      query.days || 30,
+      query.textbookId,
+    );
     return { success: true, data };
   }
 
@@ -125,7 +135,11 @@ export class AnalyticsController {
     @CurrentUser('userId') userId: string,
     @Query(new ValidationPipe({ transform: true })) query: WeakPointsQueryDto,
   ): Promise<{ success: boolean; data: WeakPointsDto }> {
-    const data = await this.service.getWeakPoints(userId, query.limit || 10, query.textbookId);
+    const data = await this.service.getWeakPoints(
+      userId,
+      query.limit || 10,
+      query.textbookId,
+    );
     return { success: true, data };
   }
 
@@ -141,7 +155,10 @@ export class AnalyticsController {
     @CurrentUser('userId') userId: string,
     @Query(new ValidationPipe({ transform: true })) query: TextbookIdQueryDto,
   ): Promise<{ success: boolean; data: LearnedKnowledgePointsDto }> {
-    const data = await this.service.getLearnedKnowledgePoints(userId, query.textbookId);
+    const data = await this.service.getLearnedKnowledgePoints(
+      userId,
+      query.textbookId,
+    );
     return { success: true, data };
   }
 
@@ -152,7 +169,11 @@ export class AnalyticsController {
   @Roles(Role.STUDENT)
   @ApiOperation({ summary: '教材维度总览' })
   @ApiQuery({ name: 'textbookId', required: true, description: '教材ID' })
-  @ApiResponse({ status: 200, description: '获取成功', type: TextbookSummaryResponseDto })
+  @ApiResponse({
+    status: 200,
+    description: '获取成功',
+    type: TextbookSummaryResponseDto,
+  })
   @ApiResponse({ status: 404, description: '教材不存在' })
   async getTextbookSummary(
     @CurrentUser('userId') userId: string,
@@ -161,7 +182,10 @@ export class AnalyticsController {
     if (!query.textbookId) {
       throw new BadRequestException('textbookId 不能为空');
     }
-    const data = await this.service.getTextbookSummary(userId, query.textbookId);
+    const data = await this.service.getTextbookSummary(
+      userId,
+      query.textbookId,
+    );
     return { success: true, data };
   }
 

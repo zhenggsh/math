@@ -64,7 +64,10 @@ beforeEach(() => {
   mocks.mockGetToken.mockReturnValue('dummy-token')
 })
 
-const renderPage = (textbooks: Textbook[] = [], storageSelection: string | null = null): RenderResult => {
+const renderPage = (
+  textbooks: Textbook[] = [],
+  storageSelection: string | null = null
+): RenderResult => {
   mocks.mockGetTextbooks.mockResolvedValue(textbooks)
   if (storageSelection !== null) {
     localStorage.setItem('mathtong:selected-textbooks', storageSelection)
