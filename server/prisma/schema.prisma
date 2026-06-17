@@ -89,6 +89,9 @@ model KnowledgePoint {
   // 唯一约束：同一个教材内的知识点编号不能重复
   @@unique([code, textbookId], name: "idx_knowledge_point_code_textbook")
 
+  // 索引优化（按教材查询）
+  @@index([textbookId], name: "idx_knowledge_point_textbook")
+
   // 索引优化（智能学习模式）
   @@index([importanceLevel], name: "idx_knowledge_point_importance")
   @@map("knowledge_points")
