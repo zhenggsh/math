@@ -59,9 +59,11 @@ export const StudentAnalyticsPage: React.FC = () => {
 
   if (!textbookId) {
     return (
-      <div className={styles.container}>
-        <h1 className={styles.title}>学习分析</h1>
-        <TextbookHeader />
+      <div className={styles.page}>
+        <div className={styles.header}>
+          <h1 className={styles.title}>学习分析</h1>
+          <TextbookHeader />
+        </div>
       </div>
     )
   }
@@ -74,74 +76,78 @@ export const StudentAnalyticsPage: React.FC = () => {
     learnedQuery.isLoading
 
   return (
-    <div className={styles.container}>
-      <h1 className={styles.title}>学习分析</h1>
-      <TextbookHeader textbookName={summaryQuery.data?.textbookName} />
+    <div className={styles.page}>
+      <div className={styles.header}>
+        <h1 className={styles.title}>学习分析</h1>
+        <TextbookHeader textbookName={summaryQuery.data?.textbookName} />
+      </div>
 
-      {isInitialLoading ? (
-        <div className={styles.loadingContainer}>
-          <Spin size="large" description="加载分析数据..." />
-        </div>
-      ) : (
-        <Tabs activeKey={activeKey} onChange={setActiveKey} className={styles.tabs}>
-          <Tabs.TabPane tab="教材维度" key="textbook">
-            <ErrorBoundary
-              FallbackComponent={FallbackAdapter}
-              onReset={createResetHandler(summaryQuery.refetch)}
-            >
-              <TextbookDimensionTab
-                data={summaryQuery.data || null}
-                loading={summaryQuery.isLoading}
-              />
-            </ErrorBoundary>
-          </Tabs.TabPane>
+      <div className={styles.content}>
+        {isInitialLoading ? (
+          <div className={styles.loadingContainer}>
+            <Spin size="large" description="加载分析数据..." />
+          </div>
+        ) : (
+          <Tabs activeKey={activeKey} onChange={setActiveKey} className={styles.tabs}>
+            <Tabs.TabPane tab="教材维度" key="textbook">
+              <ErrorBoundary
+                FallbackComponent={FallbackAdapter}
+                onReset={createResetHandler(summaryQuery.refetch)}
+              >
+                <TextbookDimensionTab
+                  data={summaryQuery.data || null}
+                  loading={summaryQuery.isLoading}
+                />
+              </ErrorBoundary>
+            </Tabs.TabPane>
 
-          <Tabs.TabPane tab="学习行为维度" key="behavior">
-            <ErrorBoundary
-              FallbackComponent={FallbackAdapter}
-              onReset={createResetHandler(trendQuery.refetch)}
-            >
-              <BehaviorDimensionTab
-                data={trendQuery.data || null}
-                loading={trendQuery.isLoading}
-                days={days}
-                onDaysChange={setDays}
-              />
-            </ErrorBoundary>
-          </Tabs.TabPane>
+            <Tabs.TabPane tab="学习行为维度" key="behavior">
+              <ErrorBoundary
+                FallbackComponent={FallbackAdapter}
+                onReset={createResetHandler(trendQuery.refetch)}
+              >
+                <BehaviorDimensionTab
+                  data={trendQuery.data || null}
+                  loading={trendQuery.isLoading}
+                  days={days}
+                  onDaysChange={setDays}
+                />
+              </ErrorBoundary>
+            </Tabs.TabPane>
 
-          <Tabs.TabPane tab="知识点维度" key="knowledge">
-            <ErrorBoundary
-              FallbackComponent={FallbackAdapter}
-              onReset={createResetHandler(learnedQuery.refetch)}
-            >
-              <KnowledgePointDimensionTab
-                learned={learnedQuery.data || null}
-                weakPoints={weakQuery.data || null}
-                progress={progressQuery.data || null}
-                progressLoading={progressQuery.isLoading}
-                selectedId={selectedKnowledgePointId}
-                onSelect={setSelectedKnowledgePointId}
-              />
-            </ErrorBoundary>
-          </Tabs.TabPane>
+            <Tabs.TabPane tab="知识点维度" key="knowledge">
+              <ErrorBoundary
+                FallbackComponent={FallbackAdapter}
+                onReset={createResetHandler(learnedQuery.refetch)}
+              >
+                <KnowledgePointDimensionTab
+                  learned={learnedQuery.data || null}
+                  weakPoints={weakQuery.data || null}
+                  progress={progressQuery.data || null}
+                  progressLoading={progressQuery.isLoading}
+                  selectedId={selectedKnowledgePointId}
+                  onSelect={setSelectedKnowledgePointId}
+                />
+              </ErrorBoundary>
+            </Tabs.TabPane>
 
-          <Tabs.TabPane tab="总结与建议" key="summary">
-            <ErrorBoundary
-              FallbackComponent={FallbackAdapter}
-              onReset={createResetHandler(summaryQuery.refetch)}
-            >
-              <SummaryTab
-                summary={summaryQuery.data || null}
-                weakPoints={weakQuery.data || null}
-                learningTrend={trendQuery.data || null}
-                totalDurationMinutes={overviewQuery.data?.totalDurationMinutes || 0}
-                loading={summaryQuery.isLoading}
-              />
-            </ErrorBoundary>
-          </Tabs.TabPane>
-        </Tabs>
-      )}
+            <Tabs.TabPane tab="总结与建议" key="summary">
+              <ErrorBoundary
+                FallbackComponent={FallbackAdapter}
+                onReset={createResetHandler(summaryQuery.refetch)}
+              >
+                <SummaryTab
+                  summary={summaryQuery.data || null}
+                  weakPoints={weakQuery.data || null}
+                  learningTrend={trendQuery.data || null}
+                  totalDurationMinutes={overviewQuery.data?.totalDurationMinutes || 0}
+                  loading={summaryQuery.isLoading}
+                />
+              </ErrorBoundary>
+            </Tabs.TabPane>
+          </Tabs>
+        )}
+      </div>
     </div>
   )
 }
