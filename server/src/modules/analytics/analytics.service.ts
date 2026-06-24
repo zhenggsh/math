@@ -91,7 +91,10 @@ export class AnalyticsService {
     const latestRecords = await this.prisma.learningRecord.findMany({
       where,
       distinct: ['knowledgePointId'],
-      orderBy: { startTime: 'desc' },
+      orderBy: [
+        { knowledgePointId: 'asc' },
+        { startTime: 'desc' },
+      ],
       select: { masteryLevel: true },
     });
 
@@ -205,7 +208,10 @@ export class AnalyticsService {
     const latestRecords = await this.prisma.learningRecord.findMany({
       where,
       distinct: ['knowledgePointId'],
-      orderBy: { startTime: 'desc' },
+      orderBy: [
+        { knowledgePointId: 'asc' },
+        { startTime: 'desc' },
+      ],
       take: limit,
       include: {
         knowledgePoint: {
