@@ -10,7 +10,6 @@ import { RawKnowledgePoint, ParseResult } from './types/textbook.types';
 describe('TextbookService', () => {
   let service: TextbookService;
   let prismaService: PrismaService;
-  let parserService: TextbookParserService;
   let fileService: TextbookFileService;
 
   // Mock data
@@ -104,7 +103,6 @@ describe('TextbookService', () => {
 
     service = module.get<TextbookService>(TextbookService);
     prismaService = module.get<PrismaService>(PrismaService);
-    parserService = module.get<TextbookParserService>(TextbookParserService);
     fileService = module.get<TextbookFileService>(TextbookFileService);
   });
 

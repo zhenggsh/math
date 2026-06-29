@@ -7,10 +7,10 @@ import { App } from 'antd'
 import SmartLearningPage from '../SmartLearningPage'
 
 const mocks = vi.hoisted(() => ({
-  mockGetWeakPoints: vi.fn(),
-  mockGetByImportance: vi.fn(),
-  mockGetRandomPoints: vi.fn(),
-  mockGetKnowledgePointDetail: vi.fn(),
+  mockGetWeakPoints: vi.fn<unknown[], Promise<unknown>>(),
+  mockGetByImportance: vi.fn<unknown[], Promise<unknown>>(),
+  mockGetRandomPoints: vi.fn<unknown[], Promise<unknown>>(),
+  mockGetKnowledgePointDetail: vi.fn<unknown[], Promise<unknown>>(),
   mockSelectedTextbookIds: ['tb-1'],
 }))
 

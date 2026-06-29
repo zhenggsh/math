@@ -54,6 +54,7 @@ it('navigates to smart-learning on 去学习 click', () => {
         learned={mockLearned}
         weakPoints={mockWeak}
         progress={null}
+        loading={false}
         progressLoading={false}
         selectedId="kp-1"
         onSelect={vi.fn()}

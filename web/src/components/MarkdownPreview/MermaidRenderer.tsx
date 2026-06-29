@@ -31,7 +31,7 @@ const MERMAID_ESCAPE_MAP: Record<string, string> = {
  * 尝试自动转义 Mermaid 内容中的特殊字符
  */
 function escapeMermaidContent(value: string): string {
-  return value.replace(/[()\[\]"':;]/g, char => MERMAID_ESCAPE_MAP[char] || char)
+  return value.replace(/[()[\]"':;]/g, char => MERMAID_ESCAPE_MAP[char] || char)
 }
 
 /**

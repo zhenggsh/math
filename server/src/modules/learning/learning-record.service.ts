@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  Logger,
-  NotFoundException,
-  ForbiddenException,
-} from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { MasteryLevel, ImportanceLevel } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateLearningRecordDto } from './dto/create-learning-record.dto';

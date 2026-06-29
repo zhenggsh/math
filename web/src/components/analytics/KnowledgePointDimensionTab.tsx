@@ -1,6 +1,6 @@
-import React, { useMemo } from 'react'
+import React, { useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Card, Select, Radio, Button, Empty, Tag } from 'antd'
+import { Card, Select, Radio, Button, Empty, Tag, Spin } from 'antd'
 import { BookOutlined } from '@ant-design/icons'
 import { ProgressionChart } from '../features/analytics'
 import type {
@@ -17,6 +17,7 @@ export interface KnowledgePointDimensionTabProps {
   learned: LearnedKnowledgePoints | null
   weakPoints: WeakPoints | null
   progress: KnowledgePointProgress | null
+  loading: boolean
   progressLoading: boolean
   selectedId: string
   onSelect: (id: string) => void
@@ -26,6 +27,7 @@ export const KnowledgePointDimensionTab: React.FC<KnowledgePointDimensionTabProp
   learned,
   weakPoints,
   progress,
+  loading,
   progressLoading,
   selectedId,
   onSelect,
@@ -52,6 +54,22 @@ export const KnowledgePointDimensionTab: React.FC<KnowledgePointDimensionTabProp
     if (filter === 'weak') return points.filter(p => weakIds.has(p.knowledgePointId))
     return points.filter(p => trend(p.lastTwoMasteryLevels) === filter)
   }, [learned, filter, weakIds])
+
+  useEffect(() => {
+    const stillValid = filteredPoints.some(p => p.knowledgePointId === selectedId)
+    if (stillValid) {
+      return
+    }
+    onSelect(filteredPoints[0]?.knowledgePointId || '')
+  }, [filteredPoints, selectedId, onSelect])
+
+  if (loading) {
+    return (
+      <div className={styles.loadingContainer}>
+        <Spin size="large" tip="加载知识点数据..." />
+      </div>
+    )
+  }
 
   return (
     <div className={styles.container}>

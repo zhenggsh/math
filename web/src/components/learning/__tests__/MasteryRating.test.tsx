@@ -41,7 +41,7 @@ describe('MasteryRating', () => {
     })
   })
 
-  it('should show tooltips with descriptions', async () => {
+  it('should show tooltips with descriptions', () => {
     render(<MasteryRating />)
 
     // Check that tooltips are rendered (title attributes or aria-labels)

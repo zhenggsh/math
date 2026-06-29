@@ -408,12 +408,13 @@ export class TextbookService {
    * 使用知识点编号（code）在 md 文件中匹配对应内容块
    * 支持一二级节点按 code 层级匹配（a / a.b / a.b.c）
    */
+
   private async readContentFromFile(
     code: string,
     textbookId: string,
     level1?: string | null,
     level2?: string | null,
-    level3?: string | null,
+    level3?: string | null, // eslint-disable-line @typescript-eslint/no-unused-vars
   ): Promise<string> {
     try {
       const textbook = await this.prisma.textbook.findUnique({

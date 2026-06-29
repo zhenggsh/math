@@ -3,11 +3,10 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 import { useRecommendations, useRefreshRecommendations } from '../useRecommendations'
-import { smartLearningApi } from '../../services/smartLearningApi'
 
-const mockGetWeakPoints = vi.fn()
-const mockGetByImportance = vi.fn()
-const mockGetRandomPoints = vi.fn()
+const mockGetWeakPoints = vi.fn<unknown[], Promise<unknown>>()
+const mockGetByImportance = vi.fn<unknown[], Promise<unknown>>()
+const mockGetRandomPoints = vi.fn<unknown[], Promise<unknown>>()
 
 let mockSelectedTextbookIds: string[] = ['tb-1']
 

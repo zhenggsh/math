@@ -35,9 +35,7 @@ describe('knowledgeApi', () => {
 
       const result = await knowledgeApi.getKnowledgeTree('tb-1')
 
-      expect(mockGet).toHaveBeenCalledWith('/knowledge-points', {
-        params: { textbookId: 'tb-1' },
-      })
+      expect(mockGet).toHaveBeenCalledWith('/textbooks/tb-1/knowledge-points')
       expect(result).toEqual(mockData)
     })
   })
@@ -54,7 +52,7 @@ describe('knowledgeApi', () => {
 
       const result = await knowledgeApi.getKnowledgePointDetail('kp-1')
 
-      expect(mockGet).toHaveBeenCalledWith('/knowledge-points/kp-1')
+      expect(mockGet).toHaveBeenCalledWith('/textbooks/knowledge-points/kp-1')
       expect(result).toEqual(mockData)
     })
   })

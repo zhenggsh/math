@@ -1,10 +1,13 @@
 import React from 'react'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { App } from 'antd'
 import { FeedbackPanel } from '../FeedbackPanel'
 import * as learningRecordApi from '../../../services/learningRecordApi'
 
 vi.mock('../../../services/learningRecordApi')
+
+const renderWithApp = (ui: React.ReactElement) => render(<App>{ui}</App>)
 
 describe('FeedbackPanel', () => {
   const mockKnowledgePointId = 'kp-123'
@@ -17,7 +20,7 @@ describe('FeedbackPanel', () => {
   })
 
   it('should render timer, rating, and form elements', () => {
-    render(<FeedbackPanel knowledgePointId={mockKnowledgePointId} />)
+    renderWithApp(<FeedbackPanel knowledgePointId={mockKnowledgePointId} />)
 
     expect(screen.getByText('学习时长')).toBeInTheDocument()
     expect(screen.getByText('学习反馈')).toBeInTheDocument()
@@ -29,7 +32,7 @@ describe('FeedbackPanel', () => {
   })
 
   it('should show error when submitting without mastery level', async () => {
-    render(<FeedbackPanel knowledgePointId={mockKnowledgePointId} />)
+    renderWithApp(<FeedbackPanel knowledgePointId={mockKnowledgePointId} />)
 
     const submitButton = screen.getByRole('button', { name: /提交/i })
     fireEvent.click(submitButton)
@@ -46,7 +49,7 @@ describe('FeedbackPanel', () => {
       mockCreateRecord
     )
 
-    render(
+    renderWithApp(
       <FeedbackPanel knowledgePointId={mockKnowledgePointId} onSubmitSuccess={mockSubmitSuccess} />
     )
 
@@ -68,7 +71,7 @@ describe('FeedbackPanel', () => {
   })
 
   it('should open history modal when clicking history button', async () => {
-    render(<FeedbackPanel knowledgePointId={mockKnowledgePointId} />)
+    renderWithApp(<FeedbackPanel knowledgePointId={mockKnowledgePointId} />)
 
     const historyButton = screen.getByRole('button', { name: /学习历史/i })
     fireEvent.click(historyButton)
@@ -104,7 +107,7 @@ describe('FeedbackPanel', () => {
       learningRecordApi.getLearningRecordsByKnowledgePoint as ReturnType<typeof vi.fn>
     ).mockResolvedValue(mockRecords)
 
-    render(<FeedbackPanel knowledgePointId={mockKnowledgePointId} />)
+    renderWithApp(<FeedbackPanel knowledgePointId={mockKnowledgePointId} />)
 
     await waitFor(() => {
       expect(learningRecordApi.getLearningRecordsByKnowledgePoint).toHaveBeenCalledWith(

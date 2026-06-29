@@ -13,14 +13,12 @@ import { RolesGuard } from './guards/roles.guard';
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],
-      useFactory: async (
-        configService: ConfigService,
-      ): Promise<JwtModuleOptions> => {
+      useFactory: (configService: ConfigService): JwtModuleOptions => {
         const expiresIn = configService.get<string>('JWT_EXPIRES_IN') || '24h';
         return {
           secret: configService.get<string>('JWT_SECRET')!,
           signOptions: {
-            expiresIn: expiresIn as any,
+            expiresIn,
           },
         };
       },

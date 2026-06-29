@@ -1,5 +1,5 @@
 import React from 'react'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import { describe, it, expect } from 'vitest'
 import { RecordHistory } from '../RecordHistory'
 import type { LearningRecord } from '../../../types/learning-record.types'

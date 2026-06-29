@@ -89,7 +89,7 @@ describe('StudyGoalTracker', () => {
 
     fireEvent.click(screen.getByRole('button', { name: '设定学习目标' }))
 
-    const input = screen.getByRole('spinbutton') as HTMLInputElement
+    const input = screen.getByRole('spinbutton')
     expect(input.value).toBe('7')
   })
 })

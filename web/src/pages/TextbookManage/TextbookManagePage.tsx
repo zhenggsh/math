@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-misused-promises, @typescript-eslint/no-unsafe-enum-comparison */
+/* eslint-disable @typescript-eslint/no-misused-promises */
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, Button, Space, Typography, Alert, App, Empty } from 'antd'

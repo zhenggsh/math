@@ -2,7 +2,7 @@ import axios from 'axios'
 import { getToken } from './auth.service'
 import type { KnowledgePoint } from '../types/knowledge.types'
 
-const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
+const API_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) || 'http://localhost:3000'
 
 const api = axios.create({
   baseURL: `${API_URL}/smart-learning`,
@@ -15,6 +15,12 @@ api.interceptors.request.use(config => {
   }
   return config
 })
+
+interface ApiResponse<T> {
+  success: boolean
+  data: T
+  message?: string
+}
 
 export interface WeakPointItem {
   knowledgePoint: KnowledgePoint
@@ -53,8 +59,11 @@ export const smartLearningApi = {
    * 获取薄弱知识点
    */
   async getWeakPoints(params?: { textbookId?: string; limit?: number }) {
-    const response = await api.get('/weak-points', { params })
-    return response.data.data as { total: number; items: WeakPointItem[] }
+    const response = await api.get<ApiResponse<{ total: number; items: WeakPointItem[] }>>(
+      '/weak-points',
+      { params }
+    )
+    return response.data.data
   },
 
   /**
@@ -65,28 +74,30 @@ export const smartLearningApi = {
     excludeMastered?: boolean
     limit?: number
   }) {
-    const response = await api.get('/by-importance', { params })
-    return response.data.data as {
-      level: 'A' | 'B' | 'C'
-      total: number
-      items: ByImportanceItem[]
-    }
+    const response = await api.get<
+      ApiResponse<{
+        level: 'A' | 'B' | 'C'
+        total: number
+        items: ByImportanceItem[]
+      }>
+    >('/by-importance', { params })
+    return response.data.data
   },
 
   /**
    * 获取随机知识点
    */
   async getRandomPoints(params?: { textbookId?: string; count?: number }) {
-    const response = await api.get('/random', { params })
-    return response.data.data as { items: KnowledgePoint[] }
+    const response = await api.get<ApiResponse<{ items: KnowledgePoint[] }>>('/random', { params })
+    return response.data.data
   },
 
   /**
    * 获取学习统计
    */
   async getLearningStats() {
-    const response = await api.get('/stats')
-    return response.data.data as LearningStats
+    const response = await api.get<ApiResponse<LearningStats>>('/stats')
+    return response.data.data
   },
 }
 

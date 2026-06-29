@@ -37,8 +37,8 @@ describe('MermaidRenderer', () => {
     render(<MermaidRenderer value="invalid" />)
 
     await waitFor(() => {
-      expect(screen.getByText('Diagram render error')).toBeInTheDocument()
-      expect(screen.getByText('Invalid syntax')).toBeInTheDocument()
+      expect(screen.getByText('图表渲染失败')).toBeInTheDocument()
+      expect(screen.getByText(/Invalid syntax/)).toBeInTheDocument()
     })
   })
 
@@ -48,7 +48,7 @@ describe('MermaidRenderer', () => {
 
     await waitFor(() => {
       expect(screen.queryByText('Rendering diagram...')).not.toBeInTheDocument()
-      expect(screen.queryByText('Diagram render error')).not.toBeInTheDocument()
+      expect(screen.queryByText('图表渲染失败')).not.toBeInTheDocument()
     })
   })
 })

@@ -35,7 +35,9 @@ export function calculateRecentStudyPenalty(
   config: RecommendationConfig,
 ): number {
   if (records.length === 0) return 0;
-  const cutoff = new Date(Date.now() - config.frequencyWindowDays * 24 * 60 * 60 * 1000);
+  const cutoff = new Date(
+    Date.now() - config.frequencyWindowDays * 24 * 60 * 60 * 1000,
+  );
   const hasRecent = records.some((r) => r.startTime >= cutoff);
   return hasRecent ? config.recentPenalty : 0;
 }

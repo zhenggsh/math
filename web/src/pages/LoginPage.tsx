@@ -18,9 +18,18 @@ export const LoginPage: React.FC = () => {
     try {
       await login(values.email, values.password)
       message.success('登录成功')
-      navigate('/')
-    } catch (error: any) {
-      message.error(error.response?.data?.message || '登录失败')
+      void navigate('/')
+    } catch (error: unknown) {
+      const errorMessage =
+        (error instanceof Error && error.message) ||
+        (typeof error === 'object' &&
+          error !== null &&
+          'response' in error &&
+          typeof (error as { response?: { data?: { message?: string } } }).response?.data
+            ?.message === 'string' &&
+          (error as { response: { data: { message: string } } }).response.data.message) ||
+        '登录失败'
+      message.error(errorMessage)
     } finally {
       setLoading(false)
     }
@@ -40,7 +49,12 @@ export const LoginPage: React.FC = () => {
         <Title level={2} style={{ textAlign: 'center', marginBottom: 24 }}>
           知识通 - 登录
         </Title>
-        <Form name="login" onFinish={onFinish} autoComplete="off" layout="vertical">
+        <Form
+          name="login"
+          onFinish={values => void onFinish(values as { email: string; password: string })}
+          autoComplete="off"
+          layout="vertical"
+        >
           <Form.Item
             name="email"
             rules={[

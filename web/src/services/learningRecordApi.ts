@@ -6,7 +6,7 @@ import type {
   PaginatedLearningRecords,
 } from '../types/learning-record.types'
 
-const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
+const API_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) || 'http://localhost:3000'
 
 // 创建带认证的 axios 实例
 const api = axios.create({

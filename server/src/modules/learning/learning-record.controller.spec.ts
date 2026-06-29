@@ -5,7 +5,6 @@ import { MasteryLevel, ImportanceLevel } from '@prisma/client';
 
 describe('LearningRecordController', () => {
   let controller: LearningRecordController;
-  let service: LearningRecordService;
 
   const mockUserId = 'user-123';
 
@@ -27,7 +26,6 @@ describe('LearningRecordController', () => {
     }).compile();
 
     controller = module.get<LearningRecordController>(LearningRecordController);
-    service = module.get<LearningRecordService>(LearningRecordService);
 
     jest.clearAllMocks();
   });

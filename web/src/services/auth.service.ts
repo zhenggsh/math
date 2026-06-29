@@ -1,24 +1,24 @@
 import axios from 'axios'
 import type { LoginRequest, RegisterRequest, AuthResponse, User } from '../types/auth.types'
 
-const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
+const API_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) || 'http://localhost:3000'
 
 export const authApi = axios.create({
   baseURL: `${API_URL}/auth`,
 })
 
 export const login = async (data: LoginRequest): Promise<AuthResponse> => {
-  const response = await authApi.post('/login', data)
+  const response = await authApi.post<AuthResponse>('/login', data)
   return response.data
 }
 
 export const register = async (data: RegisterRequest): Promise<AuthResponse> => {
-  const response = await authApi.post('/register', data)
+  const response = await authApi.post<AuthResponse>('/register', data)
   return response.data
 }
 
 export const getProfile = async (token: string): Promise<User> => {
-  const response = await authApi.get('/profile', {
+  const response = await authApi.get<User>('/profile', {
     headers: {
       Authorization: `Bearer ${token}`,
     },

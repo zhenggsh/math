@@ -130,29 +130,32 @@ const LearningPage: React.FC = () => {
   const hasNext = currentIndex >= 0 && currentIndex < flatSequence.length - 1
 
   // 处理节点选择（必须在 navigateToNode 之前定义）
-  const handleSelectNode = useCallback(async (node: KnowledgeTreeNode) => {
-    setSelectedNode(node)
+  const handleSelectNode = useCallback(
+    async (node: KnowledgeTreeNode) => {
+      setSelectedNode(node)
 
-    if (node.data.id) {
-      try {
-        setContentLoading(true)
-        const detail = await knowledgeApi.getKnowledgePointDetail(node.data.id)
-        const initialContent = detail.content || detail.definition || 'No content available'
-        setContent(initialContent)
-        setEditedContent(initialContent)
-        setDetail({
-          definition: detail.definition || undefined,
-          characteristics: detail.characteristics || undefined,
-          importanceLevel: detail.importanceLevel,
-        })
-      } catch {
-        message.error('Failed to load content')
-        setContent('Failed to load content. Please try again.')
-      } finally {
-        setContentLoading(false)
+      if (node.data.id) {
+        try {
+          setContentLoading(true)
+          const detail = await knowledgeApi.getKnowledgePointDetail(node.data.id)
+          const initialContent = detail.content || detail.definition || 'No content available'
+          setContent(initialContent)
+          setEditedContent(initialContent)
+          setDetail({
+            definition: detail.definition || undefined,
+            characteristics: detail.characteristics || undefined,
+            importanceLevel: detail.importanceLevel,
+          })
+        } catch {
+          message.error('Failed to load content')
+          setContent('Failed to load content. Please try again.')
+        } finally {
+          setContentLoading(false)
+        }
       }
-    }
-  }, [])
+    },
+    [message]
+  )
 
   const navigateToNode = useCallback(
     (targetNode: KnowledgeTreeNode) => {
@@ -342,7 +345,7 @@ const LearningPage: React.FC = () => {
     } finally {
       setExportLoading(false)
     }
-  }, [selectedNode])
+  }, [selectedNode, content, message])
 
   // 保存内容到 MD 文件
   const handleSaveContent = useCallback(async () => {
@@ -361,7 +364,7 @@ const LearningPage: React.FC = () => {
     } finally {
       setIsSaving(false)
     }
-  }, [selectedNode, activeTextbookId, editedContent])
+  }, [selectedNode, activeTextbookId, editedContent, message])
 
   const exportMenuItems: MenuProps['items'] = [
     {
@@ -375,7 +378,7 @@ const LearningPage: React.FC = () => {
       icon: exportLoading ? <LoadingOutlined /> : <ExportOutlined />,
       label: exportLoading ? '导出中...' : '导出 PDF',
       disabled: exportLoading,
-      onClick: handleExportPdf,
+      onClick: () => void handleExportPdf(),
     },
   ]
 
@@ -413,7 +416,12 @@ const LearningPage: React.FC = () => {
           />
           <Button icon={<RightOutlined />} size="small" disabled={!hasNext} onClick={handleNext} />
           {showRaw && canEdit && (
-            <Button size="small" type="primary" loading={isSaving} onClick={handleSaveContent}>
+            <Button
+              size="small"
+              type="primary"
+              loading={isSaving}
+              onClick={() => void handleSaveContent()}
+            >
               保存
             </Button>
           )}

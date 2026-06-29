@@ -2,7 +2,7 @@ import axios from 'axios'
 import { getToken } from './auth.service'
 import type { KnowledgePoint, KnowledgePointDetail, LearningRecord } from '../types/knowledge.types'
 
-const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
+const API_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) || 'http://localhost:3000'
 
 // 创建带认证的 axios 实例
 const api = axios.create({
@@ -18,6 +18,12 @@ api.interceptors.request.use(config => {
   return config
 })
 
+interface ApiResponse<T> {
+  success: boolean
+  data: T
+  message?: string
+}
+
 /**
  * 知识点相关 API
  */
@@ -27,7 +33,9 @@ export const knowledgeApi = {
    * @param textbookId 教材ID
    */
   async getKnowledgeTree(textbookId: string): Promise<KnowledgePoint[]> {
-    const response = await api.get(`/textbooks/${textbookId}/knowledge-points`)
+    const response = await api.get<ApiResponse<KnowledgePoint[]>>(
+      `/textbooks/${textbookId}/knowledge-points`
+    )
     return response.data.data
   },
 
@@ -36,7 +44,9 @@ export const knowledgeApi = {
    * @param id 知识点ID
    */
   async getKnowledgePointDetail(id: string): Promise<KnowledgePointDetail> {
-    const response = await api.get(`/textbooks/knowledge-points/${id}`)
+    const response = await api.get<ApiResponse<KnowledgePointDetail>>(
+      `/textbooks/knowledge-points/${id}`
+    )
     return response.data.data
   },
 
@@ -45,7 +55,7 @@ export const knowledgeApi = {
    * @param keyword 关键词
    */
   async searchKnowledgePoints(keyword: string): Promise<KnowledgePoint[]> {
-    const response = await api.get(`/knowledge-points/search`, {
+    const response = await api.get<ApiResponse<KnowledgePoint[]>>(`/knowledge-points/search`, {
       params: { keyword },
     })
     return response.data.data
@@ -78,7 +88,7 @@ export const learningRecordApi = {
    * @param knowledgePointId 知识点ID（可选）
    */
   async getLearningRecords(knowledgePointId?: string): Promise<LearningRecord[]> {
-    const response = await api.get('/learning-records', {
+    const response = await api.get<ApiResponse<LearningRecord[]>>('/learning-records', {
       params: knowledgePointId ? { knowledgePointId } : undefined,
     })
     return response.data.data
@@ -95,7 +105,7 @@ export const learningRecordApi = {
     masteryLevel: string
     notes?: string
   }): Promise<LearningRecord> {
-    const response = await api.post('/learning-records', data)
+    const response = await api.post<ApiResponse<LearningRecord>>('/learning-records', data)
     return response.data.data
   },
 }

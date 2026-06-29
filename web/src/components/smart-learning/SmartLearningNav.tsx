@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef } from 'react'
 import { Tabs, Skeleton, Collapse, Tag, Empty, Button, Tooltip } from 'antd'
 import { ReloadOutlined } from '@ant-design/icons'
 import type { RecommendationMode, UnifiedRecommendationItem } from '../../hooks/useRecommendations'
@@ -197,6 +197,18 @@ export const SmartLearningNav: React.FC<SmartLearningNavProps> = ({
     return groupedItems.slice(0, 2).map((_, index) => String(index))
   }, [groupedItems])
 
+  const listRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!selectedId || !listRef.current) {
+      return
+    }
+    const element = listRef.current.querySelector(`[data-kp-id="${selectedId}"]`)
+    if (element && typeof element.scrollIntoView === 'function') {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+  }, [selectedId])
+
   const hasTextbookSelection = (selectedTextbookIds ?? []).length > 0
   const isTextbookEmpty = !isLoading && !hasTextbookSelection
   const isWeakModeEmpty =
@@ -235,7 +247,7 @@ export const SmartLearningNav: React.FC<SmartLearningNavProps> = ({
         </div>
       )}
 
-      <div className={styles.listArea}>
+      <div ref={listRef} className={styles.listArea}>
         {isLoading && (
           <div className={styles.loading}>
             <Skeleton active paragraph={{ rows: 6 }} />

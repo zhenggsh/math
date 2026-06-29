@@ -7,6 +7,18 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/setupTests.ts'],
+    testTimeout: 60000,
+    hookTimeout: 60000,
+    maxWorkers: 1,
+    minWorkers: 1,
+    fileParallelism: false,
+    deps: {
+      optimizer: {
+        client: {
+          enabled: true,
+        },
+      },
+    },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

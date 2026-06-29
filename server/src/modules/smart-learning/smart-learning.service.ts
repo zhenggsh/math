@@ -131,7 +131,8 @@ export class SmartLearningService {
     query: WeakPointsQuery,
   ): Promise<{ total: number; items: WeakPointItem[] }> {
     const { textbookId, limit = 20 } = query;
-    const config = this.configService.get<RecommendationConfig>('recommendation')!;
+    const config =
+      this.configService.get<RecommendationConfig>('recommendation')!;
 
     // Step 1: Get all non-mastered records for this user
     let records = await this.prisma.learningRecord.findMany({
@@ -158,7 +159,7 @@ export class SmartLearningService {
     });
 
     // Pre-filtering: if >500 candidates, take oldest 200 first
-    const uniqueRecords = new Map<string, typeof records[0]>();
+    const uniqueRecords = new Map<string, (typeof records)[0]>();
     for (const r of records) {
       if (!uniqueRecords.has(r.knowledgePointId)) {
         uniqueRecords.set(r.knowledgePointId, r);
@@ -172,7 +173,10 @@ export class SmartLearningService {
 
     // Step 2: Get candidate IDs and batch fetch recent records
     const candidateIds = [...new Set(records.map((r) => r.knowledgePointId))];
-    const recentRecords = await this.getRecentRecordsForCandidates(userId, candidateIds);
+    const recentRecords = await this.getRecentRecordsForCandidates(
+      userId,
+      candidateIds,
+    );
 
     // Step 3: Group recent records by knowledgePointId
     const recordsByKp = new Map<string, typeof recentRecords>();
@@ -268,7 +272,8 @@ export class SmartLearningService {
     items: ByImportanceItem[];
   }> {
     const { level, excludeMastered = true, limit = 50 } = query;
-    const config = this.configService.get<RecommendationConfig>('recommendation')!;
+    const config =
+      this.configService.get<RecommendationConfig>('recommendation')!;
     const targetLevel = level || ImportanceLevel.A;
 
     // Get mastered IDs if excluding
@@ -304,7 +309,10 @@ export class SmartLearningService {
 
     // Batch fetch recent records for all candidates
     const candidateIds = knowledgePoints.map((kp) => kp.id);
-    const recentRecords = await this.getRecentRecordsForCandidates(userId, candidateIds);
+    const recentRecords = await this.getRecentRecordsForCandidates(
+      userId,
+      candidateIds,
+    );
 
     // Group by knowledgePointId
     const recordsByKp = new Map<string, typeof recentRecords>();
@@ -331,8 +339,12 @@ export class SmartLearningService {
       if (excludeMastered && isMastered) continue;
 
       const components = {
-        baseScore: latestRecord ? calculateBaseScore(latestRecord.masteryLevel) : 10,
-        decayBonus: latestRecord ? calculateDecayBonus(latestRecord.startTime, config) : 0,
+        baseScore: latestRecord
+          ? calculateBaseScore(latestRecord.masteryLevel)
+          : 10,
+        decayBonus: latestRecord
+          ? calculateDecayBonus(latestRecord.startTime, config)
+          : 0,
         recentStudyPenalty: calculateRecentStudyPenalty(kpRecords, config),
         importanceWeight: calculateImportanceWeight(kp.importanceLevel, config),
         improvementVelocity: calculateImprovementVelocity(kpRecords, config),
@@ -473,5 +485,4 @@ export class SmartLearningService {
       importanceStats: { A: aCount, B: bCount, C: cCount },
     };
   }
-
 }

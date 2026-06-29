@@ -32,7 +32,8 @@ export function generateSummary(input: SummaryInput): string {
   let summary = `你在《${textbookName}》的学习覆盖率为 ${coverage}%（${learnedCount}/${totalKnowledgePoints}），累计学习时长约 ${durationText}。`
 
   if (mostRecentLearningDate) {
-    summary += `最近一次学习发生在 ${mostRecentLearningDate}。`
+    const formattedDate = new Date(mostRecentLearningDate).toLocaleDateString('zh-CN')
+    summary += `最近一次学习发生在 ${formattedDate}。`
   }
 
   if (weakPointCount > 0 && topWeakPointName) {

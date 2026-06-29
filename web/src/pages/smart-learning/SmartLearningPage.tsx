@@ -133,8 +133,6 @@ const SmartLearningPage: React.FC = () => {
     if (exists) {
       hasNotifiedMissingRef.current = false
       setSelectedId(focusId)
-      const element = document.querySelector(`[data-kp-id="${focusId}"]`)
-      element?.scrollIntoView({ behavior: 'smooth', block: 'center' })
       return
     }
 

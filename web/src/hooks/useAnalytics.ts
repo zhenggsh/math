@@ -71,6 +71,7 @@ export function useLearningTrend(
 export function useWeakPoints(textbookId: string | undefined): UseQueryResult<WeakPoints, Error> {
   return useQuery({
     queryKey: ['analytics', 'weak-points', textbookId],
+    // Request a generous limit so the UI can display all weak points for the selected textbook.
     queryFn: () => getWeakPoints(50, textbookId),
     enabled: Boolean(textbookId),
     staleTime: 5 * 60 * 1000,

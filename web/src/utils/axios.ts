@@ -2,7 +2,7 @@ import axios from 'axios'
 import { getToken, removeToken } from '../services/auth.service'
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000',
+  baseURL: (import.meta.env.VITE_API_BASE_URL as string | undefined) || 'http://localhost:3000',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -17,21 +17,27 @@ api.interceptors.request.use(
     }
     return config
   },
-  error => {
-    return Promise.reject(error)
+  (error: unknown) => {
+    return Promise.reject(error instanceof Error ? error : new Error(String(error)))
   }
 )
 
 // 响应拦截器：处理 401 错误
 api.interceptors.response.use(
   response => response,
-  error => {
-    if (error.response?.status === 401) {
+  (error: unknown) => {
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      'response' in error &&
+      typeof (error as { response?: { status?: number } }).response?.status === 'number' &&
+      (error as { response: { status: number } }).response.status === 401
+    ) {
       // Token 过期或无效，清除 Token 并跳转登录页
       removeToken()
       window.location.href = '/login'
     }
-    return Promise.reject(error)
+    return Promise.reject(error instanceof Error ? error : new Error(String(error)))
   }
 )
 

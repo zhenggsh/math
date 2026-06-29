@@ -24,9 +24,18 @@ export const RegisterPage: React.FC = () => {
     try {
       await register(values)
       message.success('注册成功')
-      navigate('/')
-    } catch (error: any) {
-      message.error(error.response?.data?.message || '注册失败')
+      void navigate('/')
+    } catch (error: unknown) {
+      const errorMessage =
+        (error instanceof Error && error.message) ||
+        (typeof error === 'object' &&
+          error !== null &&
+          'response' in error &&
+          typeof (error as { response?: { data?: { message?: string } } }).response?.data
+            ?.message === 'string' &&
+          (error as { response: { data: { message: string } } }).response.data.message) ||
+        '注册失败'
+      message.error(errorMessage)
     } finally {
       setLoading(false)
     }
@@ -46,7 +55,14 @@ export const RegisterPage: React.FC = () => {
         <Title level={2} style={{ textAlign: 'center', marginBottom: 24 }}>
           知识通 - 注册
         </Title>
-        <Form name="register" onFinish={onFinish} autoComplete="off" layout="vertical">
+        <Form
+          name="register"
+          onFinish={values =>
+            void onFinish(values as { email: string; password: string; name: string; role: Role })
+          }
+          autoComplete="off"
+          layout="vertical"
+        >
           <Form.Item
             name="email"
             rules={[
