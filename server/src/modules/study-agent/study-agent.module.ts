@@ -10,7 +10,8 @@ import { StudyMessageService } from './services/study-message.service';
 import { MessageFeedbackService } from './services/message-feedback.service';
 
 import { StudyRateLimitService } from './services/study-rate-limit.service';
-import { QaSkill, StudySkillRegistry } from './services/skills/qa.skill';
+import { QaSkill } from './services/skills/qa.skill';
+import { StudySkillRegistry } from './services/study-skill.registry';
 
 @Module({
   imports: [PrismaModule],

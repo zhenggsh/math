@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { StudyMessageRole } from '@prisma/client';
-import { QaSkill, QaSkillInput, StudySkillRegistry } from './qa.skill';
+import { QaSkill, QaSkillInput } from './qa.skill';
+import { StudySkillRegistry } from '../study-skill.registry';
 import { KimiClientService } from '../kimi-client.service';
 import { StudyAgentConfigService } from '../study-agent-config.service';
 import { KnowledgeContentService } from '../knowledge-content.service';

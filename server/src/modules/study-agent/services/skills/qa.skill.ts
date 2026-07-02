@@ -114,12 +114,3 @@ export class QaSkill {
     return null;
   }
 }
-
-@Injectable()
-export class StudySkillRegistry {
-  constructor(private readonly qaSkill: QaSkill) {}
-
-  getDefaultSkill(): QaSkill {
-    return this.qaSkill;
-  }
-}
