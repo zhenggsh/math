@@ -22,8 +22,8 @@ export class KnowledgeContentService {
 
     let content: string;
     try {
-      content = readFileSync(absolutePath, 'utf-8');
-    } catch (error) {
+      content = await Promise.resolve(readFileSync(absolutePath, 'utf-8'));
+    } catch {
       this.logger.warn(
         `Failed to read knowledge content file: ${absolutePath}`,
       );
@@ -53,10 +53,7 @@ export class KnowledgeContentService {
       if (headingLine.includes(code) || headingLine.includes(title)) {
         const level = headingLine.match(/^#{1,6}/)?.[0].length ?? 1;
         const start = match.index;
-        const nextHeadingRegex = new RegExp(
-          `^#{1,${level}}\\s+.*$`,
-          'gm',
-        );
+        const nextHeadingRegex = new RegExp(`^#{1,${level}}\\s+.*$`, 'gm');
         nextHeadingRegex.lastIndex = start + headingLine.length;
         const nextMatch = nextHeadingRegex.exec(content);
         const end = nextMatch ? nextMatch.index : content.length;

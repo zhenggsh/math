@@ -70,9 +70,7 @@ describe('LearningContextService', () => {
 
     const result = await service.getRecentRecords('user-1', 'kp-1');
 
-    expect(result).toBe(
-      'No prior learning records for this knowledge point.',
-    );
+    expect(result).toBe('No prior learning records for this knowledge point.');
   });
 
   it('should limit output to the three most recent records', async () => {

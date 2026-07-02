@@ -21,10 +21,7 @@ describe('KnowledgeContentService', () => {
   beforeEach(async () => {
     readFileSyncMock.mockImplementation(
       (filePath: fs.PathOrFileDescriptor, options: BufferEncoding) => {
-        if (
-          typeof filePath === 'string' &&
-          filePath.endsWith('knowledge.md')
-        ) {
+        if (typeof filePath === 'string' && filePath.endsWith('knowledge.md')) {
           return sampleContent;
         }
         return jest
