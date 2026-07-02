@@ -143,6 +143,31 @@ describe('KnowledgeContentService', () => {
     expect(result).toBe('');
   });
 
+  it('should not extract a section when the code is a prefix of another code', async () => {
+    const content = `# Title
+
+## 知识点 1.1.1：First
+
+First content.
+
+## 知识点 1.1.2：Second
+
+Second content.
+`;
+    readFileSyncMock.mockReturnValue(content);
+
+    const result = await service.getSummary(
+      'knowledge.md',
+      undefined,
+      '1.1',
+      'unused',
+    );
+
+    expect(result).toContain('First content');
+    expect(result).toContain('Second content');
+    expect(result.startsWith('# Title')).toBe(true);
+  });
+
   it('should truncate at a paragraph boundary near the limit', async () => {
     const longParagraph = 'word '.repeat(500); // ~2500 chars
     const section = `## 知识点 1.1.1：Long\n\n${longParagraph}\n\nAnother paragraph.\n`;
@@ -160,5 +185,33 @@ describe('KnowledgeContentService', () => {
     expect(result.length).toBeLessThanOrEqual(2000);
     expect(result.startsWith('## 知识点 1.1.1：Long')).toBe(true);
     expect(result).not.toContain('Another paragraph');
+  });
+
+  it('should truncate at a formula boundary near the limit', async () => {
+    const longSentence = 'a'.repeat(1600);
+    const formula = '$$E = mc^2$$';
+    const extra = 'more text after the formula that exceeds the limit. '.repeat(
+      50,
+    );
+    const section = `## 知识点 1.1.1：Long\n\n${longSentence} before formula ${formula} ${extra}`;
+    const content = section + '\n\n## 知识点 1.1.2：Next\n\nMore.\n';
+
+    readFileSyncMock.mockReturnValue(content);
+
+    const result = await service.getSummary(
+      'knowledge.md',
+      undefined,
+      '1.1.1',
+      'Long',
+    );
+
+    expect(result.length).toBeLessThanOrEqual(2000);
+    expect(result.startsWith('## 知识点 1.1.1：Long')).toBe(true);
+    const formulaStart = result.indexOf('$$');
+    if (formulaStart >= 0) {
+      expect(result.slice(formulaStart, formulaStart + formula.length)).toBe(
+        formula,
+      );
+    }
   });
 });

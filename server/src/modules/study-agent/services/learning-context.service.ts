@@ -16,7 +16,6 @@ export class LearningContextService {
       select: {
         masteryLevel: true,
         durationMinutes: true,
-        createdAt: true,
       },
     });
 

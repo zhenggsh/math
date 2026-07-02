@@ -58,7 +58,6 @@ describe('LearningContextService', () => {
       select: {
         masteryLevel: true,
         durationMinutes: true,
-        createdAt: true,
       },
     });
     expect(result).toContain('1. Mastery: A, Duration: 10 minutes');
