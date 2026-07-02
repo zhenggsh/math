@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { StudyMessageFeedback, StudyMessageRole } from '@prisma/client';
 
@@ -11,8 +15,18 @@ export class MessageFeedbackService {
   async updateFeedback(
     userId: string,
     messageId: string,
-    feedback: FeedbackValue,
+    feedback: string | null,
   ): Promise<void> {
+    if (
+      feedback !== 'positive' &&
+      feedback !== 'negative' &&
+      feedback !== null
+    ) {
+      throw new BadRequestException(
+        `Invalid feedback value: ${feedback}. Must be 'positive', 'negative', or null.`,
+      );
+    }
+
     const message = await this.prisma.studyMessage.findFirst({
       where: {
         id: messageId,
@@ -27,18 +41,14 @@ export class MessageFeedbackService {
 
     const feedbackValue = this.toStudyMessageFeedback(feedback);
 
-    await this.prisma.studyMessage.updateMany({
-      where: {
-        id: messageId,
-        role: StudyMessageRole.AGENT,
-        session: { userId },
-      },
+    await this.prisma.studyMessage.update({
+      where: { id: messageId },
       data: { feedback: feedbackValue },
     });
   }
 
   private toStudyMessageFeedback(
-    feedback: FeedbackValue,
+    feedback: string | null,
   ): StudyMessageFeedback | null {
     if (feedback === 'positive') {
       return StudyMessageFeedback.POSITIVE;

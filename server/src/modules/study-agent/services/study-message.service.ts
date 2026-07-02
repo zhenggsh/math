@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { StudyMessage, StudyMessageRole } from '@prisma/client';
 
@@ -38,21 +38,21 @@ export class StudyMessageService {
     });
   }
 
-  async findBySession(sessionId: string): Promise<StudyMessage[]> {
+  async findBySession(
+    userId: string,
+    sessionId: string,
+  ): Promise<StudyMessage[]> {
     return this.prisma.studyMessage.findMany({
-      where: { sessionId },
+      where: { sessionId, session: { userId } },
       orderBy: { createdAt: 'asc' },
     });
   }
 
   async findLastAgentMessage(sessionId: string): Promise<StudyMessage | null> {
-    const messages = await this.prisma.studyMessage.findMany({
+    return this.prisma.studyMessage.findFirst({
       where: { sessionId, role: StudyMessageRole.AGENT },
       orderBy: { createdAt: 'desc' },
-      take: 1,
     });
-
-    return messages.length > 0 ? messages[0] : null;
   }
 
   async findUserMessageById(
@@ -96,10 +96,23 @@ export class StudyMessageService {
   }
 
   async updateAgentMessage(
+    userId: string,
     id: string,
     content: string,
     followUps: string[],
   ): Promise<StudyMessage> {
+    const message = await this.prisma.studyMessage.findFirst({
+      where: {
+        id,
+        role: StudyMessageRole.AGENT,
+        session: { userId },
+      },
+    });
+
+    if (!message) {
+      throw new NotFoundException('Agent message not found');
+    }
+
     return this.prisma.studyMessage.update({
       where: { id },
       data: {

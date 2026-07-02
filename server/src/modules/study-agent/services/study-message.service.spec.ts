@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { NotFoundException } from '@nestjs/common';
 import { StudyMessage, StudyMessageRole } from '@prisma/client';
 import { StudyMessageService } from './study-message.service';
 import { PrismaService } from '../../../prisma/prisma.service';
@@ -98,6 +99,7 @@ describe('StudyMessageService', () => {
 
   describe('findBySession', () => {
     it('should return messages ordered by createdAt ascending', async () => {
+      const userId = 'user-1';
       const sessionId = 'session-1';
       const messages: StudyMessage[] = [
         {
@@ -113,13 +115,27 @@ describe('StudyMessageService', () => {
       ];
       mockPrismaService.studyMessage.findMany.mockResolvedValue(messages);
 
-      const result = await service.findBySession(sessionId);
+      const result = await service.findBySession(userId, sessionId);
 
       expect(mockPrismaService.studyMessage.findMany).toHaveBeenCalledWith({
-        where: { sessionId },
+        where: { sessionId, session: { userId } },
         orderBy: { createdAt: 'asc' },
       });
       expect(result).toBe(messages);
+    });
+
+    it('should not return messages for another user', async () => {
+      const userId = 'user-1';
+      const sessionId = 'session-1';
+      mockPrismaService.studyMessage.findMany.mockResolvedValue([]);
+
+      const result = await service.findBySession(userId, sessionId);
+
+      expect(mockPrismaService.studyMessage.findMany).toHaveBeenCalledWith({
+        where: { sessionId, session: { userId } },
+        orderBy: { createdAt: 'asc' },
+      });
+      expect(result).toEqual([]);
     });
   });
 
@@ -136,20 +152,19 @@ describe('StudyMessageService', () => {
         createdAt: new Date('2026-07-01T12:00:00Z'),
         updatedAt: new Date('2026-07-01T12:00:00Z'),
       };
-      mockPrismaService.studyMessage.findMany.mockResolvedValue([message]);
+      mockPrismaService.studyMessage.findFirst.mockResolvedValue(message);
 
       const result = await service.findLastAgentMessage(sessionId);
 
-      expect(mockPrismaService.studyMessage.findMany).toHaveBeenCalledWith({
+      expect(mockPrismaService.studyMessage.findFirst).toHaveBeenCalledWith({
         where: { sessionId, role: StudyMessageRole.AGENT },
         orderBy: { createdAt: 'desc' },
-        take: 1,
       });
       expect(result).toBe(message);
     });
 
     it('should return null when there is no agent message', async () => {
-      mockPrismaService.studyMessage.findMany.mockResolvedValue([]);
+      mockPrismaService.studyMessage.findFirst.mockResolvedValue(null);
 
       const result = await service.findLastAgentMessage('session-1');
 
@@ -249,6 +264,7 @@ describe('StudyMessageService', () => {
 
   describe('updateAgentMessage', () => {
     it('should update content, follow-ups, and reset feedback', async () => {
+      const userId = 'user-1';
       const id = 'msg-2';
       const content = 'Updated';
       const followUps = ['Q3'];
@@ -262,10 +278,23 @@ describe('StudyMessageService', () => {
         createdAt: new Date('2026-07-01T00:00:00Z'),
         updatedAt: new Date('2026-07-01T00:00:00Z'),
       };
+      mockPrismaService.studyMessage.findFirst.mockResolvedValue(message);
       mockPrismaService.studyMessage.update.mockResolvedValue(message);
 
-      const result = await service.updateAgentMessage(id, content, followUps);
+      const result = await service.updateAgentMessage(
+        userId,
+        id,
+        content,
+        followUps,
+      );
 
+      expect(mockPrismaService.studyMessage.findFirst).toHaveBeenCalledWith({
+        where: {
+          id,
+          role: StudyMessageRole.AGENT,
+          session: { userId },
+        },
+      });
       expect(mockPrismaService.studyMessage.update).toHaveBeenCalledWith({
         where: { id },
         data: {
@@ -275,6 +304,16 @@ describe('StudyMessageService', () => {
         },
       });
       expect(result).toBe(message);
+    });
+
+    it('should throw NotFoundException when the agent message belongs to another user', async () => {
+      mockPrismaService.studyMessage.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.updateAgentMessage('user-2', 'msg-2', 'Updated', []),
+      ).rejects.toThrow(NotFoundException);
+
+      expect(mockPrismaService.studyMessage.update).not.toHaveBeenCalled();
     });
   });
 });

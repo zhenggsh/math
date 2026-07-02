@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import {
   StudyMessage,
   StudyMessageRole,
@@ -14,7 +14,7 @@ describe('MessageFeedbackService', () => {
   const mockPrismaService = {
     studyMessage: {
       findFirst: jest.fn(),
-      updateMany: jest.fn(),
+      update: jest.fn(),
     },
   };
 
@@ -51,7 +51,7 @@ describe('MessageFeedbackService', () => {
       updatedAt: new Date('2026-07-01T00:00:00Z'),
     };
     mockPrismaService.studyMessage.findFirst.mockResolvedValue(message);
-    mockPrismaService.studyMessage.updateMany.mockResolvedValue({ count: 1 });
+    mockPrismaService.studyMessage.update.mockResolvedValue(message);
 
     await service.updateFeedback(userId, messageId, 'positive');
 
@@ -62,12 +62,8 @@ describe('MessageFeedbackService', () => {
         session: { userId },
       },
     });
-    expect(mockPrismaService.studyMessage.updateMany).toHaveBeenCalledWith({
-      where: {
-        id: messageId,
-        role: StudyMessageRole.AGENT,
-        session: { userId },
-      },
+    expect(mockPrismaService.studyMessage.update).toHaveBeenCalledWith({
+      where: { id: messageId },
       data: { feedback: StudyMessageFeedback.POSITIVE },
     });
   });
@@ -86,16 +82,12 @@ describe('MessageFeedbackService', () => {
       updatedAt: new Date('2026-07-01T00:00:00Z'),
     };
     mockPrismaService.studyMessage.findFirst.mockResolvedValue(message);
-    mockPrismaService.studyMessage.updateMany.mockResolvedValue({ count: 1 });
+    mockPrismaService.studyMessage.update.mockResolvedValue(message);
 
     await service.updateFeedback(userId, messageId, 'negative');
 
-    expect(mockPrismaService.studyMessage.updateMany).toHaveBeenCalledWith({
-      where: {
-        id: messageId,
-        role: StudyMessageRole.AGENT,
-        session: { userId },
-      },
+    expect(mockPrismaService.studyMessage.update).toHaveBeenCalledWith({
+      where: { id: messageId },
       data: { feedback: StudyMessageFeedback.NEGATIVE },
     });
   });
@@ -114,18 +106,23 @@ describe('MessageFeedbackService', () => {
       updatedAt: new Date('2026-07-01T00:00:00Z'),
     };
     mockPrismaService.studyMessage.findFirst.mockResolvedValue(message);
-    mockPrismaService.studyMessage.updateMany.mockResolvedValue({ count: 1 });
+    mockPrismaService.studyMessage.update.mockResolvedValue(message);
 
     await service.updateFeedback(userId, messageId, null);
 
-    expect(mockPrismaService.studyMessage.updateMany).toHaveBeenCalledWith({
-      where: {
-        id: messageId,
-        role: StudyMessageRole.AGENT,
-        session: { userId },
-      },
+    expect(mockPrismaService.studyMessage.update).toHaveBeenCalledWith({
+      where: { id: messageId },
       data: { feedback: null },
     });
+  });
+
+  it('should throw BadRequestException for an invalid feedback value', async () => {
+    await expect(
+      service.updateFeedback('user-1', 'msg-1', 'neutral'),
+    ).rejects.toThrow(BadRequestException);
+
+    expect(mockPrismaService.studyMessage.findFirst).not.toHaveBeenCalled();
+    expect(mockPrismaService.studyMessage.update).not.toHaveBeenCalled();
   });
 
   it('should throw NotFoundException when the agent message does not exist', async () => {
@@ -135,6 +132,6 @@ describe('MessageFeedbackService', () => {
       service.updateFeedback('user-1', 'missing', 'positive'),
     ).rejects.toThrow(NotFoundException);
 
-    expect(mockPrismaService.studyMessage.updateMany).not.toHaveBeenCalled();
+    expect(mockPrismaService.studyMessage.update).not.toHaveBeenCalled();
   });
 });

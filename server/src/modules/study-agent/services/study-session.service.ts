@@ -43,10 +43,12 @@ export class StudySessionService {
     userId: string,
     knowledgePointId: string,
   ): Promise<StudySession | null> {
-    return this.prisma.studySession.findFirst({
+    return this.prisma.studySession.findUnique({
       where: {
-        userId,
-        knowledgePointId,
+        idx_study_session_user_knowledge_point: {
+          userId,
+          knowledgePointId,
+        },
       },
     });
   }

@@ -10,6 +10,7 @@ describe('StudySessionService', () => {
     studySession: {
       upsert: jest.fn(),
       findFirst: jest.fn(),
+      findUnique: jest.fn(),
     },
   };
 
@@ -113,24 +114,26 @@ describe('StudySessionService', () => {
         createdAt: new Date('2026-07-01T00:00:00Z'),
         updatedAt: new Date('2026-07-01T00:00:00Z'),
       };
-      mockPrismaService.studySession.findFirst.mockResolvedValue(session);
+      mockPrismaService.studySession.findUnique.mockResolvedValue(session);
 
       const result = await service.findByKnowledgePoint(
         userId,
         knowledgePointId,
       );
 
-      expect(mockPrismaService.studySession.findFirst).toHaveBeenCalledWith({
+      expect(mockPrismaService.studySession.findUnique).toHaveBeenCalledWith({
         where: {
-          userId,
-          knowledgePointId,
+          idx_study_session_user_knowledge_point: {
+            userId,
+            knowledgePointId,
+          },
         },
       });
       expect(result).toBe(session);
     });
 
     it('should return null when no session is found', async () => {
-      mockPrismaService.studySession.findFirst.mockResolvedValue(null);
+      mockPrismaService.studySession.findUnique.mockResolvedValue(null);
 
       const result = await service.findByKnowledgePoint('user-1', 'missing');
 
