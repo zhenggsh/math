@@ -154,7 +154,10 @@ export class KnowledgeContentService {
         return boundary.end;
       }
 
-      return boundary.start;
+      // The limit falls inside the closing delimiter or the formula content
+      // that it ends. Keep searching backward for the opening delimiter so
+      // the formula is excluded rather than left half-open.
+      continue;
     }
 
     return -1;

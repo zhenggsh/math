@@ -214,4 +214,48 @@ Second content.
       );
     }
   });
+
+  it('should exclude a formula when the limit cuts through the closing delimiter', async () => {
+    const longSentence = 'a'.repeat(1850);
+    const formulaContent = 'x '.repeat(55);
+    const formula = `$$${formulaContent}$$`;
+    const section = `## 知识点 1.1.1：Formula\n\n${longSentence} before formula ${formula}`;
+    const content = section + '\n\n## 知识点 1.1.2：Next\n\nMore.\n';
+
+    readFileSyncMock.mockReturnValue(content);
+
+    const result = await service.getSummary(
+      'knowledge.md',
+      undefined,
+      '1.1.1',
+      'Formula',
+    );
+
+    expect(result.length).toBeLessThanOrEqual(2000);
+    expect(result.startsWith('## 知识点 1.1.1：Formula')).toBe(true);
+    expect(result).not.toContain('$$');
+    expect(result.endsWith(' before formula ')).toBe(true);
+  });
+
+  it('should exclude a $...$ formula when the limit cuts through its content', async () => {
+    const longSentence = 'a'.repeat(1850);
+    const formulaContent = 'x '.repeat(60);
+    const formula = `$${formulaContent}$`;
+    const section = `## 知识点 1.1.1：Formula\n\n${longSentence} before formula ${formula}`;
+    const content = section + '\n\n## 知识点 1.1.2：Next\n\nMore.\n';
+
+    readFileSyncMock.mockReturnValue(content);
+
+    const result = await service.getSummary(
+      'knowledge.md',
+      undefined,
+      '1.1.1',
+      'Formula',
+    );
+
+    expect(result.length).toBeLessThanOrEqual(2000);
+    expect(result.startsWith('## 知识点 1.1.1：Formula')).toBe(true);
+    expect(result).not.toContain('$');
+    expect(result.endsWith(' before formula ')).toBe(true);
+  });
 });
