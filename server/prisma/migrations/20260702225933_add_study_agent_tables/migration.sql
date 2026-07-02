@@ -1,8 +1,8 @@
 -- CreateEnum
-CREATE TYPE "StudyMessageRole" AS ENUM ('user', 'agent');
+CREATE TYPE "StudyMessageRole" AS ENUM ('USER', 'AGENT');
 
 -- CreateEnum
-CREATE TYPE "StudyMessageFeedback" AS ENUM ('positive', 'negative');
+CREATE TYPE "StudyMessageFeedback" AS ENUM ('POSITIVE', 'NEGATIVE');
 
 -- CreateTable
 CREATE TABLE "study_sessions" (
@@ -31,7 +31,7 @@ CREATE TABLE "study_messages" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "study_sessions_user_id_knowledge_point_id_key" ON "study_sessions"("user_id", "knowledge_point_id");
+CREATE UNIQUE INDEX "idx_study_session_user_knowledge_point" ON "study_sessions"("user_id", "knowledge_point_id");
 
 -- CreateIndex
 CREATE INDEX "idx_study_message_session" ON "study_messages"("session_id");

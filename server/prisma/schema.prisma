@@ -31,13 +31,13 @@ enum ImportanceLevel {
 }
 
 enum StudyMessageRole {
-  user
-  agent
+  USER
+  AGENT
 }
 
 enum StudyMessageFeedback {
-  positive
-  negative
+  POSITIVE
+  NEGATIVE
 }
 
 // 用户模型
@@ -136,7 +136,7 @@ model StudySession {
   id                String   @id @default(uuid())
   userId            String   @map("user_id")
   knowledgePointId  String   @map("knowledge_point_id")
-  title             String   @map("title")
+  title             String
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")
 
@@ -144,15 +144,15 @@ model StudySession {
   knowledgePoint    KnowledgePoint  @relation(fields: [knowledgePointId], references: [id], onDelete: Cascade)
   messages          StudyMessage[]
 
-  @@unique([userId, knowledgePointId], name: "idx_study_session_user_knowledge_point")
+  @@unique([userId, knowledgePointId], name: "idx_study_session_user_knowledge_point", map: "idx_study_session_user_knowledge_point")
   @@map("study_sessions")
 }
 
 model StudyMessage {
   id          String   @id @default(uuid())
   sessionId   String   @map("session_id")
-  role        StudyMessageRole @map("role")
-  content     String   @map("content")
+  role        StudyMessageRole
+  content     String
   followUps   String[] @map("follow_ups") @default([])
   feedback    StudyMessageFeedback? @map("feedback")
   createdAt   DateTime @default(now()) @map("created_at")
