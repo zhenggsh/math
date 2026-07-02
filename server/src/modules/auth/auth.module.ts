@@ -18,7 +18,9 @@ import { RolesGuard } from './guards/roles.guard';
         return {
           secret: configService.get<string>('JWT_SECRET')!,
           signOptions: {
-            expiresIn,
+            expiresIn: expiresIn as NonNullable<
+              JwtModuleOptions['signOptions']
+            >['expiresIn'],
           },
         };
       },
