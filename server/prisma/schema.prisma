@@ -30,6 +30,16 @@ enum ImportanceLevel {
   C
 }
 
+enum StudyMessageRole {
+  user
+  agent
+}
+
+enum StudyMessageFeedback {
+  positive
+  negative
+}
+
 // 用户模型
 model User {
   id            String    @id @default(uuid())
@@ -43,6 +53,7 @@ model User {
 
   // 关系
   learningRecords LearningRecord[]
+  studySessions   StudySession[]
 
   @@map("users")
 }
@@ -85,6 +96,7 @@ model KnowledgePoint {
   // 关系
   textbook          Textbook        @relation(fields: [textbookId], references: [id], onDelete: Cascade)
   learningRecords   LearningRecord[]
+  studySessions     StudySession[]
 
   // 唯一约束：同一个教材内的知识点编号不能重复
   @@unique([code, textbookId], name: "idx_knowledge_point_code_textbook")
@@ -118,4 +130,37 @@ model LearningRecord {
   @@index([userId, masteryLevel], name: "idx_learning_record_user_proficiency")
   @@index([userId, startTime], name: "idx_learning_record_user_date")
   @@map("learning_records")
+}
+
+model StudySession {
+  id                String   @id @default(uuid())
+  userId            String   @map("user_id")
+  knowledgePointId  String   @map("knowledge_point_id")
+  title             String   @map("title")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  knowledgePoint    KnowledgePoint  @relation(fields: [knowledgePointId], references: [id], onDelete: Cascade)
+  messages          StudyMessage[]
+
+  @@unique([userId, knowledgePointId], name: "idx_study_session_user_knowledge_point")
+  @@map("study_sessions")
+}
+
+model StudyMessage {
+  id          String   @id @default(uuid())
+  sessionId   String   @map("session_id")
+  role        StudyMessageRole @map("role")
+  content     String   @map("content")
+  followUps   String[] @map("follow_ups") @default([])
+  feedback    StudyMessageFeedback? @map("feedback")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  session     StudySession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId], name: "idx_study_message_session")
+  @@index([sessionId, createdAt], name: "idx_study_message_session_created_at")
+  @@map("study_messages")
 }
