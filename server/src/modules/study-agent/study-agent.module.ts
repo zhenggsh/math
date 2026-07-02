@@ -9,6 +9,9 @@ import { StudySessionService } from './services/study-session.service';
 import { StudyMessageService } from './services/study-message.service';
 import { MessageFeedbackService } from './services/message-feedback.service';
 
+import { StudyRateLimitService } from './services/study-rate-limit.service';
+import { QaSkill, StudySkillRegistry } from './services/skills/qa.skill';
+
 @Module({
   imports: [PrismaModule],
   controllers: [StudyAgentController],
@@ -20,6 +23,9 @@ import { MessageFeedbackService } from './services/message-feedback.service';
     StudySessionService,
     StudyMessageService,
     MessageFeedbackService,
+    StudyRateLimitService,
+    QaSkill,
+    StudySkillRegistry,
   ],
 })
 export class StudyAgentModule {}
