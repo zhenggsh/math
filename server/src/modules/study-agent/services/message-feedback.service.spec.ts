@@ -5,7 +5,10 @@ import {
   StudyMessageRole,
   StudyMessageFeedback,
 } from '@prisma/client';
-import { MessageFeedbackService } from './message-feedback.service';
+import {
+  MessageFeedbackService,
+  FeedbackValue,
+} from './message-feedback.service';
 import { PrismaService } from '../../../prisma/prisma.service';
 
 describe('MessageFeedbackService', () => {
@@ -118,7 +121,7 @@ describe('MessageFeedbackService', () => {
 
   it('should throw BadRequestException for an invalid feedback value', async () => {
     await expect(
-      service.updateFeedback('user-1', 'msg-1', 'neutral'),
+      service.updateFeedback('user-1', 'msg-1', 'neutral' as FeedbackValue),
     ).rejects.toThrow(BadRequestException);
 
     expect(mockPrismaService.studyMessage.findFirst).not.toHaveBeenCalled();

@@ -15,7 +15,7 @@ export class MessageFeedbackService {
   async updateFeedback(
     userId: string,
     messageId: string,
-    feedback: string | null,
+    feedback: FeedbackValue,
   ): Promise<void> {
     if (
       feedback !== 'positive' &&
@@ -23,7 +23,7 @@ export class MessageFeedbackService {
       feedback !== null
     ) {
       throw new BadRequestException(
-        `Invalid feedback value: ${feedback}. Must be 'positive', 'negative', or null.`,
+        `Invalid feedback value: ${String(feedback)}. Must be 'positive', 'negative', or null.`,
       );
     }
 
@@ -48,7 +48,7 @@ export class MessageFeedbackService {
   }
 
   private toStudyMessageFeedback(
-    feedback: string | null,
+    feedback: FeedbackValue,
   ): StudyMessageFeedback | null {
     if (feedback === 'positive') {
       return StudyMessageFeedback.POSITIVE;
