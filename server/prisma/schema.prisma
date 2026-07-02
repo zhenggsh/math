@@ -154,7 +154,7 @@ model StudyMessage {
   role        StudyMessageRole
   content     String
   followUps   String[] @map("follow_ups") @default([])
-  feedback    StudyMessageFeedback? @map("feedback")
+  feedback    StudyMessageFeedback?
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
