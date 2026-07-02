@@ -207,6 +207,7 @@ describe('StudyAgentController', () => {
           userId: mockUserId,
           knowledgePointId: mockKnowledgePointId,
           question: dto.content,
+          history: [],
           title: mockTitle,
           code: mockCode,
           contentRef: mockContentRef,
@@ -355,11 +356,7 @@ describe('StudyAgentController', () => {
         role: StudyMessageRole;
         content: string;
       }>;
-      expect(actualHistory).toHaveLength(1);
-      expect(actualHistory[0]).toEqual({
-        role: StudyMessageRole.USER,
-        content: userMessage.content,
-      });
+      expect(actualHistory).toHaveLength(0);
       expect(mockMessageService.updateAgentMessage).toHaveBeenCalledWith(
         mockUserId,
         agentMessageId,

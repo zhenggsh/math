@@ -195,10 +195,10 @@ export class StudyAgentController {
   }
 
   @Post('messages/:userMessageId/regenerate')
-  @HttpCode(HttpStatus.CREATED)
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: '重新生成 AI 回复' })
   @ApiResponse({
-    status: HttpStatus.CREATED,
+    status: HttpStatus.OK,
     description: '重新生成成功',
     type: StudyMessageResponseDto,
   })
@@ -307,12 +307,14 @@ export class StudyAgentController {
       throw new NotFoundException('Knowledge point not found');
     }
 
+    const dedupedHistory = this.deduplicateHistory(history, question);
+
     try {
       return await this.skillRegistry.getDefaultSkill().execute({
         userId,
         knowledgePointId: session.knowledgePointId,
         question,
-        history,
+        history: dedupedHistory,
         title: session.title,
         code: knowledgePoint.code,
         contentRef: knowledgePoint.contentRef ?? undefined,
@@ -321,6 +323,20 @@ export class StudyAgentController {
     } catch {
       throw new ServiceUnavailableException('AI 助手暂时不可用，请稍后重试');
     }
+  }
+
+  private deduplicateHistory(
+    history: { role: StudyMessageRole; content: string }[],
+    question: string,
+  ): { role: StudyMessageRole; content: string }[] {
+    const lastMessage = history[history.length - 1];
+    if (
+      lastMessage?.role === StudyMessageRole.USER &&
+      lastMessage.content === question
+    ) {
+      return history.slice(0, -1);
+    }
+    return history;
   }
 
   private findLastUserMessageContent(
