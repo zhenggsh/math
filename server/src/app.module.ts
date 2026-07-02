@@ -8,6 +8,7 @@ import { TextbookModule } from './modules/textbook/textbook.module';
 import { SmartLearningModule } from './modules/smart-learning/smart-learning.module';
 import { LearningModule } from './modules/learning/learning.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { StudyAgentModule } from './modules/study-agent/study-agent.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
     SmartLearningModule,
     LearningModule,
     AnalyticsModule,
+    StudyAgentModule,
   ],
   controllers: [AppController],
   providers: [AppService],
