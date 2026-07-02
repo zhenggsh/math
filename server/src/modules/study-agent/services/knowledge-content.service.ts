@@ -1,10 +1,15 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { readFileSync } from 'fs';
-import { resolve } from 'path';
+import { readFile } from 'fs/promises';
+import * as path from 'path';
 
 @Injectable()
 export class KnowledgeContentService {
   private readonly logger = new Logger(KnowledgeContentService.name);
+  private readonly baseDir = path.normalize(
+    process.env.IKSM_CONTENT_DIR
+      ? path.resolve(process.env.IKSM_CONTENT_DIR)
+      : process.cwd(),
+  );
   private readonly MAX_SUMMARY_LENGTH = 2000;
   private readonly TRUNCATION_WINDOW = 500;
 
@@ -20,11 +25,20 @@ export class KnowledgeContentService {
       return '';
     }
 
-    const absolutePath = resolve(filePath);
+    const absolutePath = path.resolve(this.baseDir, filePath);
+    const normalizedAbsolute = path.normalize(absolutePath);
+    const relativeToBase = path.relative(this.baseDir, normalizedAbsolute);
+
+    if (relativeToBase.startsWith('..') || path.isAbsolute(relativeToBase)) {
+      this.logger.warn(
+        `Resolved knowledge content path escapes base directory: ${absolutePath}`,
+      );
+      return '';
+    }
 
     let content: string;
     try {
-      content = await Promise.resolve(readFileSync(absolutePath, 'utf-8'));
+      content = await readFile(absolutePath, 'utf-8');
     } catch {
       this.logger.warn(
         `Failed to read knowledge content file: ${absolutePath}`,
@@ -146,6 +160,10 @@ export class KnowledgeContentService {
         break;
       }
 
+      if (boundary.isOpening && limit < boundary.end) {
+        return boundary.start;
+      }
+
       if (boundary.isOpening) {
         return boundary.start;
       }
@@ -165,14 +183,25 @@ export class KnowledgeContentService {
 
   private findLastSentenceBoundary(text: string, limit: number): number {
     const searchStart = Math.max(0, limit - this.TRUNCATION_WINDOW);
-    const periodIndex = text.lastIndexOf('。', limit);
-    const semicolonIndex = text.lastIndexOf('；', limit);
-    const boundaryIndex = Math.max(periodIndex, semicolonIndex);
+    const boundaries: { index: number; char: string }[] = [];
+    const boundaryChars = ['。', '；', '.', ';', '!', '?'];
 
-    if (boundaryIndex >= searchStart) {
-      return boundaryIndex + 1;
+    for (const char of boundaryChars) {
+      const index = text.lastIndexOf(char, limit);
+      if (index >= searchStart) {
+        boundaries.push({ index, char });
+      }
     }
 
-    return -1;
+    if (boundaries.length === 0) {
+      return -1;
+    }
+
+    const best = boundaries.reduce((a, b) => (a.index >= b.index ? a : b));
+    const includeSpace =
+      ['.', ';', '!', '?'].includes(best.char) &&
+      best.index + 1 <= limit &&
+      text[best.index + 1] === ' ';
+    return includeSpace ? best.index + 2 : best.index + 1;
   }
 }

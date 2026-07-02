@@ -24,7 +24,6 @@ export class LearningContextService {
     }
 
     return records
-      .slice(0, 3)
       .map(
         (record, index) =>
           `${index + 1}. Mastery: ${record.masteryLevel}, Duration: ${record.durationMinutes} minutes`,

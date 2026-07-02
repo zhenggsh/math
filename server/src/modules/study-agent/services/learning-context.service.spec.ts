@@ -89,11 +89,6 @@ describe('LearningContextService', () => {
         durationMinutes: 15,
         createdAt: new Date('2026-07-01T10:00:00Z'),
       },
-      {
-        masteryLevel: MasteryLevel.D,
-        durationMinutes: 20,
-        createdAt: new Date('2026-06-30T10:00:00Z'),
-      },
     ];
 
     mockPrismaService.learningRecord.findMany.mockResolvedValue(records);
