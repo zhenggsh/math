@@ -1,17 +1,21 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { readFile } from 'fs/promises';
 import * as path from 'path';
 
 @Injectable()
 export class KnowledgeContentService {
   private readonly logger = new Logger(KnowledgeContentService.name);
-  private readonly baseDir = path.normalize(
-    process.env.IKSM_CONTENT_DIR
-      ? path.resolve(process.env.IKSM_CONTENT_DIR)
-      : process.cwd(),
-  );
+  private readonly baseDir: string;
   private readonly MAX_SUMMARY_LENGTH = 2000;
   private readonly TRUNCATION_WINDOW = 500;
+
+  constructor(private readonly configService: ConfigService) {
+    this.baseDir = path.normalize(
+      this.configService.get<string>('IKSM_DIR') ||
+        path.join(process.cwd(), '..', '..', 'iksm'),
+    );
+  }
 
   async getSummary(
     contentRef: string | undefined,

@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ConfigService } from '@nestjs/config';
 import { KnowledgeContentService } from './knowledge-content.service';
 import { readFile } from 'fs/promises';
 import * as path from 'path';
@@ -31,13 +32,23 @@ More details.
 Should not include.
 `;
 
-const DEFAULT_CWD = 'C:\\repo-root';
+const DEFAULT_IKSM_DIR = 'C:\\repo-root\\iksm';
+
+const createConfigServiceMock = (iksmDir: string): ConfigService => {
+  return {
+    get: jest.fn((key: string) => {
+      if (key === 'IKSM_DIR') {
+        return iksmDir;
+      }
+      return undefined;
+    }),
+  } as unknown as ConfigService;
+};
 
 describe('KnowledgeContentService', () => {
   let service: KnowledgeContentService;
 
   beforeEach(async () => {
-    jest.spyOn(process, 'cwd').mockReturnValue(DEFAULT_CWD);
     readFileMock.mockImplementation((filePath: string | Buffer | URL) => {
       if (typeof filePath === 'string' && filePath.endsWith('knowledge.md')) {
         return Promise.resolve(sampleContent);
@@ -46,7 +57,13 @@ describe('KnowledgeContentService', () => {
     });
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [KnowledgeContentService],
+      providers: [
+        KnowledgeContentService,
+        {
+          provide: ConfigService,
+          useValue: createConfigServiceMock(DEFAULT_IKSM_DIR),
+        },
+      ],
     }).compile();
 
     service = module.get<KnowledgeContentService>(KnowledgeContentService);
@@ -110,13 +127,13 @@ describe('KnowledgeContentService', () => {
     );
 
     expect(readFileMock).toHaveBeenCalledWith(
-      path.resolve(DEFAULT_CWD, contentRefPath),
+      path.resolve(DEFAULT_IKSM_DIR, contentRefPath),
       'utf-8',
     );
     expect(result).toContain('移动通信的起源与发展');
   });
 
-  it('should resolve relative paths against process.cwd()', async () => {
+  it('should resolve relative paths against IKSM_DIR', async () => {
     readFileMock.mockImplementation((filePath: string | Buffer | URL) => {
       if (typeof filePath === 'string' && filePath.endsWith('relative.md')) {
         return Promise.resolve(sampleContent);
@@ -127,7 +144,7 @@ describe('KnowledgeContentService', () => {
     await service.getSummary('relative.md', undefined, '1.1.1', 'unused');
 
     expect(readFileMock).toHaveBeenCalledWith(
-      path.resolve(DEFAULT_CWD, 'relative.md'),
+      path.resolve(DEFAULT_IKSM_DIR, 'relative.md'),
       'utf-8',
     );
   });
@@ -317,5 +334,40 @@ Second content.
     expect(result.startsWith('## 知识点 1.1.1：Open')).toBe(true);
     expect(result).not.toContain('$$');
     expect(result).not.toContain('$');
+  });
+
+  it('should use a configured IKSM_DIR to resolve content files', async () => {
+    const customIksmDir = 'C:\\custom\\temp\\iksm';
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        KnowledgeContentService,
+        {
+          provide: ConfigService,
+          useValue: createConfigServiceMock(customIksmDir),
+        },
+      ],
+    }).compile();
+
+    const customService = module.get<KnowledgeContentService>(
+      KnowledgeContentService,
+    );
+
+    readFileMock.mockImplementation((filePath: string | Buffer | URL) => {
+      if (
+        typeof filePath === 'string' &&
+        filePath === path.resolve(customIksmDir, 'custom.md')
+      ) {
+        return Promise.resolve(sampleContent);
+      }
+      return Promise.reject(new Error('ENOENT'));
+    });
+
+    await customService.getSummary('custom.md', undefined, '1.1.1', 'unused');
+
+    expect(readFileMock).toHaveBeenCalledWith(
+      path.resolve(customIksmDir, 'custom.md'),
+      'utf-8',
+    );
   });
 });
