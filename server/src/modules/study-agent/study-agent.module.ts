@@ -4,6 +4,7 @@ import { StudyAgentController } from './study-agent.controller';
 import { StudyAgentConfigService } from './services/study-agent-config.service';
 import { KimiClientService } from './services/kimi-client.service';
 import { KnowledgeContentService } from './services/knowledge-content.service';
+import { LearningContextService } from './services/learning-context.service';
 
 @Module({
   imports: [PrismaModule],
@@ -12,6 +13,7 @@ import { KnowledgeContentService } from './services/knowledge-content.service';
     StudyAgentConfigService,
     KimiClientService,
     KnowledgeContentService,
+    LearningContextService,
   ],
 })
 export class StudyAgentModule {}
