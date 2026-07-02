@@ -2,6 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { KimiClientService } from './kimi-client.service';
 
+type MockOpenAI = jest.Mock & { createMock: jest.Mock };
+
 jest.mock('openai', () => {
   const createMock = jest.fn();
   const OpenAIMock = jest.fn().mockImplementation(() => ({
@@ -12,10 +14,14 @@ jest.mock('openai', () => {
     },
   }));
 
+  const mockWithCreate = Object.assign(OpenAIMock, {
+    createMock,
+  }) as MockOpenAI;
+
   return {
     __esModule: true,
-    default: Object.assign(OpenAIMock, { createMock }),
-    OpenAI: Object.assign(OpenAIMock, { createMock }),
+    default: mockWithCreate,
+    OpenAI: mockWithCreate,
   };
 });
 
@@ -23,10 +29,11 @@ describe('KimiClientService', () => {
   let service: KimiClientService;
   let createMock: jest.Mock;
 
+  const getMockedOpenAI = (): { default: MockOpenAI; OpenAI: MockOpenAI } =>
+    jest.requireMock('openai');
+
   beforeEach(async () => {
-    const mocked = jest.requireMock('openai') as {
-      default: jest.Mock & { createMock: jest.Mock };
-    };
+    const mocked = getMockedOpenAI();
     createMock = mocked.default.createMock;
     createMock.mockReset();
     mocked.default.mockClear();
@@ -58,9 +65,7 @@ describe('KimiClientService', () => {
   });
 
   it('should create OpenAI client with configured values', () => {
-    const mocked = jest.requireMock('openai') as {
-      default: jest.Mock;
-    };
+    const mocked = getMockedOpenAI();
     expect(mocked.default).toHaveBeenCalledWith({
       baseURL: 'https://api.moonshot.cn/v1',
       apiKey: 'test-api-key',
@@ -74,9 +79,7 @@ describe('KimiClientService', () => {
       choices: [{ message: { content: '你好，我是小智。' } }],
     });
 
-    const result = await service.chat([
-      { role: 'user', content: '你好' },
-    ]);
+    const result = await service.chat([{ role: 'user', content: '你好' }]);
 
     expect(createMock).toHaveBeenCalledWith({
       model: 'kimi-k2-0711-preview',

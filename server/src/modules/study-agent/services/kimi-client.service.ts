@@ -15,7 +15,8 @@ export class KimiClientService {
       timeout: 30000,
       maxRetries: 1,
     });
-    this.model = this.configService.get<string>('KIMI_MODEL') ?? 'kimi-k2-0711-preview';
+    this.model =
+      this.configService.get<string>('KIMI_MODEL') ?? 'kimi-k2-0711-preview';
   }
 
   async chat(messages: ChatMessage[]): Promise<KimiClientResponse> {
