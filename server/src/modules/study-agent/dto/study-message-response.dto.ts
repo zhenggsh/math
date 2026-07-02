@@ -24,11 +24,12 @@ export class StudyMessageResponseDto {
   followUps: string[];
 
   @ApiProperty({
+    enum: ['positive', 'negative'],
     nullable: true,
     description: '反馈类型',
     example: 'positive',
   })
-  feedback: string | null;
+  feedback: 'positive' | 'negative' | null;
 
   @ApiProperty()
   createdAt: Date;

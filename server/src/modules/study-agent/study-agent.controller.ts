@@ -388,7 +388,7 @@ export class StudyAgentController {
 
   private mapFeedback(
     feedback: StudyMessageFeedback | null | undefined,
-  ): string | null {
+  ): 'positive' | 'negative' | null {
     if (feedback === StudyMessageFeedback.POSITIVE) {
       return 'positive';
     }

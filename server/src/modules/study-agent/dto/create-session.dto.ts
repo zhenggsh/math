@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString } from 'class-validator';
+import { IsNotEmpty, IsString } from 'class-validator';
 
 export class CreateSessionDto {
   @ApiProperty({
@@ -7,6 +7,7 @@ export class CreateSessionDto {
     example: 'kp-123',
   })
   @IsString()
+  @IsNotEmpty()
   knowledgePointId: string;
 
   @ApiProperty({
@@ -14,5 +15,6 @@ export class CreateSessionDto {
     example: '三角函数的基本概念',
   })
   @IsString()
+  @IsNotEmpty()
   knowledgePointTitle: string;
 }
