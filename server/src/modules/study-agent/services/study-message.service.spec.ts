@@ -14,6 +14,9 @@ describe('StudyMessageService', () => {
       findFirst: jest.fn(),
       update: jest.fn(),
     },
+    studySession: {
+      findFirst: jest.fn(),
+    },
   };
 
   beforeEach(async () => {
@@ -37,6 +40,7 @@ describe('StudyMessageService', () => {
 
   describe('createUserMessage', () => {
     it('should create a user message', async () => {
+      const userId = 'user-1';
       const sessionId = 'session-1';
       const content = 'Hello';
       const message: StudyMessage = {
@@ -49,10 +53,21 @@ describe('StudyMessageService', () => {
         createdAt: new Date('2026-07-01T00:00:00Z'),
         updatedAt: new Date('2026-07-01T00:00:00Z'),
       };
+      mockPrismaService.studySession.findFirst.mockResolvedValue({
+        id: sessionId,
+        userId,
+      });
       mockPrismaService.studyMessage.create.mockResolvedValue(message);
 
-      const result = await service.createUserMessage(sessionId, content);
+      const result = await service.createUserMessage(
+        userId,
+        sessionId,
+        content,
+      );
 
+      expect(mockPrismaService.studySession.findFirst).toHaveBeenCalledWith({
+        where: { id: sessionId, userId },
+      });
       expect(mockPrismaService.studyMessage.create).toHaveBeenCalledWith({
         data: {
           sessionId,
@@ -62,10 +77,26 @@ describe('StudyMessageService', () => {
       });
       expect(result).toBe(message);
     });
+
+    it('should throw NotFoundException when session belongs to another user', async () => {
+      const userId = 'user-1';
+      const sessionId = 'session-1';
+      mockPrismaService.studySession.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.createUserMessage(userId, sessionId, 'Hello'),
+      ).rejects.toThrow(NotFoundException);
+
+      expect(mockPrismaService.studySession.findFirst).toHaveBeenCalledWith({
+        where: { id: sessionId, userId },
+      });
+      expect(mockPrismaService.studyMessage.create).not.toHaveBeenCalled();
+    });
   });
 
   describe('createAgentMessage', () => {
     it('should create an agent message with follow-ups', async () => {
+      const userId = 'user-1';
       const input = {
         sessionId: 'session-1',
         content: 'Explanation',
@@ -81,10 +112,17 @@ describe('StudyMessageService', () => {
         createdAt: new Date('2026-07-01T00:00:00Z'),
         updatedAt: new Date('2026-07-01T00:00:00Z'),
       };
+      mockPrismaService.studySession.findFirst.mockResolvedValue({
+        id: input.sessionId,
+        userId,
+      });
       mockPrismaService.studyMessage.create.mockResolvedValue(message);
 
-      const result = await service.createAgentMessage(input);
+      const result = await service.createAgentMessage(userId, input);
 
+      expect(mockPrismaService.studySession.findFirst).toHaveBeenCalledWith({
+        where: { id: input.sessionId, userId },
+      });
       expect(mockPrismaService.studyMessage.create).toHaveBeenCalledWith({
         data: {
           sessionId: input.sessionId,
@@ -94,6 +132,25 @@ describe('StudyMessageService', () => {
         },
       });
       expect(result).toBe(message);
+    });
+
+    it('should throw NotFoundException when session belongs to another user', async () => {
+      const userId = 'user-1';
+      const input = {
+        sessionId: 'session-1',
+        content: 'Explanation',
+        followUps: ['Q1'],
+      };
+      mockPrismaService.studySession.findFirst.mockResolvedValue(null);
+
+      await expect(service.createAgentMessage(userId, input)).rejects.toThrow(
+        NotFoundException,
+      );
+
+      expect(mockPrismaService.studySession.findFirst).toHaveBeenCalledWith({
+        where: { id: input.sessionId, userId },
+      });
+      expect(mockPrismaService.studyMessage.create).not.toHaveBeenCalled();
     });
   });
 
@@ -141,6 +198,7 @@ describe('StudyMessageService', () => {
 
   describe('findLastAgentMessage', () => {
     it('should return the most recent agent message', async () => {
+      const userId = 'user-1';
       const sessionId = 'session-1';
       const message: StudyMessage = {
         id: 'msg-2',
@@ -154,10 +212,14 @@ describe('StudyMessageService', () => {
       };
       mockPrismaService.studyMessage.findFirst.mockResolvedValue(message);
 
-      const result = await service.findLastAgentMessage(sessionId);
+      const result = await service.findLastAgentMessage(userId, sessionId);
 
       expect(mockPrismaService.studyMessage.findFirst).toHaveBeenCalledWith({
-        where: { sessionId, role: StudyMessageRole.AGENT },
+        where: {
+          sessionId,
+          role: StudyMessageRole.AGENT,
+          session: { userId },
+        },
         orderBy: { createdAt: 'desc' },
       });
       expect(result).toBe(message);
@@ -166,8 +228,26 @@ describe('StudyMessageService', () => {
     it('should return null when there is no agent message', async () => {
       mockPrismaService.studyMessage.findFirst.mockResolvedValue(null);
 
-      const result = await service.findLastAgentMessage('session-1');
+      const result = await service.findLastAgentMessage('user-1', 'session-1');
 
+      expect(result).toBeNull();
+    });
+
+    it('should not return the agent message for another user', async () => {
+      const userId = 'user-2';
+      const sessionId = 'session-1';
+      mockPrismaService.studyMessage.findFirst.mockResolvedValue(null);
+
+      const result = await service.findLastAgentMessage(userId, sessionId);
+
+      expect(mockPrismaService.studyMessage.findFirst).toHaveBeenCalledWith({
+        where: {
+          sessionId,
+          role: StudyMessageRole.AGENT,
+          session: { userId },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
       expect(result).toBeNull();
     });
   });
@@ -203,6 +283,7 @@ describe('StudyMessageService', () => {
 
   describe('findAgentResponseForUserMessage', () => {
     it('should return the first agent message after the user message', async () => {
+      const userId = 'user-1';
       const sessionId = 'session-1';
       const userMessageId = 'msg-1';
       const userCreatedAt = new Date('2026-07-01T10:00:00Z');
@@ -221,6 +302,7 @@ describe('StudyMessageService', () => {
         .mockResolvedValueOnce(agentMessage);
 
       const result = await service.findAgentResponseForUserMessage(
+        userId,
         sessionId,
         userMessageId,
       );
@@ -232,6 +314,7 @@ describe('StudyMessageService', () => {
             id: userMessageId,
             sessionId,
             role: StudyMessageRole.USER,
+            session: { userId },
           },
           select: { createdAt: true },
         },
@@ -243,6 +326,7 @@ describe('StudyMessageService', () => {
             sessionId,
             role: StudyMessageRole.AGENT,
             createdAt: { gt: userCreatedAt },
+            session: { userId },
           },
           orderBy: { createdAt: 'asc' },
         },
@@ -254,10 +338,35 @@ describe('StudyMessageService', () => {
       mockPrismaService.studyMessage.findFirst.mockResolvedValue(null);
 
       const result = await service.findAgentResponseForUserMessage(
+        'user-1',
         'session-1',
         'missing',
       );
 
+      expect(result).toBeNull();
+    });
+
+    it('should not find a response for another user', async () => {
+      const userId = 'user-2';
+      const sessionId = 'session-1';
+      const userMessageId = 'msg-1';
+      mockPrismaService.studyMessage.findFirst.mockResolvedValue(null);
+
+      const result = await service.findAgentResponseForUserMessage(
+        userId,
+        sessionId,
+        userMessageId,
+      );
+
+      expect(mockPrismaService.studyMessage.findFirst).toHaveBeenCalledWith({
+        where: {
+          id: userMessageId,
+          sessionId,
+          role: StudyMessageRole.USER,
+          session: { userId },
+        },
+        select: { createdAt: true },
+      });
       expect(result).toBeNull();
     });
   });

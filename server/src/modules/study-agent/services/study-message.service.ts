@@ -13,9 +13,18 @@ export class StudyMessageService {
   constructor(private readonly prisma: PrismaService) {}
 
   async createUserMessage(
+    userId: string,
     sessionId: string,
     content: string,
   ): Promise<StudyMessage> {
+    const session = await this.prisma.studySession.findFirst({
+      where: { id: sessionId, userId },
+    });
+
+    if (!session) {
+      throw new NotFoundException('Session not found');
+    }
+
     return this.prisma.studyMessage.create({
       data: {
         sessionId,
@@ -26,8 +35,17 @@ export class StudyMessageService {
   }
 
   async createAgentMessage(
+    userId: string,
     input: CreateAgentMessageInput,
   ): Promise<StudyMessage> {
+    const session = await this.prisma.studySession.findFirst({
+      where: { id: input.sessionId, userId },
+    });
+
+    if (!session) {
+      throw new NotFoundException('Session not found');
+    }
+
     return this.prisma.studyMessage.create({
       data: {
         sessionId: input.sessionId,
@@ -48,9 +66,16 @@ export class StudyMessageService {
     });
   }
 
-  async findLastAgentMessage(sessionId: string): Promise<StudyMessage | null> {
+  async findLastAgentMessage(
+    userId: string,
+    sessionId: string,
+  ): Promise<StudyMessage | null> {
     return this.prisma.studyMessage.findFirst({
-      where: { sessionId, role: StudyMessageRole.AGENT },
+      where: {
+        sessionId,
+        role: StudyMessageRole.AGENT,
+        session: { userId },
+      },
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -69,6 +94,7 @@ export class StudyMessageService {
   }
 
   async findAgentResponseForUserMessage(
+    userId: string,
     sessionId: string,
     userMessageId: string,
   ): Promise<StudyMessage | null> {
@@ -77,6 +103,7 @@ export class StudyMessageService {
         id: userMessageId,
         sessionId,
         role: StudyMessageRole.USER,
+        session: { userId },
       },
       select: { createdAt: true },
     });
@@ -90,6 +117,7 @@ export class StudyMessageService {
         sessionId,
         role: StudyMessageRole.AGENT,
         createdAt: { gt: userMessage.createdAt },
+        session: { userId },
       },
       orderBy: { createdAt: 'asc' },
     });
