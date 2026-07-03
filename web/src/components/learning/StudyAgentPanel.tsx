@@ -83,11 +83,10 @@ export const StudyAgentPanel: React.FC<StudyAgentPanelProps> = ({
       size={380}
       title={<KnowledgeContextBar title={knowledgePointTitle} />}
       className={styles.drawer}
-      maskClosable={false}
-      destroyOnClose
+      destroyOnHidden
     >
       <div className={styles.container}>
-        {error && <Alert message={error} type="error" showIcon className={styles.errorAlert} />}
+        {error && <Alert title={error} type="error" showIcon className={styles.errorAlert} />}
 
         <div className={styles.messagesArea}>
           {isLoading && (
