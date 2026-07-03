@@ -1,0 +1,9 @@
+.container {
+  padding: 8px 0;
+}
+
+.chip {
+  max-width: 100%;
+  white-space: normal;
+  word-break: break-all;
+}
