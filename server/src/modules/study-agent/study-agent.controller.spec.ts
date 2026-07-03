@@ -88,6 +88,12 @@ describe('StudyAgentController', () => {
 
     jest.clearAllMocks();
     mockRateLimitService.isAllowed.mockReturnValue(true);
+    mockPrismaService.knowledgePoint.findUnique.mockResolvedValue({
+      id: mockKnowledgePointId,
+      code: mockCode,
+      contentRef: mockContentRef,
+      textbook: { contentPath: mockTextbookContentPath },
+    });
   });
 
   describe('POST /study-agent/sessions', () => {
@@ -111,6 +117,22 @@ describe('StudyAgentController', () => {
         mockKnowledgePointId,
         mockTitle,
       );
+      expect(mockPrismaService.knowledgePoint.findUnique).toHaveBeenCalledWith({
+        where: { id: mockKnowledgePointId },
+      });
+    });
+
+    it('should throw 404 if knowledge point does not exist', async () => {
+      const dto: CreateSessionDto = {
+        knowledgePointId: mockKnowledgePointId,
+        knowledgePointTitle: mockTitle,
+      };
+
+      mockPrismaService.knowledgePoint.findUnique.mockResolvedValue(null);
+
+      await expect(
+        controller.createSession(mockUserId, dto),
+      ).rejects.toBeInstanceOf(NotFoundException);
     });
   });
 

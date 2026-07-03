@@ -69,6 +69,13 @@ export class StudyAgentController {
     @CurrentUser('userId') userId: string,
     @Body(new ValidationPipe({ transform: true })) dto: CreateSessionDto,
   ): Promise<{ success: boolean; data: StudySessionResponseDto }> {
+    const knowledgePoint = await this.prisma.knowledgePoint.findUnique({
+      where: { id: dto.knowledgePointId },
+    });
+    if (!knowledgePoint) {
+      throw new NotFoundException('知识点不存在');
+    }
+
     const session = await this.sessionService.upsert(
       userId,
       dto.knowledgePointId,
@@ -102,7 +109,7 @@ export class StudyAgentController {
   ): Promise<{ success: boolean; data: StudySessionResponseDto }> {
     const session = await this.sessionService.findById(userId, sessionId);
     if (!session) {
-      throw new NotFoundException('Session not found');
+      throw new NotFoundException('会话不存在');
     }
     const messages = await this.messageService.findBySession(
       userId,
@@ -144,7 +151,7 @@ export class StudyAgentController {
 
     const session = await this.sessionService.findById(userId, sessionId);
     if (!session) {
-      throw new NotFoundException('Session not found');
+      throw new NotFoundException('会话不存在');
     }
 
     await this.messageService.createUserMessage(userId, sessionId, dto.content);
@@ -229,7 +236,7 @@ export class StudyAgentController {
       userMessageId,
     );
     if (!userMessage) {
-      throw new NotFoundException('User message not found');
+      throw new NotFoundException('用户消息不存在');
     }
 
     const agentResponse =
@@ -239,7 +246,7 @@ export class StudyAgentController {
         userMessageId,
       );
     if (!agentResponse) {
-      throw new NotFoundException('Agent response not found');
+      throw new NotFoundException('AI 回复不存在');
     }
 
     const session = await this.sessionService.findById(
@@ -247,7 +254,7 @@ export class StudyAgentController {
       userMessage.sessionId,
     );
     if (!session) {
-      throw new NotFoundException('Session not found');
+      throw new NotFoundException('会话不存在');
     }
 
     const allMessages = await this.messageService.findBySession(
@@ -304,7 +311,7 @@ export class StudyAgentController {
     });
 
     if (!knowledgePoint) {
-      throw new NotFoundException('Knowledge point not found');
+      throw new NotFoundException('知识点不存在');
     }
 
     const dedupedHistory = this.deduplicateHistory(history, question);
