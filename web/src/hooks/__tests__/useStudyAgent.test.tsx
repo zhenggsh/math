@@ -12,7 +12,7 @@ const { mockCreateSession, mockGetSession, mockSendMessage, mockUpdateFeedback, 
     mockCreateSession: vi.fn<unknown[], Promise<StudySession>>(),
     mockGetSession: vi.fn<unknown[], Promise<StudySession>>(),
     mockSendMessage: vi.fn<unknown[], Promise<StudyMessage>>(),
-    mockUpdateFeedback: vi.fn<unknown[], Promise<StudyMessage>>(),
+    mockUpdateFeedback: vi.fn<unknown[], Promise<void>>(),
     mockRegenerate: vi.fn<unknown[], Promise<StudyMessage>>(),
   }))
 
@@ -25,8 +25,6 @@ vi.mock('../../services/studyAgentApi', () => ({
     regenerate: mockRegenerate,
   },
 }))
-
-const mockedStudyAgentApi = vi.mocked(studyAgentApi)
 
 function createWrapper() {
   const queryClient = new QueryClient({
@@ -84,7 +82,6 @@ describe('useStudyAgent', () => {
       feedback: null,
       createdAt: '2024-01-01T00:00:00.000Z',
     }
-    mockCreateSession.mockResolvedValue(session)
     mockSendMessage.mockResolvedValue(agentMessage)
     mockCreateSession.mockResolvedValue({
       ...session,
@@ -132,15 +129,7 @@ describe('useStudyAgent', () => {
 
   it('should submit feedback', async () => {
     mockCreateSession.mockResolvedValue(session)
-    mockUpdateFeedback.mockResolvedValue({
-      id: 'msg-2',
-      sessionId: session.id,
-      role: 'agent',
-      content: 'Answer',
-      followUps: [],
-      feedback: 'positive',
-      createdAt: '2024-01-01T00:00:00.000Z',
-    })
+    mockUpdateFeedback.mockResolvedValue()
 
     const { result } = renderHook(() => useStudyAgent('kp-1', 'Test Point'), {
       wrapper: createWrapper(),
@@ -183,9 +172,5 @@ describe('useStudyAgent', () => {
     })
 
     await waitFor(() => expect(result.current.error).toBe('Invalid input'))
-  })
-
-  it('should expose the mocked API module', () => {
-    expect(mockedStudyAgentApi).toBeDefined()
   })
 })

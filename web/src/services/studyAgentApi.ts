@@ -46,13 +46,9 @@ export const studyAgentApi = {
   async updateFeedback(
     messageId: string,
     feedback?: 'positive' | 'negative'
-  ): Promise<StudyMessage> {
+  ): Promise<void> {
     const data: UpdateFeedbackRequest = { feedback }
-    const response = await api.put<ApiResponse<StudyMessage>>(
-      `/study-agent/messages/${messageId}/feedback`,
-      data
-    )
-    return response.data.data
+    await api.put(`/study-agent/messages/${messageId}/feedback`, data)
   },
 
   async regenerate(userMessageId: string): Promise<StudyMessage> {

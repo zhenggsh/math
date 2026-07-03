@@ -4,11 +4,6 @@ import axios from 'axios'
 import { studyAgentApi } from '../services/studyAgentApi'
 import type { StudySession, StudyMessage } from '../types/study-agent.types'
 
-export interface UseStudyAgentOptions {
-  knowledgePointId: string
-  knowledgePointTitle: string
-}
-
 export interface UseStudyAgentReturn {
   session: StudySession | null
   isLoading: boolean
@@ -53,7 +48,8 @@ export function useStudyAgent(
       })
     },
     enabled: Boolean(knowledgePointId),
-    staleTime: 5 * 60 * 1000,
+    retry: false,
+    staleTime: Infinity,
   })
 
   const handleError = useCallback((error: unknown): void => {
@@ -90,7 +86,7 @@ export function useStudyAgent(
   })
 
   const submitFeedbackMutation = useMutation<
-    StudyMessage,
+    void,
     Error,
     { messageId: string; feedback?: 'positive' | 'negative' }
   >({
