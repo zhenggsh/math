@@ -1,104 +1,81 @@
 import React from 'react'
-import { render, screen, fireEvent, act } from '@testing-library/react'
-import { describe, it, expect, vi } from 'vitest'
+import { render, screen, waitFor } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { AIFab } from '../AIFab'
+import { studyAgentApi } from '../../../services/studyAgentApi'
+import type { StudySession } from '../../../types/study-agent.types'
+
+vi.mock('../../../services/studyAgentApi', () => ({
+  studyAgentApi: {
+    createSession: vi.fn(),
+  },
+}))
+
+const mockCreateSession = vi.mocked(studyAgentApi.createSession)
+
+function createTestQueryClient(): QueryClient {
+  return new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: false,
+      },
+    },
+  })
+}
+
+function renderWithQueryClient(component: React.ReactElement): ReturnType<typeof render> {
+  return render(<QueryClientProvider client={createTestQueryClient()}>{component}</QueryClientProvider>)
+}
 
 describe('AIFab', () => {
+  beforeEach(() => {
+    mockCreateSession.mockResolvedValue({
+      id: 'session-1',
+      userId: 'user-1',
+      knowledgePointId: 'kp-1',
+      title: '导数',
+      messages: [],
+      createdAt: '2026-07-03T00:00:00.000Z',
+    } as StudySession)
+  })
+
   it('renders floating button', () => {
-    render(<AIFab knowledgePointTitle="三角函数" />)
-    const fab = screen.getByRole('button', { name: /AI 助手/i })
-    expect(fab).toBeInTheDocument()
+    renderWithQueryClient(
+      <AIFab knowledgePointId="kp-1" knowledgePointTitle="导数" />
+    )
+
+    expect(screen.getByRole('button', { name: /AI 助手/i })).toBeInTheDocument()
   })
 
-  it('expands panel when FAB is clicked', () => {
-    render(<AIFab knowledgePointTitle="三角函数" />)
+  it('opens StudyAgentPanel when FAB is clicked', async () => {
+    renderWithQueryClient(
+      <AIFab knowledgePointId="kp-1" knowledgePointTitle="导数" />
+    )
+
     const fab = screen.getByRole('button', { name: /AI 助手/i })
-    fireEvent.click(fab)
-    expect(screen.getByText('AI 学习助手')).toBeInTheDocument()
-    expect(screen.getByText('生成「三角函数」的常见题目')).toBeInTheDocument()
-  })
+    fab.click()
 
-  it('generates generic prompts when title is undefined', () => {
-    render(<AIFab />)
-    const fab = screen.getByRole('button', { name: /AI 助手/i })
-    fireEvent.click(fab)
-    expect(screen.getByText(/生成.*的常见题目/)).toBeInTheDocument()
-  })
-
-  it('shows mock response after clicking a prompt', () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true })
-    render(<AIFab knowledgePointTitle="集合" />)
-    fireEvent.click(screen.getByRole('button', { name: /AI 助手/i }))
-
-    const prompt = screen.getByText('「集合」易错点分析')
-    fireEvent.click(prompt)
-
-    expect(screen.getByText('正在思考...')).toBeInTheDocument()
-
-    act(() => {
-      vi.advanceTimersByTime(800)
+    await waitFor(() => {
+      expect(screen.getByText('导数')).toBeInTheDocument()
     })
 
-    expect(screen.getByText(/学习中的常见易错点/)).toBeInTheDocument()
-
-    vi.useRealTimers()
-  })
-
-  it('closes panel when close button is clicked', () => {
-    render(<AIFab knowledgePointTitle="函数" />)
-    fireEvent.click(screen.getByRole('button', { name: /AI 助手/i }))
-    expect(screen.getByText('AI 学习助手')).toBeInTheDocument()
-
-    const closeButton = screen.getByRole('button', { name: /关闭/i })
-    fireEvent.click(closeButton)
-
-    expect(screen.queryByText('AI 学习助手')).not.toBeInTheDocument()
-  })
-
-  it('closes panel when ESC key is pressed', () => {
-    render(<AIFab knowledgePointTitle="函数" />)
-    fireEvent.click(screen.getByRole('button', { name: /AI 助手/i }))
-    expect(screen.getByText('AI 学习助手')).toBeInTheDocument()
-
-    fireEvent.keyDown(document, { key: 'Escape' })
-
-    expect(screen.queryByText('AI 学习助手')).not.toBeInTheDocument()
-  })
-
-  it('resets to prompt view when reopened after closing', async () => {
-    render(<AIFab knowledgePointTitle="数列" />)
-    const fab = screen.getByRole('button', { name: /AI 助手/i })
-
-    fireEvent.click(fab)
-    fireEvent.click(screen.getByText('「数列」名师讲解视频'))
-
-    const closeButton = screen.getByRole('button', { name: /关闭/i })
-    fireEvent.click(closeButton)
-    fireEvent.click(screen.getByRole('button', { name: /AI 助手/i }))
-
-    const prompt = await screen.findByText('「数列」名师讲解视频')
-    expect(prompt).toBeInTheDocument()
-    expect(screen.queryByText(/推荐以下名师/)).not.toBeInTheDocument()
-  })
-
-  it('resets to prompts when knowledge point changes while panel is open', () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true })
-    const { rerender } = render(<AIFab knowledgePointTitle="集合" />)
-
-    fireEvent.click(screen.getByRole('button', { name: /AI 助手/i }))
-    fireEvent.click(screen.getByText('「集合」易错点分析'))
-
-    act(() => {
-      vi.advanceTimersByTime(800)
+    await waitFor(() => {
+      expect(screen.getByText(/你好！我是你的 AI 学习助手/)).toBeInTheDocument()
     })
 
-    expect(screen.getByText(/学习中的常见易错点/)).toBeInTheDocument()
+    expect(mockCreateSession).toHaveBeenCalledWith({
+      knowledgePointId: 'kp-1',
+      knowledgePointTitle: '导数',
+    })
+  })
 
-    rerender(<AIFab knowledgePointTitle="三角函数" />)
+  it('does not render panel when knowledge point info is missing', () => {
+    renderWithQueryClient(<AIFab />)
 
-    expect(screen.getByText('生成「三角函数」的常见题目')).toBeInTheDocument()
-    expect(screen.queryByText(/学习中的常见易错点/)).not.toBeInTheDocument()
+    const fab = screen.getByRole('button', { name: /AI 助手/i })
+    fab.click()
 
-    vi.useRealTimers()
+    expect(screen.queryByText('AI 助手')).not.toBeInTheDocument()
   })
 })
