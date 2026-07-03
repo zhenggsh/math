@@ -86,7 +86,7 @@ export const StudyAgentPanel: React.FC<StudyAgentPanelProps> = ({
       destroyOnHidden
     >
       <div className={styles.container}>
-        {error && <Alert title={error} type="error" showIcon className={styles.errorAlert} />}
+        {error && <Alert message={error} type="error" showIcon closable className={styles.errorAlert} />}
 
         <div className={styles.messagesArea}>
           {isLoading && (
