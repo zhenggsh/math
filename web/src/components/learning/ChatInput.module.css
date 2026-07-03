@@ -1,0 +1,13 @@
+.chatInput {
+  padding: 12px 16px;
+  border-top: 1px solid #f0f0f0;
+  background: #fff;
+}
+
+.compact {
+  width: 100%;
+}
+
+.input {
+  flex: 1;
+}
