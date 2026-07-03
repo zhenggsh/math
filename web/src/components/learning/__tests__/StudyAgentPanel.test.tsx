@@ -3,16 +3,17 @@ import { render, screen, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { StudyAgentPanel } from '../StudyAgentPanel'
-import { studyAgentApi } from '../../../services/studyAgentApi'
-import type { StudySession } from '../../../types/study-agent.types'
+import type { CreateSessionRequest, StudySession } from '../../../types/study-agent.types'
+
+const mocks = vi.hoisted(() => ({
+  mockCreateSession: vi.fn<(data: CreateSessionRequest) => Promise<StudySession>>(),
+}))
 
 vi.mock('../../../services/studyAgentApi', () => ({
   studyAgentApi: {
-    createSession: vi.fn(),
+    createSession: mocks.mockCreateSession,
   },
 }))
-
-const mockCreateSession = vi.mocked(studyAgentApi.createSession)
 
 function createTestQueryClient(): QueryClient {
   return new QueryClient({
@@ -25,12 +26,14 @@ function createTestQueryClient(): QueryClient {
 }
 
 function renderWithQueryClient(component: React.ReactElement): ReturnType<typeof render> {
-  return render(<QueryClientProvider client={createTestQueryClient()}>{component}</QueryClientProvider>)
+  return render(
+    <QueryClientProvider client={createTestQueryClient()}>{component}</QueryClientProvider>
+  )
 }
 
 describe('StudyAgentPanel', () => {
   beforeEach(() => {
-    mockCreateSession.mockResolvedValue({
+    mocks.mockCreateSession.mockResolvedValue({
       id: 'session-1',
       userId: 'user-1',
       knowledgePointId: 'kp-1',
@@ -58,7 +61,7 @@ describe('StudyAgentPanel', () => {
       expect(screen.getByText(/你好！我是你的 AI 学习助手/)).toBeInTheDocument()
     })
 
-    expect(mockCreateSession).toHaveBeenCalledWith({
+    expect(mocks.mockCreateSession).toHaveBeenCalledWith({
       knowledgePointId: 'kp-1',
       knowledgePointTitle: '导数',
     })

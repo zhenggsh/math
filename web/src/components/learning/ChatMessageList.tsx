@@ -49,8 +49,7 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
   }, [messages])
 
   const lastAgentIndex = [...messages].reverse().findIndex(m => m.role === 'agent')
-  const latestAgentIndex =
-    lastAgentIndex === -1 ? -1 : messages.length - 1 - lastAgentIndex
+  const latestAgentIndex = lastAgentIndex === -1 ? -1 : messages.length - 1 - lastAgentIndex
 
   return (
     <div className={styles.messageList}>
@@ -83,7 +82,10 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
                       icon={<LikeOutlined />}
                       className={message.feedback === 'positive' ? styles.activePositive : ''}
                       onClick={() =>
-                        onFeedback(message.id, message.feedback === 'positive' ? undefined : 'positive')
+                        onFeedback(
+                          message.id,
+                          message.feedback === 'positive' ? undefined : 'positive'
+                        )
                       }
                       aria-label="点赞"
                     />
@@ -93,7 +95,10 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
                       icon={<DislikeOutlined />}
                       className={message.feedback === 'negative' ? styles.activeNegative : ''}
                       onClick={() =>
-                        onFeedback(message.id, message.feedback === 'negative' ? undefined : 'negative')
+                        onFeedback(
+                          message.id,
+                          message.feedback === 'negative' ? undefined : 'negative'
+                        )
                       }
                       aria-label="点踩"
                     />

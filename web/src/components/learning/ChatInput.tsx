@@ -25,7 +25,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend, loading }) => {
         handleSend()
       }
     },
-    [handleSend],
+    [handleSend]
   )
 
   return (
@@ -33,7 +33,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend, loading }) => {
       <Space.Compact className={styles.compact}>
         <Input
           value={value}
-          onChange={(e) => setValue(e.target.value)}
+          onChange={e => setValue(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="请输入问题..."
           disabled={loading}

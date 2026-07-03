@@ -17,11 +17,7 @@ export interface StudyAgentPanelProps {
 }
 
 function generateStarterQuestions(title: string): string[] {
-  return [
-    `什么是${title}？`,
-    `学习${title}时有哪些常见易错点？`,
-    `请给我一些${title}的练习题`,
-  ]
+  return [`什么是${title}？`, `学习${title}时有哪些常见易错点？`, `请给我一些${title}的练习题`]
 }
 
 export const StudyAgentPanel: React.FC<StudyAgentPanelProps> = ({
@@ -52,8 +48,8 @@ export const StudyAgentPanel: React.FC<StudyAgentPanelProps> = ({
   const isBusy = isSending || isRegenerating || isSubmittingFeedback
 
   const handleSend = useCallback(
-    async (content: string): Promise<void> => {
-      await sendMessage(content)
+    (content: string): void => {
+      void sendMessage(content)
     },
     [sendMessage]
   )
@@ -91,14 +87,7 @@ export const StudyAgentPanel: React.FC<StudyAgentPanelProps> = ({
       destroyOnClose
     >
       <div className={styles.container}>
-        {error && (
-          <Alert
-            message={error}
-            type="error"
-            showIcon
-            className={styles.errorAlert}
-          />
-        )}
+        {error && <Alert message={error} type="error" showIcon className={styles.errorAlert} />}
 
         <div className={styles.messagesArea}>
           {isLoading && (
@@ -121,7 +110,8 @@ export const StudyAgentPanel: React.FC<StudyAgentPanelProps> = ({
           {isEmpty && !isLoading && (
             <div className={styles.welcome}>
               <Text className={styles.welcomeText}>
-                你好！我是你的 AI 学习助手。你可以问我关于「{knowledgePointTitle}」的任何问题，我会基于当前知识点为你解答。
+                你好！我是你的 AI 学习助手。你可以问我关于「{knowledgePointTitle}
+                」的任何问题，我会基于当前知识点为你解答。
               </Text>
               <div className={styles.starters}>
                 <Text type="secondary" className={styles.startersHint}>
