@@ -1,38 +1,41 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor, act } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import type { ReactNode } from 'react'
+import type { FC, ReactNode } from 'react'
 import axios from 'axios'
 import { useStudyAgent } from '../useStudyAgent'
-import { studyAgentApi } from '../../services/studyAgentApi'
 import type { StudySession, StudyMessage } from '../../types/study-agent.types'
 
-const { mockCreateSession, mockGetSession, mockSendMessage, mockUpdateFeedback, mockRegenerate } =
-  vi.hoisted(() => ({
+const { mockCreateSession, mockSendMessage, mockUpdateFeedback, mockRegenerate } = vi.hoisted(
+  () => ({
     mockCreateSession: vi.fn<unknown[], Promise<StudySession>>(),
-    mockGetSession: vi.fn<unknown[], Promise<StudySession>>(),
     mockSendMessage: vi.fn<unknown[], Promise<StudyMessage>>(),
     mockUpdateFeedback: vi.fn<unknown[], Promise<void>>(),
     mockRegenerate: vi.fn<unknown[], Promise<StudyMessage>>(),
-  }))
+  })
+)
 
 vi.mock('../../services/studyAgentApi', () => ({
   studyAgentApi: {
     createSession: mockCreateSession,
-    getSession: mockGetSession,
     sendMessage: mockSendMessage,
     updateFeedback: mockUpdateFeedback,
     regenerate: mockRegenerate,
   },
 }))
 
-function createWrapper() {
+interface WrapperProps {
+  children: ReactNode
+}
+
+function createWrapper(): FC<WrapperProps> {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   })
-  return function Wrapper({ children }: { children: ReactNode }) {
+  const Wrapper: FC<WrapperProps> = ({ children }) => {
     return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   }
+  return Wrapper
 }
 
 function createAxiosError(status: number, message: string): axios.AxiosError {

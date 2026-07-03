@@ -12,7 +12,7 @@ import type {
 const API_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) || 'http://localhost:3000'
 
 const api = axios.create({
-  baseURL: `${API_URL}`,
+  baseURL: API_URL,
 })
 
 api.interceptors.request.use(config => {
@@ -43,10 +43,7 @@ export const studyAgentApi = {
     return response.data.data
   },
 
-  async updateFeedback(
-    messageId: string,
-    feedback?: 'positive' | 'negative'
-  ): Promise<void> {
+  async updateFeedback(messageId: string, feedback?: 'positive' | 'negative'): Promise<void> {
     const data: UpdateFeedbackRequest = { feedback }
     await api.put(`/study-agent/messages/${messageId}/feedback`, data)
   },

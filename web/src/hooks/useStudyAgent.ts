@@ -13,6 +13,7 @@ export interface UseStudyAgentReturn {
   regenerate: (userMessageId: string) => Promise<void>
   isRegenerating: boolean
   submitFeedback: (messageId: string, feedback?: 'positive' | 'negative') => Promise<void>
+  isSubmittingFeedback: boolean
 }
 
 const SESSION_QUERY_KEY = 'studySession'
@@ -147,5 +148,6 @@ export function useStudyAgent(
     regenerate,
     isRegenerating: regenerateMutation.isPending,
     submitFeedback,
+    isSubmittingFeedback: submitFeedbackMutation.isPending,
   }
 }
