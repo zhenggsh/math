@@ -1,5 +1,5 @@
 import React from 'react'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { AIFab } from '../AIFab'
@@ -53,7 +53,7 @@ describe('AIFab', () => {
     renderWithQueryClient(<AIFab knowledgePointId="kp-1" knowledgePointTitle="导数" />)
 
     const fab = screen.getByRole('button', { name: /AI 助手/i })
-    fab.click()
+    fireEvent.click(fab)
 
     await waitFor(() => {
       expect(screen.getByText('导数')).toBeInTheDocument()
@@ -73,7 +73,7 @@ describe('AIFab', () => {
     renderWithQueryClient(<AIFab />)
 
     const fab = screen.getByRole('button', { name: /AI 助手/i })
-    fab.click()
+    fireEvent.click(fab)
 
     expect(screen.queryByText('AI 助手')).not.toBeInTheDocument()
   })

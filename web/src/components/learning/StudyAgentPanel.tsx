@@ -86,7 +86,9 @@ export const StudyAgentPanel: React.FC<StudyAgentPanelProps> = ({
       destroyOnHidden
     >
       <div className={styles.container}>
-        {error && <Alert message={error} type="error" showIcon closable className={styles.errorAlert} />}
+        {error && (
+          <Alert title={error} type="error" showIcon closable className={styles.errorAlert} />
+        )}
 
         <div className={styles.messagesArea}>
           {isLoading && (
@@ -122,7 +124,7 @@ export const StudyAgentPanel: React.FC<StudyAgentPanelProps> = ({
           )}
         </div>
 
-        <ChatInput onSend={handleSend} loading={isBusy} />
+        <ChatInput onSend={handleSend} loading={isBusy || isLoading || Boolean(error)} />
       </div>
     </Drawer>
   )
