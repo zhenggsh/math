@@ -32,6 +32,21 @@ describe('KimiClientService', () => {
   const getMockedOpenAI = (): { default: MockOpenAI; OpenAI: MockOpenAI } =>
     jest.requireMock('openai');
 
+  const createConfigService = (
+    overrides?: Record<string, string | undefined>,
+  ) =>
+    ({
+      get: jest.fn((key: string) => {
+        const values: Record<string, string | undefined> = {
+          KIMI_BASE_URL: 'https://api.moonshot.cn/v1',
+          KIMI_API_KEY: 'test-api-key',
+          KIMI_MODEL: 'kimi-k2-0711-preview',
+          ...overrides,
+        };
+        return values[key];
+      }),
+    }) as unknown as ConfigService;
+
   beforeEach(async () => {
     const mocked = getMockedOpenAI();
     createMock = mocked.default.createMock;
@@ -43,16 +58,7 @@ describe('KimiClientService', () => {
         KimiClientService,
         {
           provide: ConfigService,
-          useValue: {
-            get: jest.fn((key: string) => {
-              const values: Record<string, string> = {
-                KIMI_BASE_URL: 'https://api.moonshot.cn/v1',
-                KIMI_API_KEY: 'test-api-key',
-                KIMI_MODEL: 'kimi-k2-0711-preview',
-              };
-              return values[key];
-            }),
-          },
+          useValue: createConfigService(),
         },
       ],
     }).compile();
@@ -64,8 +70,14 @@ describe('KimiClientService', () => {
     expect(service).toBeDefined();
   });
 
-  it('should create OpenAI client with configured values', () => {
+  it('should create OpenAI client with configured values on first chat call', async () => {
+    createMock.mockResolvedValue({
+      choices: [{ message: { content: '你好，我是小智。' } }],
+    });
+
     const mocked = getMockedOpenAI();
+    await service.chat([{ role: 'user', content: '你好' }]);
+
     expect(mocked.default).toHaveBeenCalledWith({
       baseURL: 'https://api.moonshot.cn/v1',
       apiKey: 'test-api-key',
@@ -86,5 +98,27 @@ describe('KimiClientService', () => {
       messages: [{ role: 'user', content: '你好' }],
     });
     expect(result.content).toBe('你好，我是小智。');
+  });
+
+  it('should throw when credentials are missing', async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        KimiClientService,
+        {
+          provide: ConfigService,
+          useValue: createConfigService({
+            KIMI_BASE_URL: undefined,
+            KIMI_API_KEY: undefined,
+          }),
+        },
+      ],
+    }).compile();
+
+    const serviceWithoutCredentials =
+      module.get<KimiClientService>(KimiClientService);
+
+    await expect(
+      serviceWithoutCredentials.chat([{ role: 'user', content: '你好' }]),
+    ).rejects.toThrow('Kimi API credentials are not configured');
   });
 });
