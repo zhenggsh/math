@@ -21,6 +21,8 @@ export interface KnowledgePoint {
   id: string
   /** 知识点编号 */
   code: string
+  /** 知识点名称 */
+  name?: string
   /** 一级知识点 */
   level1: string
   /** 二级知识点 */

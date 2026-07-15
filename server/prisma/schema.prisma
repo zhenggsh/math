@@ -80,6 +80,7 @@ model Textbook {
 model KnowledgePoint {
   id                String          @id @default(uuid())
   code              String
+  name              String?
   level1            String
   level2            String?
   level3            String?

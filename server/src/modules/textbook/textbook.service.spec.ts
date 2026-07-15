@@ -6,6 +6,9 @@ import { TextbookFileService } from './textbook-file.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { RawKnowledgePoint, ParseResult } from './types/textbook.types';
+import * as fs from 'fs';
+
+jest.mock('fs');
 
 describe('TextbookService', () => {
   let service: TextbookService;
@@ -62,6 +65,7 @@ describe('TextbookService', () => {
               createMany: jest.fn(),
               deleteMany: jest.fn(),
               count: jest.fn().mockResolvedValue(0),
+              findUnique: jest.fn(),
             },
             $transaction: jest.fn((callback) =>
               callback({
@@ -284,6 +288,83 @@ describe('TextbookService', () => {
         'math02.xlsx',
         expect.any(Buffer),
       );
+    });
+  });
+
+  describe('removeKnowledgePointBlock', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    it('should remove the content block and rewrite the file', async () => {
+      const fileContent = [
+        '## 1 集合',
+        '',
+        '一级内容',
+        '',
+        '### 1.1 集合的概念',
+        '',
+        '二级内容',
+        '',
+        '#### 知识点 1.1.1：集合的含义',
+        '',
+        '三级内容',
+        '',
+      ].join('\n');
+
+      jest.spyOn(prismaService.knowledgePoint, 'findUnique').mockResolvedValue({
+        id: 'kp-1',
+        code: '1.1.1',
+        level1: '集合',
+        level2: '1.1',
+        level3: '1.1.1',
+        textbookId: 'tb-1',
+      } as any);
+      jest.spyOn(prismaService.textbook, 'findUnique').mockResolvedValue({
+        id: 'tb-1',
+        contentPath: 'math01.md',
+      } as any);
+      jest.spyOn(fileService, 'getFilePath').mockReturnValue('/iksm/math01.md');
+      jest.spyOn(fs, 'existsSync').mockReturnValue(true);
+      jest.spyOn(fs, 'readFileSync').mockReturnValue(fileContent);
+      const writeFileSyncSpy = jest
+        .spyOn(fs, 'writeFileSync')
+        .mockImplementation(() => undefined);
+
+      await service.removeKnowledgePointBlock('kp-1');
+
+      const written = writeFileSyncSpy.mock.calls[0][1] as string;
+      expect(written).not.toContain('#### 知识点 1.1.1');
+      expect(written).not.toContain('三级内容');
+      expect(written).toContain('## 1 集合');
+      expect(written).toContain('### 1.1 集合的概念');
+    });
+
+    it('should return early when content block is not found', async () => {
+      const fileContent = ['## 1 集合', '', '一级内容'].join('\n');
+
+      jest.spyOn(prismaService.knowledgePoint, 'findUnique').mockResolvedValue({
+        id: 'kp-1',
+        code: '1.1.1',
+        level1: '集合',
+        level2: '1.1',
+        level3: '1.1.1',
+        textbookId: 'tb-1',
+      } as any);
+      jest.spyOn(prismaService.textbook, 'findUnique').mockResolvedValue({
+        id: 'tb-1',
+        contentPath: 'math01.md',
+      } as any);
+      jest.spyOn(fileService, 'getFilePath').mockReturnValue('/iksm/math01.md');
+      jest.spyOn(fs, 'existsSync').mockReturnValue(true);
+      jest.spyOn(fs, 'readFileSync').mockReturnValue(fileContent);
+      const writeFileSyncSpy = jest
+        .spyOn(fs, 'writeFileSync')
+        .mockImplementation(() => undefined);
+
+      await service.removeKnowledgePointBlock('kp-1');
+
+      expect(writeFileSyncSpy).not.toHaveBeenCalled();
     });
   });
 });

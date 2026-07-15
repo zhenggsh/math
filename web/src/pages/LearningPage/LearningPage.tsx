@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import type { EditKnowledgePointFormValues } from '../../components/knowledge-point/EditKnowledgePointModal'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { Breadcrumb, Empty, Button, Segmented, Dropdown, App } from 'antd'
 import type { MenuProps } from 'antd'
@@ -19,11 +20,21 @@ import { MarkdownPreview } from '../../components/MarkdownPreview'
 import { KnowledgeOverview } from '../../components/KnowledgeOverview'
 import { AIFab } from '../../components/learning/AIFab'
 import { FeedbackPanel } from '../../components/learning/FeedbackPanel'
+import { AddChildKnowledgePointButton } from '../../components/knowledge-point/AddChildKnowledgePointButton'
+import { AddChildKnowledgePointModal } from '../../components/knowledge-point/AddChildKnowledgePointModal'
+import { EditKnowledgePointButton } from '../../components/knowledge-point/EditKnowledgePointButton'
+import { EditKnowledgePointModal } from '../../components/knowledge-point/EditKnowledgePointModal'
+import { DeleteKnowledgePointButton } from '../../components/knowledge-point/DeleteKnowledgePointButton'
 import { useAuth } from '../../hooks/useAuth'
 import { useTextbook } from '../../hooks/useTextbook'
 import { knowledgeApi } from '../../services/knowledgeApi'
 import type { KnowledgeTreeNode } from '../../types/knowledge.types'
-import { convertToTreeData } from '../../utils/knowledgeTree'
+import type { ImportanceLevel } from '../../types/knowledge.types'
+import type {
+  CreateKnowledgePointDto,
+  UpdateKnowledgePointDto,
+} from '../../types/knowledge-point.types'
+import { convertToTreeData, findNodeInTree } from '../../utils/knowledgeTree'
 import styles from './LearningPage.module.css'
 
 /**
@@ -82,15 +93,45 @@ const LearningPage: React.FC = () => {
   const [content, setContent] = useState<string>('')
   const [contentLoading, setContentLoading] = useState(false)
   const [detail, setDetail] = useState<{
+    code?: string
+    name?: string
     definition?: string
     characteristics?: string
-    importanceLevel?: string
+    importanceLevel?: ImportanceLevel
   }>({})
   const [showRaw, setShowRaw] = useState(false)
   const [expandedKeys, setExpandedKeys] = useState<string[]>([])
   const [exportLoading, setExportLoading] = useState(false)
   const [editedContent, setEditedContent] = useState<string>('')
   const [isSaving, setIsSaving] = useState(false)
+  const [showOverview, setShowOverview] = useState(true)
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [isAdding, setIsAdding] = useState(false)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  const toggleOverview = useCallback(() => {
+    setShowOverview(prev => !prev)
+  }, [])
+
+  const [showFeedback, setShowFeedback] = useState(true)
+
+  const toggleFeedback = useCallback(() => {
+    setShowFeedback(prev => !prev)
+  }, [])
+
+  // 编辑弹窗初始值（避免每次渲染重建对象导致表单重置）
+  const editModalInitialValues = useMemo<EditKnowledgePointFormValues>(
+    () => ({
+      code: selectedNode?.code,
+      name: detail.name || selectedNode?.title,
+      definition: detail.definition,
+      characteristics: detail.characteristics,
+      importanceLevel: detail.importanceLevel,
+    }),
+    [detail, selectedNode]
+  )
 
   // 设置页面标题
   useEffect(() => {
@@ -122,6 +163,8 @@ const LearningPage: React.FC = () => {
     return result
   }, [treeData])
 
+  const existingCodes = useMemo(() => flatSequence.map(node => node.code), [flatSequence])
+
   const currentIndex = useMemo(() => {
     return flatSequence.findIndex(n => n.key === selectedNode?.key)
   }, [flatSequence, selectedNode])
@@ -137,14 +180,17 @@ const LearningPage: React.FC = () => {
       if (node.data.id) {
         try {
           setContentLoading(true)
-          const detail = await knowledgeApi.getKnowledgePointDetail(node.data.id)
-          const initialContent = detail.content || detail.definition || 'No content available'
+          const pointDetail = await knowledgeApi.getKnowledgePointDetail(node.data.id)
+          const initialContent =
+            pointDetail.content || pointDetail.definition || 'No content available'
           setContent(initialContent)
           setEditedContent(initialContent)
           setDetail({
-            definition: detail.definition || undefined,
-            characteristics: detail.characteristics || undefined,
-            importanceLevel: detail.importanceLevel,
+            code: pointDetail.code,
+            name: pointDetail.name ?? undefined,
+            definition: pointDetail.definition || undefined,
+            characteristics: pointDetail.characteristics || undefined,
+            importanceLevel: pointDetail.importanceLevel,
           })
         } catch {
           message.error('Failed to load content')
@@ -339,9 +385,8 @@ const LearningPage: React.FC = () => {
 
       const safeTitle = selectedNode.title.replace(/[^\w\u4e00-\u9fa5]/g, '_') || 'knowledge'
       pdf.save(`${selectedNode.code || 'export'}-${safeTitle}.pdf`)
-    } catch (err) {
+    } catch {
       message.error('PDF export failed')
-      console.error(err)
     } finally {
       setExportLoading(false)
     }
@@ -365,6 +410,76 @@ const LearningPage: React.FC = () => {
       setIsSaving(false)
     }
   }, [selectedNode, activeTextbookId, editedContent, message])
+
+  const handleCreateKnowledgePoint = useCallback(
+    async (dto: CreateKnowledgePointDto) => {
+      if (!activeTextbookId || !selectedNode) return
+      setIsAdding(true)
+      try {
+        const newPoint = await knowledgeApi.createKnowledgePoint(activeTextbookId, dto)
+        const tree = await knowledgeApi.getKnowledgeTree(activeTextbookId)
+        const newTree = convertToTreeData(tree)
+        setTreeData(newTree)
+
+        const newNode = findNodeInTree(newTree, newPoint.id)
+        if (newNode) {
+          await handleSelectNode(newNode)
+          setShowRaw(true)
+        }
+
+        setIsAddModalOpen(false)
+        message.success('新增子知识点成功')
+      } catch {
+        message.error('新增失败')
+      } finally {
+        setIsAdding(false)
+      }
+    },
+    [activeTextbookId, selectedNode, handleSelectNode, message]
+  )
+
+  const handleUpdateKnowledgePoint = useCallback(
+    async (dto: UpdateKnowledgePointDto) => {
+      if (!activeTextbookId || !selectedNode) return
+      setIsEditing(true)
+      try {
+        await knowledgeApi.updateKnowledgePoint(activeTextbookId, selectedNode.data.id, dto)
+        const tree = await knowledgeApi.getKnowledgeTree(activeTextbookId)
+        const newTree = convertToTreeData(tree)
+        setTreeData(newTree)
+        const updatedNode = findNodeInTree(newTree, selectedNode.data.id)
+        if (updatedNode) {
+          await handleSelectNode(updatedNode)
+        }
+        setIsEditModalOpen(false)
+        message.success('更新成功')
+      } catch {
+        message.error('更新失败')
+      } finally {
+        setIsEditing(false)
+      }
+    },
+    [activeTextbookId, selectedNode, handleSelectNode, message]
+  )
+
+  const handleDeleteKnowledgePoint = useCallback(async () => {
+    if (!activeTextbookId || !selectedNode) return
+    setIsDeleting(true)
+    try {
+      await knowledgeApi.deleteKnowledgePoint(activeTextbookId, selectedNode.data.id)
+      const tree = await knowledgeApi.getKnowledgeTree(activeTextbookId)
+      setTreeData(convertToTreeData(tree))
+      setSelectedNode(null)
+      setContent('')
+      setEditedContent('')
+      setDetail({})
+      message.success('删除成功')
+    } catch {
+      message.error('删除失败')
+    } finally {
+      setIsDeleting(false)
+    }
+  }, [activeTextbookId, selectedNode, message])
 
   const exportMenuItems: MenuProps['items'] = [
     {
@@ -408,6 +523,33 @@ const LearningPage: React.FC = () => {
           onChange={value => setShowRaw(value === 'raw')}
         />
         <div className={styles.toolbarRight}>
+          <AddChildKnowledgePointButton
+            parentNode={
+              selectedNode
+                ? { id: selectedNode.data.id, code: selectedNode.code, title: selectedNode.title }
+                : null
+            }
+            canEdit={canEdit}
+            onClick={() => setIsAddModalOpen(true)}
+          />
+          <EditKnowledgePointButton
+            canEdit={canEdit}
+            disabled={contentLoading}
+            loading={contentLoading}
+            onClick={() => setIsEditModalOpen(true)}
+          />
+          <DeleteKnowledgePointButton
+            canEdit={canEdit}
+            hasChildren={!!selectedNode?.children?.length}
+            onConfirm={() => void handleDeleteKnowledgePoint()}
+            loading={isDeleting}
+          />
+          <Button size="small" onClick={toggleOverview}>
+            {showOverview ? '隐藏概要区' : '显示概要区'}
+          </Button>
+          <Button size="small" onClick={toggleFeedback}>
+            {showFeedback ? '隐藏反馈区' : '显示反馈区'}
+          </Button>
           <Button
             icon={<LeftOutlined />}
             size="small"
@@ -433,11 +575,13 @@ const LearningPage: React.FC = () => {
         </div>
       </div>
       <div className={styles.exportArea}>
-        <KnowledgeOverview
-          definition={detail.definition}
-          characteristics={detail.characteristics}
-          importanceLevel={detail.importanceLevel}
-        />
+        {showOverview && (
+          <KnowledgeOverview
+            definition={detail.definition}
+            characteristics={detail.characteristics}
+            importanceLevel={detail.importanceLevel}
+          />
+        )}
         <div className={styles.markdownContent}>
           <MarkdownPreview
             content={showRaw ? editedContent : content}
@@ -448,13 +592,33 @@ const LearningPage: React.FC = () => {
           />
         </div>
       </div>
+      <AddChildKnowledgePointModal
+        open={isAddModalOpen}
+        parentNode={
+          selectedNode
+            ? { id: selectedNode.data.id, code: selectedNode.code, title: selectedNode.title }
+            : null
+        }
+        existingCodes={existingCodes}
+        loading={isAdding}
+        onCancel={() => setIsAddModalOpen(false)}
+        onSubmit={handleCreateKnowledgePoint}
+      />
+      <EditKnowledgePointModal
+        open={isEditModalOpen}
+        initialValues={editModalInitialValues}
+        loading={isEditing}
+        onCancel={() => setIsEditModalOpen(false)}
+        onSubmit={handleUpdateKnowledgePoint}
+      />
     </div>
   )
 
   // 渲染学习反馈面板
-  const learningFeedbackPanel = selectedNode?.data.id ? (
-    <FeedbackPanel key={selectedNode.data.id} knowledgePointId={selectedNode.data.id} />
-  ) : null
+  const learningFeedbackPanel =
+    selectedNode?.data.id && showFeedback ? (
+      <FeedbackPanel key={selectedNode.data.id} knowledgePointId={selectedNode.data.id} />
+    ) : null
 
   if (!activeTextbookId) {
     return (
@@ -473,7 +637,7 @@ const LearningPage: React.FC = () => {
         knowledgeTreePanel={knowledgeTreePanel}
         markdownPanel={markdownPanel}
         learningFeedbackPanel={learningFeedbackPanel}
-        showBottomPanel={true}
+        showBottomPanel={!!selectedNode && showFeedback}
       />
       <AIFab knowledgePointId={selectedNode?.data.id} knowledgePointTitle={selectedNode?.title} />
     </div>

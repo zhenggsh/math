@@ -8,6 +8,7 @@ export type FrameworkType = 'xlsx' | 'csv';
 // 知识点原始数据（从框架文件解析）
 export interface RawKnowledgePoint {
   code: string; // 知识点编号
+  name?: string; // 知识点名称
   level1: string; // 一级知识点
   level2?: string; // 二级知识点
   level3?: string; // 三级知识点

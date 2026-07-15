@@ -1,6 +1,10 @@
 import axios from 'axios'
 import { getToken } from './auth.service'
 import type { KnowledgePoint, KnowledgePointDetail, LearningRecord } from '../types/knowledge.types'
+import type {
+  CreateKnowledgePointDto,
+  UpdateKnowledgePointDto,
+} from '../types/knowledge-point.types'
 
 const API_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) || 'http://localhost:3000'
 
@@ -76,6 +80,37 @@ export const knowledgeApi = {
       knowledgePointId,
       content,
     })
+  },
+
+  /**
+   * 创建子知识点
+   * @param textbookId 教材ID
+   * @param dto 创建参数
+   */
+  async createKnowledgePoint(
+    textbookId: string,
+    dto: CreateKnowledgePointDto
+  ): Promise<KnowledgePoint> {
+    const response = await api.post<ApiResponse<KnowledgePoint>>(
+      `/textbooks/${textbookId}/knowledge-points`,
+      dto
+    )
+    return response.data.data
+  },
+  async updateKnowledgePoint(
+    textbookId: string,
+    id: string,
+    dto: UpdateKnowledgePointDto
+  ): Promise<KnowledgePoint> {
+    const response = await api.patch<ApiResponse<KnowledgePoint>>(
+      `/textbooks/${textbookId}/knowledge-points/${id}`,
+      dto
+    )
+    return response.data.data
+  },
+
+  async deleteKnowledgePoint(textbookId: string, id: string): Promise<void> {
+    await api.delete<ApiResponse<void>>(`/textbooks/${textbookId}/knowledge-points/${id}`)
   },
 }
 

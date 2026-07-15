@@ -28,8 +28,13 @@ export interface UnifiedRecommendationItem {
 
 const QUERY_KEY = 'recommendations'
 
-function buildName(level1: string, level2?: string, level3?: string): string {
-  return [level1, level2, level3].filter(Boolean).join(' > ')
+function buildName(
+  name: string | null | undefined,
+  level1: string,
+  level2?: string,
+  level3?: string
+): string {
+  return name || [level1, level2, level3].filter(Boolean).join(' > ')
 }
 
 function computeDaysSinceLastStudy(startTime: string): number {
@@ -47,7 +52,12 @@ function toUnifiedWeakItem(item: WeakPointItem): UnifiedRecommendationItem {
     level3: knowledgePoint.level3,
     importanceLevel: knowledgePoint.importanceLevel,
     definition: knowledgePoint.definition,
-    name: buildName(knowledgePoint.level1, knowledgePoint.level2, knowledgePoint.level3),
+    name: buildName(
+      knowledgePoint.name,
+      knowledgePoint.level1,
+      knowledgePoint.level2,
+      knowledgePoint.level3
+    ),
     masteryLevel: learningRecord.masteryLevel,
     daysSinceLastStudy: computeDaysSinceLastStudy(learningRecord.startTime),
     recommendationReason,
@@ -65,7 +75,7 @@ function toUnifiedImportanceItem(item: ByImportanceItem): UnifiedRecommendationI
     level3: item.level3,
     importanceLevel: item.importanceLevel,
     definition: item.definition,
-    name: buildName(item.level1, item.level2, item.level3),
+    name: buildName(item.name, item.level1, item.level2, item.level3),
     masteryLevel: item.learningRecord?.masteryLevel,
     daysSinceLastStudy: item.learningRecord
       ? computeDaysSinceLastStudy(item.learningRecord.startTime)
@@ -86,7 +96,7 @@ function toUnifiedRandomItem(item: KnowledgePoint): UnifiedRecommendationItem {
     level3: item.level3,
     importanceLevel: item.importanceLevel,
     definition: item.definition,
-    name: buildName(item.level1, item.level2, item.level3),
+    name: buildName(item.name, item.level1, item.level2, item.level3),
   }
 }
 

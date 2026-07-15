@@ -50,6 +50,15 @@ vi.mock('../../../hooks/useTextbook', () => ({
   }),
 }))
 
+vi.mock('../../../hooks/useAuth', () => ({
+  useAuth: () => ({
+    user: { id: 'user-1', email: 'teacher@test.com', name: 'Teacher', role: 'TEACHER' },
+    isLoading: false,
+    login: vi.fn(),
+    logout: vi.fn(),
+  }),
+}))
+
 vi.mock('../../../components/Layout/ResizableLayout', () => ({
   ResizableLayout: (props: {
     leftPanel?: React.ReactNode
@@ -147,7 +156,7 @@ describe('SmartLearningPage', () => {
     })
 
     await waitFor(() => {
-      expect(screen.getByText('1.1.1')).toBeInTheDocument()
+      expect(screen.getAllByText('1.1.1').length).toBeGreaterThan(0)
     })
   })
 

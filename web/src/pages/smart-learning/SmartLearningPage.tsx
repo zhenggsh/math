@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import type { EditKnowledgePointFormValues } from '../../components/knowledge-point/EditKnowledgePointModal'
 import { Button, App, Breadcrumb, Segmented, Dropdown } from 'antd'
+import { useQueryClient } from '@tanstack/react-query'
 import type { MenuProps } from 'antd'
 import {
   HomeOutlined,
@@ -19,6 +21,11 @@ import { MarkdownPreview } from '../../components/MarkdownPreview'
 import { KnowledgeOverview } from '../../components/KnowledgeOverview'
 import { FeedbackPanel } from '../../components/learning/FeedbackPanel'
 import { AIFab } from '../../components/learning/AIFab'
+import { AddChildKnowledgePointButton } from '../../components/knowledge-point/AddChildKnowledgePointButton'
+import { AddChildKnowledgePointModal } from '../../components/knowledge-point/AddChildKnowledgePointModal'
+import { EditKnowledgePointButton } from '../../components/knowledge-point/EditKnowledgePointButton'
+import { EditKnowledgePointModal } from '../../components/knowledge-point/EditKnowledgePointModal'
+import { DeleteKnowledgePointButton } from '../../components/knowledge-point/DeleteKnowledgePointButton'
 import {
   useRecommendations,
   useRefreshRecommendations,
@@ -27,12 +34,21 @@ import {
 } from '../../hooks/useRecommendations'
 import { useKnowledgePointDetail } from '../../hooks/useKnowledgePointDetail'
 import { useTextbook } from '../../hooks/useTextbook'
+import { useAuth } from '../../hooks/useAuth'
+import { knowledgeApi } from '../../services/knowledgeApi'
+import type { ImportanceLevel } from '../../types/knowledge.types'
+import type {
+  CreateKnowledgePointDto,
+  UpdateKnowledgePointDto,
+} from '../../types/knowledge-point.types'
 import styles from './SmartLearningPage.module.css'
 
 interface KnowledgeDetailState {
+  code?: string
+  name?: string
   definition?: string
   characteristics?: string
-  importanceLevel?: string
+  importanceLevel?: ImportanceLevel
 }
 
 /**
@@ -41,10 +57,13 @@ interface KnowledgeDetailState {
  */
 const SmartLearningPage: React.FC = () => {
   const { message } = App.useApp()
+  const queryClient = useQueryClient()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const focusId = searchParams.get('focusKnowledgePointId')
   const hasNotifiedMissingRef = useRef(false)
+  const { user } = useAuth()
+  const canEdit = user?.role === 'TEACHER' || user?.role === 'ADMIN'
   const [mode, setMode] = useState<RecommendationMode>('weak')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [studiedIds, setStudiedIds] = useState<Set<string>>(new Set())
@@ -52,6 +71,22 @@ const SmartLearningPage: React.FC = () => {
   const [showNextCta, setShowNextCta] = useState<boolean>(false)
   const [showRaw, setShowRaw] = useState<boolean>(false)
   const [exportLoading, setExportLoading] = useState<boolean>(false)
+  const [showOverview, setShowOverview] = useState<boolean>(true)
+
+  const toggleOverview = useCallback(() => {
+    setShowOverview(prev => !prev)
+  }, [])
+
+  const [showFeedback, setShowFeedback] = useState<boolean>(true)
+  const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false)
+  const [isAdding, setIsAdding] = useState<boolean>(false)
+  const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false)
+  const [isEditing, setIsEditing] = useState<boolean>(false)
+  const [isDeleting, setIsDeleting] = useState<boolean>(false)
+
+  const toggleFeedback = useCallback(() => {
+    setShowFeedback(prev => !prev)
+  }, [])
 
   const { items, isLoading, isError, error, refetch } = useRecommendations(mode)
   const { refresh } = useRefreshRecommendations()
@@ -65,6 +100,17 @@ const SmartLearningPage: React.FC = () => {
     const found = items.find(item => item.id === selectedId)
     return found ?? items[0]
   }, [items, selectedId])
+
+  const existingCodes = useMemo(
+    () => items.map(item => item.code).filter((code): code is string => !!code),
+    [items]
+  )
+
+  const hasSelectedChildren = useMemo(() => {
+    if (!selectedItem) return false
+    const prefix = `${selectedItem.code}.`
+    return items.some(item => item.code?.startsWith(prefix))
+  }, [selectedItem, items])
 
   // 加载选中项的详情内容
   const {
@@ -88,11 +134,25 @@ const SmartLearningPage: React.FC = () => {
       return {}
     }
     return {
+      code: detailData.code,
+      name: detailData.name || undefined,
       definition: detailData.definition,
       characteristics: detailData.characteristics,
       importanceLevel: detailData.importanceLevel,
     }
   }, [detailData])
+
+  // 编辑弹窗初始值（避免每次渲染重建对象导致表单重置）
+  const editModalInitialValues = useMemo<EditKnowledgePointFormValues>(
+    () => ({
+      code: detail.code || selectedItem?.code,
+      name: detail.name || selectedItem?.name,
+      definition: detail.definition,
+      characteristics: detail.characteristics,
+      importanceLevel: detail.importanceLevel,
+    }),
+    [detail, selectedItem]
+  )
 
   // 推荐列表加载失败时提示错误
   useEffect(() => {
@@ -290,13 +350,68 @@ const SmartLearningPage: React.FC = () => {
 
       const safeTitle = selectedItem.name.replace(/[^\w一-龥]/g, '_') || 'knowledge'
       pdf.save(`${selectedItem.code || 'export'}-${safeTitle}.pdf`)
-    } catch (err) {
+    } catch {
       message.error('PDF export failed')
-      console.error(err)
     } finally {
       setExportLoading(false)
     }
   }, [selectedItem, content, message])
+
+  const handleCreateKnowledgePoint = useCallback(
+    async (dto: CreateKnowledgePointDto) => {
+      if (!selectedItem || selectedTextbookIds.length === 0) return
+      setIsAdding(true)
+      try {
+        const newPoint = await knowledgeApi.createKnowledgePoint(selectedTextbookIds[0], dto)
+        await refetch()
+        setSelectedId(newPoint.id)
+        setShowRaw(true)
+        setIsAddModalOpen(false)
+        message.success('新增子知识点成功')
+      } catch {
+        message.error('新增失败')
+      } finally {
+        setIsAdding(false)
+      }
+    },
+    [selectedItem, selectedTextbookIds, refetch, message]
+  )
+
+  const handleUpdateKnowledgePoint = useCallback(
+    async (dto: UpdateKnowledgePointDto) => {
+      if (!selectedItem || selectedTextbookIds.length === 0) return
+      setIsEditing(true)
+      try {
+        await knowledgeApi.updateKnowledgePoint(selectedTextbookIds[0], selectedItem.id, dto)
+        await queryClient.invalidateQueries({
+          queryKey: ['knowledgePointDetail', selectedItem.id],
+        })
+        await refetch()
+        setIsEditModalOpen(false)
+        message.success('更新成功')
+      } catch {
+        message.error('更新失败')
+      } finally {
+        setIsEditing(false)
+      }
+    },
+    [selectedItem, selectedTextbookIds, refetch, message, queryClient]
+  )
+
+  const handleDeleteKnowledgePoint = useCallback(async () => {
+    if (!selectedItem || selectedTextbookIds.length === 0) return
+    setIsDeleting(true)
+    try {
+      await knowledgeApi.deleteKnowledgePoint(selectedTextbookIds[0], selectedItem.id)
+      await refetch()
+      setSelectedId(null)
+      message.success('删除成功')
+    } catch {
+      message.error('删除失败')
+    } finally {
+      setIsDeleting(false)
+    }
+  }, [selectedItem, selectedTextbookIds, refetch, message])
 
   const exportMenuItems: MenuProps['items'] = [
     {
@@ -346,6 +461,33 @@ const SmartLearningPage: React.FC = () => {
                   onChange={value => setShowRaw(value === 'raw')}
                 />
                 <div className={styles.toolbarRight}>
+                  <AddChildKnowledgePointButton
+                    parentNode={
+                      selectedItem
+                        ? { id: selectedItem.id, code: selectedItem.code, title: selectedItem.name }
+                        : null
+                    }
+                    canEdit={canEdit}
+                    onClick={() => setIsAddModalOpen(true)}
+                  />
+                  <EditKnowledgePointButton
+                    canEdit={canEdit}
+                    disabled={contentLoading}
+                    loading={contentLoading}
+                    onClick={() => setIsEditModalOpen(true)}
+                  />
+                  <DeleteKnowledgePointButton
+                    canEdit={canEdit}
+                    hasChildren={hasSelectedChildren}
+                    onConfirm={() => void handleDeleteKnowledgePoint()}
+                    loading={isDeleting}
+                  />
+                  <Button size="small" onClick={toggleOverview}>
+                    {showOverview ? '隐藏概要区' : '显示概要区'}
+                  </Button>
+                  <Button size="small" onClick={toggleFeedback}>
+                    {showFeedback ? '隐藏反馈区' : '显示反馈区'}
+                  </Button>
                   <Button icon={<LeftOutlined />} size="small" disabled />
                   <Button icon={<RightOutlined />} size="small" disabled />
                   <Dropdown menu={{ items: exportMenuItems }} placement="bottomRight">
@@ -356,11 +498,13 @@ const SmartLearningPage: React.FC = () => {
                 </div>
               </div>
               <div className={styles.exportArea}>
-                <KnowledgeOverview
-                  definition={detail.definition}
-                  characteristics={detail.characteristics}
-                  importanceLevel={detail.importanceLevel}
-                />
+                {showOverview && (
+                  <KnowledgeOverview
+                    definition={detail.definition}
+                    characteristics={detail.characteristics}
+                    importanceLevel={detail.importanceLevel}
+                  />
+                )}
                 <div className={styles.markdownContent}>
                   <MarkdownPreview
                     content={content}
@@ -370,17 +514,36 @@ const SmartLearningPage: React.FC = () => {
                   />
                 </div>
               </div>
+              <AddChildKnowledgePointModal
+                open={isAddModalOpen}
+                parentNode={
+                  selectedItem
+                    ? { id: selectedItem.id, code: selectedItem.code, title: selectedItem.name }
+                    : null
+                }
+                existingCodes={existingCodes}
+                loading={isAdding}
+                onCancel={() => setIsAddModalOpen(false)}
+                onSubmit={handleCreateKnowledgePoint}
+              />
+              <EditKnowledgePointModal
+                open={isEditModalOpen}
+                initialValues={editModalInitialValues}
+                loading={isEditing}
+                onCancel={() => setIsEditModalOpen(false)}
+                onSubmit={handleUpdateKnowledgePoint}
+              />
             </div>
           }
           bottomPanel={
             <div className={styles.bottomPanel}>
-              {selectedItem && (
+              {selectedItem && showFeedback && (
                 <FeedbackPanel
                   knowledgePointId={selectedItem.id}
                   onSubmitSuccess={handleFeedbackSuccess}
                 />
               )}
-              {showNextCta && (
+              {showNextCta && showFeedback && (
                 <div className={styles.ctaArea}>
                   <Button type="primary" onClick={handleNext} className={styles.ctaButton}>
                     {isLastItem ? '已学完当前列表，刷新查看新推荐' : '下一个推荐'}
@@ -389,7 +552,7 @@ const SmartLearningPage: React.FC = () => {
               )}
             </div>
           }
-          showBottomPanel={!!selectedItem}
+          showBottomPanel={!!selectedItem && showFeedback}
           showRightPanel={false}
           defaultSizes={{ left: 300, center: 600, bottom: 200 }}
           minSizes={{ left: 220, center: 400, bottom: 150 }}

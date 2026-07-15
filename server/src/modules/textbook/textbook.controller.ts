@@ -68,6 +68,7 @@ interface KnowledgePointsResponse {
   data: {
     id: string;
     code: string;
+    name: string | null;
     level1: string;
     level2: string | null;
     level3: string | null;
@@ -251,6 +252,7 @@ export class TextbookController {
     data: {
       id: string;
       code: string;
+      name: string | null;
       level1: string;
       level2: string | null;
       level3: string | null;

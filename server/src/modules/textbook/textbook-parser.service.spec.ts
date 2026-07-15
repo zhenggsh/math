@@ -101,6 +101,50 @@ describe('TextbookParserService', () => {
       expect(result.data).toHaveLength(1);
       expect(result.data?.[0].code).toBe('1.1.1-1');
       expect(result.data?.[0].level1).toBe('一、集合与函数概念');
+      // 未提供名称列时，默认使用三级知识点作为名称
+      expect(result.data?.[0].name).toBe('1.1.1 集合的含义与表示');
+    });
+
+    it('should parse name column when present', () => {
+      jest.spyOn(fs, 'existsSync').mockReturnValue(true);
+
+      mockedXlsx.readFile.mockReturnValue({
+        SheetNames: ['知识点框架'],
+        Sheets: {
+          知识点框架: {},
+        },
+      } as any);
+
+      (mockedXlsx.utils.sheet_to_json as jest.Mock).mockReturnValueOnce([
+        [
+          '一级知识点',
+          '二级知识点',
+          '三级知识点',
+          '知识点名称',
+          '定义',
+          '特性',
+          '重要性级别',
+          '知识点编号',
+        ],
+        [
+          '一、集合与函数概念',
+          '1.1 集合',
+          '1.1.1 集合的含义与表示',
+          '集合的含义',
+          '把研究对象统称为元素...',
+          '元素用小写字母表示...',
+          'A',
+          '1.1.1',
+        ],
+      ]);
+
+      const result = service.parseFrameworkFile('/test/math01.xlsx', 'xlsx');
+
+      expect(result.success).toBe(true);
+      // 自动生成一二级记录：1.1.1 → 额外生成 1（一级）和 1.1（二级）
+      expect(result.data).toHaveLength(3);
+      const leaf = result.data?.find((p) => p.code === '1.1.1');
+      expect(leaf?.name).toBe('集合的含义');
     });
 
     it('should return empty array when all sheets are non-compliant', () => {

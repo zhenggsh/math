@@ -9,6 +9,7 @@ import {
 } from '@ant-design/icons'
 import type { StudyMessage } from '../../types/study-agent.types'
 import { FollowUpChips } from './FollowUpChips'
+import { MarkdownMessageContent } from './MarkdownMessageContent'
 import styles from './ChatMessageList.module.css'
 
 export interface ChatMessageListProps {
@@ -115,7 +116,9 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
                 )}
               </div>
 
-              <div className={styles.messageContent}>{message.content}</div>
+              <div className={styles.messageContent}>
+                {isAgent ? <MarkdownMessageContent content={message.content} /> : message.content}
+              </div>
 
               {isAgent && (
                 <div className={styles.grounding}>

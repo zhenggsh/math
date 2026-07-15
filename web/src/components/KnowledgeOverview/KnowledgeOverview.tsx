@@ -12,7 +12,7 @@ const IMPORTANCE_COLORS: Record<ImportanceLevel, string> = {
 interface KnowledgeOverviewProps {
   definition?: string
   characteristics?: string
-  importanceLevel?: string
+  importanceLevel?: ImportanceLevel
 }
 
 export const KnowledgeOverview: React.FC<KnowledgeOverviewProps> = ({
@@ -20,30 +20,34 @@ export const KnowledgeOverview: React.FC<KnowledgeOverviewProps> = ({
   characteristics,
   importanceLevel,
 }) => {
-  if (!definition && !characteristics && !importanceLevel) {
+  const hasDefinition = !!definition
+  const hasCharacteristics = !!characteristics
+  const hasImportance = !!importanceLevel
+
+  if (!hasDefinition && !hasCharacteristics && !hasImportance) {
     return null
   }
 
   return (
-    <Card className={styles.overviewCard} size="small">
+    <Card className={styles.overviewCard} size="small" title="知识点概览">
       <div className={styles.overviewContent}>
-        {definition && (
+        {hasDefinition && (
           <div className={styles.overviewItem}>
             <span className={styles.label}>定义：</span>
             <span className={styles.value}>{definition}</span>
           </div>
         )}
-        {characteristics && (
+        {hasCharacteristics && (
           <div className={styles.overviewItem}>
             <span className={styles.label}>特性：</span>
             <span className={styles.value}>{characteristics}</span>
           </div>
         )}
-        {importanceLevel && (
+        {hasImportance && (
           <div className={styles.overviewItem}>
             <span className={styles.label}>重要性：</span>
             <Tag
-              color={IMPORTANCE_COLORS[importanceLevel as ImportanceLevel] || '#1890FF'}
+              color={IMPORTANCE_COLORS[importanceLevel] || '#1890FF'}
               className={styles.importanceTag}
             >
               {importanceLevel}

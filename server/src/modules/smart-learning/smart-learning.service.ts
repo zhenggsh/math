@@ -17,6 +17,7 @@ export interface WeakPointItem {
   knowledgePoint: {
     id: string;
     code: string;
+    name: string | null;
     textbookId: string;
     level1: string;
     level2: string | null;
@@ -39,6 +40,7 @@ export interface WeakPointItem {
 export interface ByImportanceItem {
   id: string;
   code: string;
+  name: string | null;
   textbookId: string;
   level1: string;
   level2: string | null;
@@ -60,6 +62,7 @@ export interface ByImportanceItem {
 export interface RandomItem {
   id: string;
   code: string;
+  name: string | null;
   textbookId: string;
   level1: string;
   level2: string | null;
@@ -146,6 +149,7 @@ export class SmartLearningService {
           select: {
             id: true,
             code: true,
+            name: true,
             textbookId: true,
             level1: true,
             level2: true,
@@ -297,6 +301,7 @@ export class SmartLearningService {
       select: {
         id: true,
         code: true,
+        name: true,
         textbookId: true,
         level1: true,
         level2: true,
@@ -411,6 +416,7 @@ export class SmartLearningService {
     let knowledgePoints: Array<{
       id: string;
       code: string;
+      name: string | null;
       textbook_id: string;
       level1: string;
       level2: string | null;
@@ -421,7 +427,7 @@ export class SmartLearningService {
 
     if (textbookId) {
       knowledgePoints = await this.prisma.$queryRaw`
-        SELECT id, code, textbook_id, level1, level2, level3, importance_level, definition
+        SELECT id, code, name, textbook_id, level1, level2, level3, importance_level, definition
         FROM knowledge_points
         WHERE textbook_id = ${textbookId}
         ORDER BY RANDOM()
@@ -429,7 +435,7 @@ export class SmartLearningService {
       `;
     } else {
       knowledgePoints = await this.prisma.$queryRaw`
-        SELECT id, code, textbook_id, level1, level2, level3, importance_level, definition
+        SELECT id, code, name, textbook_id, level1, level2, level3, importance_level, definition
         FROM knowledge_points
         ORDER BY RANDOM()
         LIMIT ${count}
@@ -439,6 +445,7 @@ export class SmartLearningService {
     const items: RandomItem[] = knowledgePoints.map((point) => ({
       id: point.id,
       code: point.code,
+      name: point.name,
       textbookId: point.textbook_id,
       level1: point.level1,
       level2: point.level2,

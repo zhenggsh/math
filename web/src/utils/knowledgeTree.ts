@@ -23,7 +23,7 @@ export function convertToTreeData(points: KnowledgePoint[]): KnowledgeTreeNode[]
 
     const node: KnowledgeTreeNode = {
       key: point.id,
-      title: point.level3 || point.level2 || point.level1,
+      title: point.name || point.level3 || point.level2 || point.level1,
       code: point.code,
       importanceLevel: point.importanceLevel,
       isLeaf: level >= 3,

@@ -203,6 +203,13 @@ export class TextbookParserService {
     const points = rawData.map((row, index) => {
       // 提取字段，支持多种可能的列名
       let code = this.getFieldValue(row, ['知识点编号', '编号', 'code']);
+      const name = this.getFieldValue(row, [
+        '知识点名称',
+        '名称',
+        'name',
+        'title',
+        '知识点',
+      ]);
       let level1 = this.getFieldValue(row, ['一级知识点', '一级', 'level1']);
       let level2 = this.getFieldValue(row, ['二级知识点', '二级', 'level2']);
       let level3 = this.getFieldValue(row, ['三级知识点', '三级', 'level3']);
@@ -283,8 +290,12 @@ export class TextbookParserService {
         }
       }
 
+      // 未提供名称时，使用三级知识点作为默认名称（保持与前端展示一致）
+      const resolvedName = name || level3 || level2 || level1;
+
       return {
         code: code || `unknown-${index}`,
+        name: resolvedName || undefined,
         level1: level1 || '未分类',
         level2: level2 || undefined,
         level3: level3 || undefined,

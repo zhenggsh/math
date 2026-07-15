@@ -210,6 +210,7 @@ export class TextbookService {
     // 批量创建知识点
     const data = points.map((point) => ({
       code: point.code,
+      name: point.name,
       level1: point.level1,
       level2: point.level2,
       level3: point.level3,
@@ -312,6 +313,7 @@ export class TextbookService {
     {
       id: string;
       code: string;
+      name: string | null;
       level1: string;
       level2: string | null;
       level3: string | null;
@@ -338,6 +340,7 @@ export class TextbookService {
     return points.map((point) => ({
       id: point.id,
       code: point.code,
+      name: point.name,
       level1: point.level1,
       level2: point.level2,
       level3: point.level3,
@@ -355,6 +358,7 @@ export class TextbookService {
   async getKnowledgePointDetail(knowledgePointId: string): Promise<{
     id: string;
     code: string;
+    name: string | null;
     level1: string;
     level2: string | null;
     level3: string | null;
@@ -391,6 +395,7 @@ export class TextbookService {
     return {
       id: point.id,
       code: point.code,
+      name: point.name,
       level1: point.level1,
       level2: point.level2,
       level3: point.level3,
@@ -630,6 +635,121 @@ export class TextbookService {
 
     fs.writeFileSync(filePath, newLines.join('\n'));
     this.logger.log(`已更新知识点 ${point.code} 的内容`);
+  }
+
+  async removeKnowledgePointBlock(knowledgePointId: string): Promise<void> {
+    const point = await this.prisma.knowledgePoint.findUnique({
+      where: { id: knowledgePointId },
+    });
+    if (!point) {
+      throw new NotFoundException(`知识点不存在: ${knowledgePointId}`);
+    }
+
+    const textbook = await this.prisma.textbook.findUnique({
+      where: { id: point.textbookId },
+    });
+    if (!textbook || !textbook.contentPath) {
+      throw new NotFoundException('教材内容文件不存在');
+    }
+
+    const filePath = this.fileService.getFilePath(textbook.contentPath);
+    if (!fs.existsSync(filePath)) {
+      throw new NotFoundException('内容文件不存在');
+    }
+
+    const fileContent = fs.readFileSync(filePath, 'utf-8');
+    const lines = fileContent.split('\n');
+
+    const range = this.findContentBlockRange(
+      lines,
+      point.code,
+      point.level1,
+      point.level2,
+    );
+
+    if (!range) {
+      this.logger.warn(`无法找到知识点 ${point.code} 的内容块，跳过文件清理`);
+      return;
+    }
+
+    const newLines = [
+      ...lines.slice(0, range.startIndex),
+      ...lines.slice(range.endIndex),
+    ];
+
+    fs.writeFileSync(filePath, newLines.join('\n'));
+    this.logger.log(`已删除知识点 ${point.code} 的内容块`);
+  }
+
+  /**
+   * 在教材 MD 文件中为父知识点追加子知识点占位块
+   */
+  async appendChildKnowledgePointBlock(
+    parentId: string,
+    childCode: string,
+    childName: string,
+  ): Promise<void> {
+    const parent = await this.prisma.knowledgePoint.findUnique({
+      where: { id: parentId },
+    });
+    if (!parent) {
+      throw new NotFoundException(`知识点不存在: ${parentId}`);
+    }
+
+    const textbook = await this.prisma.textbook.findUnique({
+      where: { id: parent.textbookId },
+    });
+    if (!textbook || !textbook.contentPath) {
+      throw new NotFoundException('教材内容文件不存在');
+    }
+
+    const filePath = this.fileService.getFilePath(textbook.contentPath);
+    if (!fs.existsSync(filePath)) {
+      throw new NotFoundException('内容文件不存在');
+    }
+
+    const fileContent = fs.readFileSync(filePath, 'utf-8');
+    const lines = fileContent.split('\n');
+
+    const range = this.findContentBlockRange(
+      lines,
+      parent.code,
+      parent.level1,
+      parent.level2,
+    );
+
+    const codeParts = childCode.split('.');
+    const placeholderLines: string[] = [];
+
+    if (codeParts.length === 2) {
+      // 二级知识点
+      placeholderLines.push(
+        `### ${childCode} ${childName}`,
+        '',
+        '[待输入]',
+        '',
+      );
+    } else if (codeParts.length === 3) {
+      // 三级知识点
+      placeholderLines.push(
+        `#### 知识点 ${childCode}：${childName}`,
+        '',
+        '[待输入]',
+        '',
+      );
+    } else {
+      throw new BadRequestException(`不支持的子知识点层级: ${childCode}`);
+    }
+
+    const insertIndex = range ? range.endIndex : lines.length;
+    const newLines = [
+      ...lines.slice(0, insertIndex),
+      ...placeholderLines,
+      ...lines.slice(insertIndex),
+    ];
+
+    fs.writeFileSync(filePath, newLines.join('\n'));
+    this.logger.log(`已为知识点 ${parent.code} 追加子知识点 ${childCode}`);
   }
 
   /**
