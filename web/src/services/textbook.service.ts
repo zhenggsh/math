@@ -1,7 +1,13 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return */
 import axios from 'axios'
 import { getToken } from './auth.service'
-import type { Textbook, TextbookDetail, SyncResult, UploadResult } from '../types/textbook.types'
+import type {
+  Textbook,
+  TextbookDetail,
+  SyncResult,
+  UploadResult,
+  ExpandResult,
+} from '../types/textbook.types'
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
 
@@ -76,6 +82,29 @@ export const uploadTextbook = async (
   formData.append('baseName', baseName)
 
   const response = await textbookApi.post('/upload', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  })
+  return response.data
+}
+
+/**
+ * 扩充教材知识点
+ * @param textbookId 教材ID
+ * @param frameworkFile 框架文件 (.xlsx)
+ * @param contentFile 内容文件 (.md)
+ */
+export const expandTextbook = async (
+  textbookId: string,
+  frameworkFile: File,
+  contentFile: File
+): Promise<ExpandResult> => {
+  const formData = new FormData()
+  formData.append('framework', frameworkFile)
+  formData.append('content', contentFile)
+
+  const response = await textbookApi.post<ExpandResult>(`/${textbookId}/expand`, formData, {
     headers: {
       'Content-Type': 'multipart/form-data',
     },

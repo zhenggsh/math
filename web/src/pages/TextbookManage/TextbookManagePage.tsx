@@ -59,6 +59,11 @@ const TextbookManagePage: React.FC = () => {
     }
   }
 
+  // 处理查看详情
+  const handleViewDetail = (id: string) => {
+    void navigate(`/teacher/textbooks/${id}`)
+  }
+
   // 如果没有权限，显示提示
   if (!canManage) {
     return (
@@ -134,6 +139,7 @@ const TextbookManagePage: React.FC = () => {
               loading={loading}
               onRefresh={handleRefresh}
               onDelete={handleDelete}
+              onViewDetail={handleViewDetail}
             />
           )}
         </Card>

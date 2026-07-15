@@ -7,6 +7,7 @@ import { HomePage } from './pages/HomePage'
 import { ProtectedRoute } from './components/guards/ProtectedRoute'
 import { AppLayout } from './components/Layout'
 import TextbookManagePage from './pages/TextbookManage/TextbookManagePage'
+import TextbookDetailPage from './pages/TextbookDetail/TextbookDetailPage'
 import LearningPage from './pages/LearningPage/LearningPage'
 import SmartLearningPage from './pages/smart-learning/SmartLearningPage'
 import { StudentAnalyticsPage, TeacherAnalyticsPage } from './pages/analytics'
@@ -38,6 +39,16 @@ function App() {
                 <AppLayout>
                   <ProtectedRoute>
                     <TextbookManagePage />
+                  </ProtectedRoute>
+                </AppLayout>
+              }
+            />
+            <Route
+              path="/teacher/textbooks/:id"
+              element={
+                <AppLayout>
+                  <ProtectedRoute>
+                    <TextbookDetailPage />
                   </ProtectedRoute>
                 </AppLayout>
               }

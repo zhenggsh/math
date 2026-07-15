@@ -6,6 +6,7 @@ import {
   FileExcelOutlined,
   FileTextOutlined,
   CheckCircleOutlined,
+  EyeOutlined,
 } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import type { Textbook } from '../../../types/textbook.types'
@@ -15,6 +16,7 @@ interface TextbookTableProps {
   loading: boolean
   onRefresh: (id: string) => void
   onDelete: (id: string) => void
+  onViewDetail: (id: string) => void
 }
 
 export const TextbookTable: React.FC<TextbookTableProps> = ({
@@ -22,6 +24,7 @@ export const TextbookTable: React.FC<TextbookTableProps> = ({
   loading,
   onRefresh,
   onDelete,
+  onViewDetail,
 }) => {
   const columns: ColumnsType<Textbook> = [
     {
@@ -87,6 +90,9 @@ export const TextbookTable: React.FC<TextbookTableProps> = ({
       width: 150,
       render: (_, record) => (
         <Space size="small">
+          <Tooltip title="查看详情">
+            <Button type="text" icon={<EyeOutlined />} onClick={() => onViewDetail(record.id)} />
+          </Tooltip>
           <Tooltip title="刷新教材">
             <Button type="text" icon={<SyncOutlined />} onClick={() => onRefresh(record.id)} />
           </Tooltip>

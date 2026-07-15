@@ -37,6 +37,16 @@ export interface UploadResult {
   }
 }
 
+// 扩充知识点结果
+export interface ExpandResult {
+  success: boolean
+  message: string
+  data?: {
+    addedCodes: string[]
+    count: number
+  }
+}
+
 // 文件树节点
 export interface FileTreeNode {
   title: string

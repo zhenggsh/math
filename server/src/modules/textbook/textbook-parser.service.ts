@@ -477,4 +477,32 @@ export class TextbookParserService {
       errors,
     };
   }
+
+  /**
+   * 检查原始数据是否包含必要的列
+   */
+  validateRequiredColumns(records: Record<string, string>[]): {
+    valid: boolean;
+    errors: string[];
+  } {
+    if (records.length === 0) {
+      return { valid: false, errors: ['框架文件为空'] };
+    }
+
+    const requiredFields = [
+      ['知识点编号', '编号', 'code'],
+      ['一级知识点', '一级', 'level1'],
+    ];
+    const firstRow = records[0];
+    const errors: string[] = [];
+
+    for (const possibleNames of requiredFields) {
+      const hasField = possibleNames.some((name) => name in firstRow);
+      if (!hasField) {
+        errors.push(`缺少必填列: ${possibleNames.join(' / ')}`);
+      }
+    }
+
+    return { valid: errors.length === 0, errors };
+  }
 }

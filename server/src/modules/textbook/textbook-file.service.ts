@@ -2,6 +2,9 @@ import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as os from 'os';
+import * as crypto from 'crypto';
+import * as xlsx from 'xlsx';
 import { TextbookFilePair, FrameworkType } from './types/textbook.types';
 
 @Injectable()
@@ -166,6 +169,28 @@ export class TextbookFileService {
   }
 
   /**
+   * 保存临时上传文件，返回完整路径
+   */
+  async saveTempFile(buffer: Buffer, extension: string): Promise<string> {
+    const tempDir = os.tmpdir();
+    const fileName = `.tmp-${crypto.randomUUID()}${extension}`;
+    const filePath = path.join(tempDir, fileName);
+    await fs.promises.writeFile(filePath, buffer);
+    return filePath;
+  }
+
+  /**
+   * 删除临时文件
+   */
+  async deleteTempFile(filePath: string): Promise<void> {
+    try {
+      await fs.promises.unlink(filePath);
+    } catch {
+      // 忽略删除失败
+    }
+  }
+
+  /**
    * 获取文件的完整路径
    */
   getFilePath(fileName: string): string {
@@ -198,6 +223,57 @@ export class TextbookFileService {
       size: stats.size,
       modifiedAt: stats.mtime,
     };
+  }
+
+  /**
+   * 在 xlsx 文件末尾追加新行
+   * 保持原工作表结构（best-effort）
+   */
+  appendXlsxRows(
+    fileName: string,
+    headers: string[],
+    rows: (string | number | undefined)[][],
+  ): void {
+    if (rows.length === 0) {
+      return;
+    }
+
+    const filePath = this.getFilePath(fileName);
+    if (!fs.existsSync(filePath)) {
+      throw new BadRequestException(`文件不存在: ${filePath}`);
+    }
+
+    const workbook = xlsx.readFile(filePath);
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+
+    // Determine the last row with data
+    const range = xlsx.utils.decode_range(worksheet['!ref'] || 'A1');
+    const lastRow = range.e.r;
+
+    // Ensure we append after the last data row
+    const newRowCount = rows.length;
+    for (let i = 0; i < newRowCount; i++) {
+      const row = rows[i];
+      for (let j = 0; j < row.length; j++) {
+        const cellAddress = xlsx.utils.encode_cell({
+          r: lastRow + 1 + i,
+          c: j,
+        });
+        const value = row[j] ?? '';
+        worksheet[cellAddress] = {
+          t: typeof value === 'number' ? 'n' : 's',
+          v: value,
+        };
+      }
+    }
+
+    // Update range
+    range.e.r = Math.max(range.e.r, lastRow + newRowCount);
+    worksheet['!ref'] = xlsx.utils.encode_range(range);
+
+    xlsx.writeFile(workbook, filePath);
+    this.logger.log(`已追加 ${newRowCount} 行到 xlsx: ${filePath}`);
   }
 
   /**

@@ -1,10 +1,14 @@
-/* eslint-disable @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment */
 import { Test, TestingModule } from '@nestjs/testing';
 import { TextbookService } from './textbook.service';
 import { TextbookParserService } from './textbook-parser.service';
 import { TextbookFileService } from './textbook-file.service';
 import { PrismaService } from '../../prisma/prisma.service';
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { RawKnowledgePoint, ParseResult } from './types/textbook.types';
 import * as fs from 'fs';
 
@@ -14,6 +18,7 @@ describe('TextbookService', () => {
   let service: TextbookService;
   let prismaService: PrismaService;
   let fileService: TextbookFileService;
+  let parserService: TextbookParserService;
 
   // Mock data
   const mockRawKnowledgePoints: RawKnowledgePoint[] = [
@@ -66,9 +71,11 @@ describe('TextbookService', () => {
               deleteMany: jest.fn(),
               count: jest.fn().mockResolvedValue(0),
               findUnique: jest.fn(),
+              findMany: jest.fn(),
             },
             $transaction: jest.fn((callback) =>
               callback({
+                $executeRawUnsafe: jest.fn(),
                 textbook: {
                   create: jest.fn().mockResolvedValue({ id: 'textbook-1' }),
                   update: jest.fn(),
@@ -76,6 +83,7 @@ describe('TextbookService', () => {
                 knowledgePoint: {
                   createMany: jest.fn(),
                   deleteMany: jest.fn(),
+                  findMany: jest.fn(),
                 },
               }),
             ),
@@ -86,6 +94,9 @@ describe('TextbookService', () => {
           useValue: {
             parseFrameworkFile: jest.fn().mockReturnValue(mockParseResult),
             validateKnowledgePoints: jest
+              .fn()
+              .mockReturnValue({ valid: true, errors: [] }),
+            validateRequiredColumns: jest
               .fn()
               .mockReturnValue({ valid: true, errors: [] }),
           },
@@ -100,6 +111,9 @@ describe('TextbookService', () => {
             deleteFile: jest.fn(),
             getFileType: jest.fn().mockReturnValue('xlsx'),
             saveFile: jest.fn(),
+            appendXlsxRows: jest.fn(),
+            saveTempFile: jest.fn().mockResolvedValue('/tmp/expand.xlsx'),
+            deleteTempFile: jest.fn(),
           },
         },
       ],
@@ -108,6 +122,7 @@ describe('TextbookService', () => {
     service = module.get<TextbookService>(TextbookService);
     prismaService = module.get<PrismaService>(PrismaService);
     fileService = module.get<TextbookFileService>(TextbookFileService);
+    parserService = module.get<TextbookParserService>(TextbookParserService);
   });
 
   it('should be defined', () => {
@@ -365,6 +380,137 @@ describe('TextbookService', () => {
       await service.removeKnowledgePointBlock('kp-1');
 
       expect(writeFileSyncSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('appendMdContent', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    it('should insert level-3 content under its parent level-2 block', () => {
+      const fileContent = [
+        '## 1 集合',
+        '',
+        '一级内容',
+        '',
+        '### 1.1 集合的概念',
+        '',
+        '二级内容',
+        '',
+        '#### 知识点 1.1.1：集合的含义',
+        '',
+        '旧三级内容',
+        '',
+      ].join('\n');
+
+      const newBlocks = [
+        {
+          code: '1.1.2',
+          level1: '1',
+          level2: '1.1',
+          level3: '1.1.2',
+          name: '元素与集合的关系',
+          content: '元素可以属于或不属于集合。',
+        },
+      ];
+
+      const result = (service as any).appendMdContent(fileContent, newBlocks);
+      expect(result).toContain('#### 知识点 1.1.2：元素与集合的关系');
+      expect(result.indexOf('#### 知识点 1.1.2')).toBeGreaterThan(
+        result.indexOf('### 1.1 集合的概念'),
+      );
+      expect(result).toContain('#### 知识点 1.1.1：集合的含义');
+    });
+
+    it('should append to end when parent not found', () => {
+      const fileContent = '## 1 集合\n\n一级内容\n';
+      const newBlocks = [
+        {
+          code: '2.1.1',
+          level1: '2',
+          level2: '2.1',
+          level3: '2.1.1',
+          name: '新知识点',
+          content: '新内容',
+        },
+      ];
+
+      const result = (service as any).appendMdContent(fileContent, newBlocks);
+      expect(result.endsWith('#### 知识点 2.1.1：新知识点\n\n新内容\n')).toBe(
+        true,
+      );
+    });
+  });
+
+  describe('expandKnowledgePoints', () => {
+    const mockFrameworkFile = {
+      originalname: 'expand.xlsx',
+      buffer: Buffer.from('xlsx-binary'),
+      mimetype:
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    } as Express.Multer.File;
+
+    const mockContentFile = {
+      originalname: 'expand.md',
+      buffer: Buffer.from('md-content'),
+      mimetype: 'text/markdown',
+    } as Express.Multer.File;
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    it('should throw BadRequestException when xlsx parse fails', async () => {
+      jest.spyOn(prismaService.textbook, 'findUnique').mockResolvedValue({
+        id: 'tb-1',
+        frameworkPath: 'math01.xlsx',
+        contentPath: 'math01.md',
+      } as any);
+      jest.spyOn(parserService, 'parseFrameworkFile').mockReturnValue({
+        success: false,
+        error: 'parse error',
+      });
+
+      await expect(
+        service.expandKnowledgePoints(
+          'tb-1',
+          mockFrameworkFile,
+          mockContentFile,
+        ),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw ConflictException when code conflicts with existing', async () => {
+      jest.spyOn(prismaService.textbook, 'findUnique').mockResolvedValue({
+        id: 'tb-1',
+        frameworkPath: 'math01.xlsx',
+        contentPath: 'math01.md',
+      } as any);
+      jest.spyOn(parserService, 'parseFrameworkFile').mockReturnValue({
+        success: true,
+        data: [{ code: '1.1.1', level1: '集合', importanceLevel: 'A' }],
+      });
+      jest
+        .spyOn(prismaService, '$transaction')
+        .mockImplementation(async (callback: any) => {
+          return await callback({
+            $executeRawUnsafe: jest.fn(),
+            textbook: { update: jest.fn() },
+            knowledgePoint: {
+              findMany: jest.fn().mockResolvedValue([{ code: '1.1.1' }] as any),
+              createMany: jest.fn(),
+            },
+          });
+        });
+
+      await expect(
+        service.expandKnowledgePoints(
+          'tb-1',
+          mockFrameworkFile,
+          mockContentFile,
+        ),
+      ).rejects.toThrow(ConflictException);
     });
   });
 });
