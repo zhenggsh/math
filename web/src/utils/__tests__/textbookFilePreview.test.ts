@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import * as XLSX from 'xlsx'
-import { parseXlsxPreview, readTextFile } from '../textbookFilePreview'
+import { parseCsvPreview, parseFrameworkPreview, parseXlsxPreview, readTextFile } from '../textbookFilePreview'
 
 describe('textbookFilePreview', () => {
   it('parses xlsx rows into preview objects', async () => {
@@ -58,5 +58,37 @@ describe('textbookFilePreview', () => {
     const text = await readTextFile(file)
 
     expect(text).toBe('#### 1.1.1 集合的含义\n\n这是内容。')
+  })
+
+  it('parses csv rows into preview objects', async () => {
+    const csv = 'code,level1,level2\n1.1.1,集合,集合的含义\n1.1.2,集合,元素与集合'
+    const file = new File([csv], 'expand.csv', { type: 'text/csv' })
+
+    const rows = await parseCsvPreview(file)
+
+    expect(rows).toHaveLength(2)
+    expect(rows[0]).toEqual({
+      code: '1.1.1',
+      level1: '集合',
+      level2: '集合的含义',
+    })
+  })
+
+  it('limits csv preview rows', async () => {
+    const csv = 'code\n' + Array.from({ length: 5 }, (_, i) => `${i + 1}`).join('\n')
+    const file = new File([csv], 'expand.csv', { type: 'text/csv' })
+
+    const rows = await parseCsvPreview(file, 2)
+
+    expect(rows).toHaveLength(2)
+  })
+
+  it('dispatches to csv or xlsx parser by extension', async () => {
+    const csv = 'code,level1\n1.1.1,集合'
+    const csvFile = new File([csv], 'expand.csv', { type: 'text/csv' })
+
+    const csvRows = await parseFrameworkPreview(csvFile)
+    expect(csvRows).toHaveLength(1)
+    expect(csvRows[0].code).toBe('1.1.1')
   })
 })

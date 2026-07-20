@@ -1,3 +1,4 @@
+import Papa from 'papaparse'
 import * as XLSX from 'xlsx'
 
 export interface XlsxPreviewRow {
@@ -29,6 +30,35 @@ export async function parseXlsxPreview(file: File, limit = 100): Promise<XlsxPre
     })
     return record
   })
+}
+
+export async function parseCsvPreview(file: File, limit = 100): Promise<XlsxPreviewRow[]> {
+  const text = await readTextFile(file)
+  return new Promise((resolve, reject) => {
+    Papa.parse(text, {
+      header: true,
+      skipEmptyLines: true,
+      complete: (results) => {
+        const rows = (results.data as Record<string, unknown>[]).slice(0, limit).map((row) => {
+          const record: XlsxPreviewRow = {}
+          Object.keys(row).forEach((key) => {
+            const value = row[key]
+            record[key] = value === undefined || value === null ? '' : String(value)
+          })
+          return record
+        })
+        resolve(rows)
+      },
+      error: (error) => reject(new Error(error.message)),
+    })
+  })
+}
+
+export async function parseFrameworkPreview(file: File, limit = 100): Promise<XlsxPreviewRow[]> {
+  if (file.name.toLowerCase().endsWith('.csv')) {
+    return parseCsvPreview(file, limit)
+  }
+  return parseXlsxPreview(file, limit)
 }
 
 export async function readTextFile(file: File): Promise<string> {
