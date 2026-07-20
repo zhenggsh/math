@@ -11,12 +11,12 @@ describe('textbookFilePreview', () => {
       ['1.1.2', '集合', '元素与集合的关系'],
     ])
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Sheet1')
-    const buffer = XLSX.write(workbook, { type: 'array', bookType: 'xlsx' })
-    const file = new File(
-      [buffer],
-      'expand.xlsx',
-      { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' },
+    const buffer = new Uint8Array(
+      XLSX.write(workbook, { type: 'array', bookType: 'xlsx' }) as number[]
     )
+    const file = new File([buffer], 'expand.xlsx', {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    })
 
     const rows = await parseXlsxPreview(file)
 
@@ -38,12 +38,12 @@ describe('textbookFilePreview', () => {
     const data = [['编号'], ...Array.from({ length: 5 }, (_, i) => [`${i + 1}`])]
     const worksheet = XLSX.utils.aoa_to_sheet(data)
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Sheet1')
-    const buffer = XLSX.write(workbook, { type: 'array', bookType: 'xlsx' })
-    const file = new File(
-      [buffer],
-      'expand.xlsx',
-      { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' },
+    const buffer = new Uint8Array(
+      XLSX.write(workbook, { type: 'array', bookType: 'xlsx' }) as number[]
     )
+    const file = new File([buffer], 'expand.xlsx', {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    })
 
     const rows = await parseXlsxPreview(file, 2)
 
@@ -51,11 +51,9 @@ describe('textbookFilePreview', () => {
   })
 
   it('reads md file as text', async () => {
-    const file = new File(
-      ['#### 1.1.1 集合的含义\n\n这是内容。'],
-      'expand.md',
-      { type: 'text/markdown' },
-    )
+    const file = new File(['#### 1.1.1 集合的含义\n\n这是内容。'], 'expand.md', {
+      type: 'text/markdown',
+    })
 
     const text = await readTextFile(file)
 
