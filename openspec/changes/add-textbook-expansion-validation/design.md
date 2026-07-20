@@ -16,8 +16,7 @@ This design adds a read-only validation step that runs before any write. The sam
 - Surface the validation rules and a client-side preview of the selected `.xlsx` and `.md` files so teachers can verify the upload contents before validating.
 
 **Non-Goals:**
-- In-browser editing or preview of the `.xlsx` / `.md` content.
-- Support for CSV expansion validation (only `.xlsx` for this cycle).
+- In-browser editing of the `.xlsx` / `.csv` / `.md` content (previews remain read-only).
 - Persistent validation history or server-side notifications.
 - Exact original Excel row numbers in error messages (use parser array index for now).
 - Adding, deleting, or reordering existing knowledge points.
@@ -71,43 +70,92 @@ No migration needed. This is a pure additive feature and refactor. Existing text
 
 ---
 
-## UI Redesign Proposal: Linked Editor Layout (2026-07-20)
+## UI/UX Enhancement Design: Guided Expansion Workflow (2026-07-20)
 
 ### Motivation
 
-The current validation MVP (implemented above) exposes rules, previews, and errors in a single vertical column. Teachers report that the modal becomes too tall, the two previews are hard to compare, and the error list does not point back to the offending rows in the preview. This section proposes a next-phase UI improvement to address those issues without changing the backend validation pipeline.
+The validation MVP exposes rules, previews, and errors in a single vertical column. Teachers report that the modal becomes too tall, the two previews are hard to compare, the error list does not point back to the offending rows in the preview, and there is no final confirmation of what will actually be added before writing to the database. This section turns the previous UI Redesign Proposal into a formal, comprehensive UX upgrade that keeps the backend validation pipeline unchanged.
 
-### Proposed Layout
+### Goals
 
-Switch the modal body to a two-column, linked-editor layout:
+- Reduce cognitive load by guiding the teacher through a clear, step-by-step workflow.
+- Keep both file previews visible at once and link errors directly to the offending rows.
+- Give teachers a final impact preview before they commit the expansion.
+- Provide clear success feedback and make it easy to correct and retry failed uploads.
+- Support both `.xlsx` and `.csv` framework files consistently with the backend expansion endpoint.
+- Make the feature efficient to access from the textbook list and resilient to accidental modal closes.
 
-- **Top bar**: Title + description + a "查看校验规则" button that opens a `Drawer` with the existing `ValidationRulesPanel`.
-- **Left column (50%)**: Framework file upload + xlsx preview table.
-- **Right column (50%)**: Content file upload + md preview with line numbers.
-- **Bottom panel**: Validation result error tags. Clicking a tag scrolls the corresponding preview row into view and highlights it.
-- **Footer**: Cancel / Validate / Submit buttons, same states as today.
+### Key Design Decisions
 
-### Key Interactions
+10. **Guided step workflow**
+    The modal becomes a three-step wizard instead of a single scrollable form:
+    1. **上传文件**: Select framework file (`.xlsx` or `.csv`) and content file (`.md`).
+    2. **预览校验**: Review previews, run validation, inspect errors.
+    3. **确认扩充**: See an impact preview of what will be added, then confirm.
+    - *Alternative considered:* Keep the single modal with all sections. Rejected because it overloads the teacher with too much information at once and increases the chance of skipping the validation step.
 
-1. **Inline error highlighting**
-   - xlsx preview adds a "状态" column; error rows are tinted red and show `✗ 原因`.
-   - md preview renders each line with a line number; error lines are tinted red and a `✗ 原因` annotation is inserted below the offending line.
-2. **Error-preview linkage**
-   - Each error tag carries its `location.code` or `location.row`.
-   - On click, the matching row/line in the corresponding preview is scrolled into view and briefly pulsed.
-3. **Rule panel收纳**
-   - The validation rules are not rendered by default; they are shown in a Drawer triggered by the top-bar button. This frees vertical space for the previews.
-4. **md preview rendering**
-   - Use a plain-text + line-number view initially because accurate row mapping is more important than Markdown rendering for this task. Markdown rendering can be added later if needed.
+11. **Two-column linked editor layout**
+    The modal body uses a two-column layout so teachers can compare framework and content previews side by side:
+    - **Top bar**: Title + description + a "查看校验规则" button that opens a `Drawer` with the existing `ValidationRulesPanel`.
+    - **Left column (50%)**: Framework file upload + xlsx/csv preview table.
+    - **Right column (50%)**: Content file upload + md preview with line numbers.
+    - **Bottom panel**: Validation result error tags. Clicking a tag scrolls the corresponding preview row into view and highlights it.
+    - **Footer**: Cancel / Validate / Submit buttons, same states as today.
+    - *Alternative considered:* Use `Tabs` to switch between previews. Rejected because it prevents side-by-side comparison of framework rows and md headings.
+
+12. **Inline error highlighting and preview linkage**
+    - xlsx/csv preview adds a "状态" column; error rows are tinted red and show `✗ 原因`.
+    - md preview renders each line with a line number; error lines are tinted red and a `✗ 原因` annotation is inserted below the offending line.
+    - Each error tag carries its `location.code` or `location.row`; on click, the matching row/line in the corresponding preview is scrolled into view and briefly pulsed.
+    - *Alternative considered:* Show errors only in the bottom list without linking. Rejected because teachers have to manually locate the problem in large files.
+
+13. **Impact preview before final confirmation**
+    Step 3 shows a read-only summary before the final submit:
+    - Total number of new knowledge points to be added.
+    - Code range examples (first 5 and last 5 explicit codes).
+    - Distribution by level-1 and level-2 knowledge points.
+    - Reconfirmation that all codes passed validation.
+    - *Alternative considered:* Let teachers submit directly after validation passes. Rejected because a large upload can accidentally add hundreds of unwanted points.
+
+14. **Clear action feedback**
+    - Upload in progress: 「确认扩充」 button shows `loading`, all buttons are disabled, and the modal cannot be closed by backdrop click or ESC.
+    - Upload success: `message.success('成功扩充 XX 个知识点')`, then the modal closes and the knowledge-point list refreshes.
+    - After refresh, the first newly added knowledge point is scrolled into view and briefly highlighted.
+    - Upload failure: `message.error` with the backend message; the modal stays open so the teacher can retry.
+
+15. **Consistent framework file type support**
+    The validation modal accepts both `.xlsx` and `.csv` framework files, matching the backend `expand` endpoint's capability. The file type is detected from the extension and parsed accordingly.
+    - *Alternative considered:* Keep `.xlsx` only for validation. Rejected because it forces teachers to convert existing `.csv` frameworks before validating.
+
+16. **Quick access from textbook list**
+    `TextbookTable` gains an 「扩充」 action button that navigates directly to the textbook detail page and opens the expansion modal.
+    - *Alternative considered:* Keep the entry only inside the detail page. Rejected because it adds an unnecessary navigation step for a common teacher task.
+
+17. **Error report export**
+    When validation fails, the error panel provides an 「导出错误报告」 button that downloads a plain-text or CSV report containing all issues, grouped by file type, with row/code and reason. This lets teachers fix the source files offline without keeping the modal open.
+
+18. **Draft preservation**
+    When the teacher attempts to close the modal after selecting files but before uploading, the modal asks whether to keep the draft. If yes, the next open restores the selected files, previews, and validation state (but still requires re-validation before submit).
+    - *Alternative considered:* Always clear state on close. Rejected because accidental closes force teachers to re-select and re-preview large files.
+
+19. **Responsive adaptation**
+    - Desktop (`≥768px`): two-column layout inside a `Modal` with `width={900}`.
+    - Tablet / narrow screen (`<768px`): the modal switches to a full-screen `Drawer` with a vertical stack (framework preview above content preview).
+    - *Alternative considered:* Keep the two-column layout and allow horizontal scrolling. Rejected because it breaks usability on small screens.
 
 ### Files Likely to Change
 
 | File | Change |
 |------|--------|
-| `web/src/pages/TextbookDetail/components/ExpandKnowledgePointsModal.tsx` | Switch to two-column layout; add error-to-preview mapping; integrate `MdPreview` and `ErrorTag` components. |
+| `web/src/pages/TextbookDetail/components/ExpandKnowledgePointsModal.tsx` | Rebuild as step wizard; two-column linked layout; error-to-preview mapping; impact preview; draft preservation; responsive switch to Drawer. |
 | `web/src/pages/TextbookDetail/components/ValidationRulesPanel.tsx` | Keep content, but render inside a Drawer triggered by the modal. |
+| `web/src/pages/TextbookDetail/components/FrameworkPreview.tsx` (new) | Render `.xlsx` / `.csv` as a compact table with status column and error highlighting. |
 | `web/src/pages/TextbookDetail/components/MdPreview.tsx` (new) | Render md text with line numbers and optional highlight lines. |
 | `web/src/pages/TextbookDetail/components/ErrorTag.tsx` (new) | Render an error tag that calls `onClick(location)`. |
+| `web/src/pages/TextbookDetail/components/ImpactPreview.tsx` (new) | Show new-point count, code range, and distribution before final submit. |
+| `web/src/pages/TextbookManage/components/TextbookTable.tsx` | Add 「扩充」 action button that opens the detail page with modal auto-open. |
+| `web/src/pages/TextbookDetail/hooks/useTextbookDetail.ts` | Extend with draft save/restore, CSV parsing, and success-scroll logic. |
+| `web/src/services/textbook.service.ts` | Update `validateTextbook` to accept both `.xlsx` and `.csv`. |
 
 ### Trade-offs
 
@@ -115,9 +163,15 @@ Switch the modal body to a two-column, linked-editor layout:
 |------|------|
 | Teachers can see both previews at once. | Requires more horizontal space; needs a responsive fallback on narrow screens. |
 | Errors point directly to the offending rows. | Requires maintaining a code/row index and scroll-to-line logic. |
-| First-screen information density is lower. | Slightly more complex component state than the current single-column modal. |
+| Step-by-step flow reduces cognitive load. | Slightly more clicks than a single modal for very small uploads. |
+| Impact preview prevents accidental bulk additions. | Adds one extra step before submit. |
+| CSV support matches backend capability. | CSV parsing preview is less rich than xlsx (no formatting metadata). |
+| Draft preservation avoids repeated work. | Stale drafts may confuse teachers if the underlying textbook was changed by someone else. |
 
-### Next Step
+### Migration / Compatibility
 
-If approved, this proposal should be turned into an implementation plan via the `superpowers:writing-plans` skill. The backend validation endpoint and data types remain unchanged; the work is purely frontend UI/UX.
+- Backend validation endpoint and data types remain unchanged; the work is purely frontend UI/UX plus the optional quick-access button in the list page.
+- The step wizard and linked previews are additive; existing validation rules and error structures are reused without modification.
+- CSV support is implemented by reusing the existing `papaparse` parser already used for CSV framework uploads in the initial textbook import flow.
+- Draft preservation stores state in `sessionStorage` keyed by `textbookId`; it is cleared after a successful expansion or when the teacher explicitly discards it.
 

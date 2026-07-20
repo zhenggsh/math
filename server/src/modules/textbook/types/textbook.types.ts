@@ -29,7 +29,29 @@ export interface TextbookFilePair {
 export interface ParseResult {
   success: boolean;
   data?: RawKnowledgePoint[];
+  explicitCodes?: string[];
+  rawRecords?: Record<string, string>[];
   error?: string;
+}
+
+// 校验问题定位
+export interface ValidationIssueLocation {
+  file: 'xlsx' | 'md';
+  row?: number;
+  code?: string;
+}
+
+// 校验问题
+export interface ValidationIssue {
+  type: 'xlsx' | 'md';
+  location: ValidationIssueLocation;
+  message: string;
+}
+
+// 校验报告
+export interface ValidationReport {
+  valid: boolean;
+  errors: ValidationIssue[];
 }
 
 // 教材详细信息

@@ -1,4 +1,5 @@
 import React from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Table, Button, Space, Tag, Popconfirm, Tooltip } from 'antd'
 import {
   SyncOutlined,
@@ -7,6 +8,7 @@ import {
   FileTextOutlined,
   CheckCircleOutlined,
   EyeOutlined,
+  PlusOutlined,
 } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import type { Textbook } from '../../../types/textbook.types'
@@ -26,6 +28,7 @@ export const TextbookTable: React.FC<TextbookTableProps> = ({
   onDelete,
   onViewDetail,
 }) => {
+  const navigate = useNavigate()
   const columns: ColumnsType<Textbook> = [
     {
       title: '教材名称',
@@ -87,11 +90,20 @@ export const TextbookTable: React.FC<TextbookTableProps> = ({
       title: '操作',
       key: 'action',
       fixed: 'right',
-      width: 150,
+      width: 200,
       render: (_, record) => (
         <Space size="small">
           <Tooltip title="查看详情">
             <Button type="text" icon={<EyeOutlined />} onClick={() => onViewDetail(record.id)} />
+          </Tooltip>
+          <Tooltip title="扩充知识点">
+            <Button
+              type="text"
+              icon={<PlusOutlined />}
+              onClick={() => {
+                void navigate(`/teacher/textbooks/${record.id}?expand=1`)
+              }}
+            />
           </Tooltip>
           <Tooltip title="刷新教材">
             <Button type="text" icon={<SyncOutlined />} onClick={() => onRefresh(record.id)} />

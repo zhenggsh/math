@@ -6,6 +6,7 @@ import {
   RawKnowledgePoint,
   FrameworkType,
   ParseResult,
+  ValidationIssue,
 } from './types/textbook.types';
 
 @Injectable()
@@ -41,13 +42,17 @@ export class TextbookParserService {
         };
       }
 
-      const knowledgePoints = this.transformToKnowledgePoints(rawData);
+      const explicitPoints = this.transformToExplicitPoints(rawData);
+      const knowledgePoints = this.generateHierarchyPoints(explicitPoints);
+      const explicitCodes = explicitPoints.map((p) => p.code);
 
       this.logger.log(`成功解析 ${knowledgePoints.length} 个知识点`);
 
       return {
         success: true,
         data: knowledgePoints,
+        explicitCodes,
+        rawRecords: rawData,
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : '未知错误';
@@ -185,10 +190,9 @@ export class TextbookParserService {
   }
 
   /**
-   * 将原始数据转换为知识点结构
-   * 自动生成一二级知识点记录（code 为 a 和 a.b）
+   * 将原始数据转换为知识点结构（仅显式记录，不生成父级）
    */
-  private transformToKnowledgePoints(
+  private transformToExplicitPoints(
     rawData: Record<string, string>[],
   ): RawKnowledgePoint[] {
     // 用于继承空值和自动编号
@@ -305,8 +309,18 @@ export class TextbookParserService {
       };
     });
 
-    // 后处理：自动生成一二级知识点记录
-    return this.generateHierarchyPoints(points);
+    return points;
+  }
+
+  /**
+   * 将原始数据转换为知识点结构
+   * 自动生成一二级知识点记录（code 为 a 和 a.b）
+   */
+  private transformToKnowledgePoints(
+    rawData: Record<string, string>[],
+  ): RawKnowledgePoint[] {
+    const explicitPoints = this.transformToExplicitPoints(rawData);
+    return this.generateHierarchyPoints(explicitPoints);
   }
 
   /**
@@ -423,16 +437,76 @@ export class TextbookParserService {
   /**
    * 从行数据中获取字段值，尝试多个可能的列名
    */
-  private getFieldValue(
-    row: Record<string, string>,
-    possibleNames: string[],
-  ): string {
+  getFieldValue(row: Record<string, string>, possibleNames: string[]): string {
     for (const name of possibleNames) {
       if (name in row && row[name] !== undefined && row[name] !== '') {
         return row[name].trim();
       }
     }
     return '';
+  }
+
+  /**
+   * 校验显式记录（基于原始记录）
+   */
+  validateExplicitRecords(
+    records: Record<string, string>[],
+  ): ValidationIssue[] {
+    const errors: ValidationIssue[] = [];
+    const codeAliases = ['知识点编号', '编号', 'code'];
+    const level1Aliases = ['一级知识点', '一级', 'level1'];
+    const seenCodes = new Map<string, number[]>();
+
+    for (let i = 0; i < records.length; i++) {
+      const row = records[i];
+      const isEmpty = !Object.values(row).some(
+        (value) => String(value).trim() !== '',
+      );
+      if (isEmpty) {
+        continue;
+      }
+
+      const code = this.getFieldValue(row, codeAliases);
+      const level1 = this.getFieldValue(row, level1Aliases);
+
+      if (!code) {
+        errors.push({
+          type: 'xlsx',
+          location: { file: 'xlsx', row: i + 1 },
+          message: `第 ${i + 1} 行缺少知识点编号`,
+        });
+      } else if (!/^\d+(?:\.\d+)*/.test(code)) {
+        errors.push({
+          type: 'xlsx',
+          location: { file: 'xlsx', row: i + 1, code },
+          message: `知识点编号 "${code}" 不是数字层级格式`,
+        });
+      } else {
+        const existing = seenCodes.get(code) || [];
+        existing.push(i + 1);
+        seenCodes.set(code, existing);
+      }
+
+      if (!level1) {
+        errors.push({
+          type: 'xlsx',
+          location: { file: 'xlsx', row: i + 1 },
+          message: `第 ${i + 1} 行缺少一级知识点`,
+        });
+      }
+    }
+
+    for (const [code, rows] of seenCodes) {
+      if (rows.length > 1) {
+        errors.push({
+          type: 'xlsx',
+          location: { file: 'xlsx', code },
+          message: `知识点编号 "${code}" 重复 (行: ${rows.join(', ')})`,
+        });
+      }
+    }
+
+    return errors;
   }
 
   /**
@@ -476,6 +550,33 @@ export class TextbookParserService {
       valid: errors.length === 0,
       errors,
     };
+  }
+
+  /**
+   * 从 md 内容中提取所有知识点 code
+   */
+  extractMdCodes(fileContent: string): string[] {
+    const codes: string[] = [];
+    const lines = fileContent.split('\n');
+
+    for (const line of lines) {
+      const level3Match = line.match(/^####\s+(?:知识点\s+)?(\d+(?:\.\d+)*)\b/);
+      if (level3Match) {
+        codes.push(level3Match[1]);
+        continue;
+      }
+      const level2Match = line.match(/^###\s+(\d+(?:\.\d+)*)\b/);
+      if (level2Match) {
+        codes.push(level2Match[1]);
+        continue;
+      }
+      const level1Match = line.match(/^##\s+(\d+(?:\.\d+)*)\b/);
+      if (level1Match) {
+        codes.push(level1Match[1]);
+      }
+    }
+
+    return codes;
   }
 
   /**

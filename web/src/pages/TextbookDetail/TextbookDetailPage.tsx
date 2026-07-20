@@ -1,24 +1,60 @@
-import React, { useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import React, { useEffect, useState } from 'react'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { Card, Button, Space, Typography, Descriptions, Spin, Alert, Table, Tag } from 'antd'
 import { ArrowLeftOutlined, PlusOutlined } from '@ant-design/icons'
 import { useTextbookDetail } from './hooks/useTextbookDetail'
 import { ExpandKnowledgePointsModal } from './components/ExpandKnowledgePointsModal'
+import type { KnowledgePoint } from '../../types/knowledge.types'
 
 const { Title } = Typography
 
 const TextbookDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const [modalOpen, setModalOpen] = useState(false)
-  const { textbook, knowledgePoints, loading, error, expanding, expandError, expand } =
-    useTextbookDetail(id || '')
+  const [searchParams] = useSearchParams()
+  const [modalOpen, setModalOpen] = useState(() => searchParams.get('expand') === '1')
+  const [newPointCodes, setNewPointCodes] = useState<string[]>([])
+  const {
+    textbook,
+    knowledgePoints,
+    loading,
+    error,
+    expanding,
+    expandError,
+    validating,
+    validationResult,
+    validationError,
+    expand,
+    validate,
+    resetValidation,
+  } = useTextbookDetail(id || '')
+
+  useEffect(() => {
+    if (newPointCodes.length === 0) {
+      return
+    }
+    const element = document.querySelector('.highlighted-new-point')
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+    const timer = setTimeout(() => {
+      setNewPointCodes([])
+    }, 3000)
+    return () => clearTimeout(timer)
+  }, [newPointCodes, knowledgePoints])
 
   const handleExpand = async (frameworkFile: File, contentFile: File) => {
     const result = await expand(frameworkFile, contentFile)
-    if (result?.success) {
+    if (result?.success && result.data?.addedCodes.length) {
+      setNewPointCodes(result.data.addedCodes)
+      setModalOpen(false)
+    } else if (result?.success) {
       setModalOpen(false)
     }
+  }
+
+  const handleValidate = async (frameworkFile: File, contentFile: File) => {
+    await validate(frameworkFile, contentFile)
   }
 
   const columns = [
@@ -133,16 +169,26 @@ const TextbookDetailPage: React.FC = () => {
             columns={columns}
             pagination={{ pageSize: 20 }}
             scroll={{ x: 800 }}
+            rowClassName={(record: KnowledgePoint) =>
+              newPointCodes.includes(record.code) ? 'highlighted-new-point' : ''
+            }
           />
         </Card>
       </Space>
 
       <ExpandKnowledgePointsModal
+        key={modalOpen ? 'open' : 'closed'}
         open={modalOpen}
+        textbookId={id || ''}
         onCancel={() => setModalOpen(false)}
         onSubmit={handleExpand}
+        onValidate={handleValidate}
+        onResetValidation={resetValidation}
         loading={expanding}
+        validating={validating}
         error={expandError}
+        validationResult={validationResult}
+        validationError={validationError}
       />
     </div>
   )

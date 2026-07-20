@@ -38,18 +38,18 @@ export async function parseCsvPreview(file: File, limit = 100): Promise<XlsxPrev
     Papa.parse(text, {
       header: true,
       skipEmptyLines: true,
-      complete: (results) => {
-        const rows = (results.data as Record<string, unknown>[]).slice(0, limit).map((row) => {
+      complete: results => {
+        const rows = (results.data as Record<string, unknown>[]).slice(0, limit).map(row => {
           const record: XlsxPreviewRow = {}
-          Object.keys(row).forEach((key) => {
-            const value = row[key]
+          Object.keys(row).forEach(key => {
+            const value = row[key] as string | number | boolean | null | undefined
             record[key] = value === undefined || value === null ? '' : String(value)
           })
           return record
         })
         resolve(rows)
       },
-      error: (error) => reject(new Error(error.message)),
+      error: (error: { message: string }) => reject(new Error(error.message)),
     })
   })
 }

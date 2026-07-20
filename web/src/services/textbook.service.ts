@@ -7,6 +7,7 @@ import type {
   SyncResult,
   UploadResult,
   ExpandResult,
+  ValidationReport,
 } from '../types/textbook.types'
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
@@ -81,11 +82,7 @@ export const uploadTextbook = async (
   }
   formData.append('baseName', baseName)
 
-  const response = await textbookApi.post('/upload', formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  })
+  const response = await textbookApi.post('/upload', formData)
   return response.data
 }
 
@@ -104,10 +101,28 @@ export const expandTextbook = async (
   formData.append('framework', frameworkFile)
   formData.append('content', contentFile)
 
-  const response = await textbookApi.post<ExpandResult>(`/${textbookId}/expand`, formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  })
+  const response = await textbookApi.post<ExpandResult>(`/${textbookId}/expand`, formData)
   return response.data
+}
+
+/**
+ * 校验教材扩充文件
+ * @param textbookId 教材ID
+ * @param frameworkFile 框架文件 (.xlsx)
+ * @param contentFile 内容文件 (.md)
+ */
+export const validateTextbook = async (
+  textbookId: string,
+  frameworkFile: File,
+  contentFile: File
+): Promise<ValidationReport> => {
+  const formData = new FormData()
+  formData.append('framework', frameworkFile)
+  formData.append('content', contentFile)
+
+  const response = await textbookApi.post<{ data: ValidationReport }>(
+    `/${textbookId}/validate`,
+    formData
+  )
+  return response.data.data
 }

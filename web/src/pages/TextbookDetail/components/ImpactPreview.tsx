@@ -8,14 +8,12 @@ interface ImpactPreviewProps {
 
 export const ImpactPreview: React.FC<ImpactPreviewProps> = ({ rows }) => {
   const validCodes = useMemo(() => {
-    return rows
-      .map((row) => row.code)
-      .filter((code): code is string => Boolean(code))
+    return rows.map(row => row.code).filter((code): code is string => Boolean(code))
   }, [rows])
 
   const levelDistribution = useMemo(() => {
     const dist = new Map<string, number>()
-    rows.forEach((row) => {
+    rows.forEach(row => {
       const key = row.level1 || '未分类'
       dist.set(key, (dist.get(key) || 0) + 1)
     })
@@ -38,7 +36,14 @@ export const ImpactPreview: React.FC<ImpactPreviewProps> = ({ rows }) => {
       <Typography.Paragraph data-testid="impact-summary" style={{ marginBottom: 16 }}>
         将新增 <strong>{validCodes.length}</strong> 个知识点
       </Typography.Paragraph>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 16 }}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: 16,
+          marginBottom: 16,
+        }}
+      >
         <Statistic title="新增知识点数量" value={validCodes.length} />
         <Statistic title="首个编号" value={validCodes[0]} />
         <Statistic title="末个编号" value={validCodes[validCodes.length - 1]} />

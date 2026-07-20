@@ -19,6 +19,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '@prisma/client';
 import { FrameworkType } from './types/textbook.types';
 import { ExpandKnowledgePointsResponse } from './dto/expand-knowledge-points.dto';
+import { ValidateKnowledgePointsResponse } from './dto/validate-knowledge-points.dto';
 
 interface FileFields {
   framework?: Express.Multer.File[];
@@ -263,6 +264,50 @@ export class TextbookController {
       frameworkFile,
       contentFile,
     );
+  }
+
+  /**
+   * 校验扩充文件
+   */
+  @Post(':id/validate')
+  @Roles(Role.TEACHER, Role.ADMIN)
+  @UseInterceptors(
+    FileFieldsInterceptor([
+      { name: 'framework', maxCount: 1 },
+      { name: 'content', maxCount: 1 },
+    ]),
+  )
+  async validate(
+    @Param('id') id: string,
+    @UploadedFiles() files: FileFields,
+  ): Promise<ValidateKnowledgePointsResponse> {
+    if (!files.framework || files.framework.length === 0) {
+      throw new BadRequestException('必须上传框架文件 (.xlsx)');
+    }
+    if (!files.content || files.content.length === 0) {
+      throw new BadRequestException('必须上传内容文件 (.md)');
+    }
+
+    const frameworkFile = files.framework[0];
+    const contentFile = files.content[0];
+
+    if (!frameworkFile.originalname.toLowerCase().endsWith('.xlsx')) {
+      throw new BadRequestException('框架文件必须是 .xlsx 格式');
+    }
+    if (!contentFile.originalname.toLowerCase().endsWith('.md')) {
+      throw new BadRequestException('内容文件必须是 .md 格式');
+    }
+
+    const report = await this.textbookService.validateExpansionFiles(
+      id,
+      frameworkFile,
+      contentFile,
+    );
+
+    return {
+      success: true,
+      data: report,
+    };
   }
 
   /**

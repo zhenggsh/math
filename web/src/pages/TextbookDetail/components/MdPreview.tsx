@@ -8,15 +8,11 @@ interface MdPreviewProps {
   highlightedLine?: number
 }
 
-export const MdPreview: React.FC<MdPreviewProps> = ({
-  content,
-  errors,
-  highlightedLine,
-}) => {
+export const MdPreview: React.FC<MdPreviewProps> = ({ content, errors, highlightedLine }) => {
   const lines = useMemo(() => content.split('\n'), [content])
   const errorMap = useMemo(() => {
     const map = new Map<number, ValidationIssue[]>()
-    errors.forEach((err) => {
+    errors.forEach(err => {
       if (err.location.row) {
         const list = map.get(err.location.row) || []
         list.push(err)
@@ -89,12 +85,9 @@ export const MdPreview: React.FC<MdPreviewProps> = ({
         )
       })}
       {Array.from(errorMap.entries()).map(([lineNumber, lineErrors]) => (
-        <div
-          key={`md-error-${lineNumber}`}
-          style={{ padding: '4px 0 4px 48px', fontSize: 12 }}
-        >
+        <div key={`md-error-${lineNumber}`} style={{ padding: '4px 0 4px 48px', fontSize: 12 }}>
           <Typography.Text type="danger">
-            ✗ 第 {lineNumber} 行：{lineErrors.map((e) => e.message).join('；')}
+            ✗ 第 {lineNumber} 行：{lineErrors.map(e => e.message).join('；')}
           </Typography.Text>
         </div>
       ))}

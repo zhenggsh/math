@@ -1,6 +1,11 @@
 import { describe, it, expect } from 'vitest'
 import * as XLSX from 'xlsx'
-import { parseCsvPreview, parseFrameworkPreview, parseXlsxPreview, readTextFile } from '../textbookFilePreview'
+import {
+  parseCsvPreview,
+  parseFrameworkPreview,
+  parseXlsxPreview,
+  readTextFile,
+} from '../textbookFilePreview'
 
 describe('textbookFilePreview', () => {
   it('parses xlsx rows into preview objects', async () => {

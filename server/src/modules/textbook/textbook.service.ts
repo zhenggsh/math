@@ -12,6 +12,8 @@ import {
   TextbookFilePair,
   FrameworkType,
   RawKnowledgePoint,
+  ValidationIssue,
+  ValidationReport,
 } from './types/textbook.types';
 import type { ExpandKnowledgePointsResponse } from './dto/expand-knowledge-points.dto';
 import * as fs from 'fs';
@@ -543,7 +545,7 @@ export class TextbookService {
 
     for (const line of lines) {
       const startMatch = line.match(
-        new RegExp(`^####\\s+知识点\\s+${this.escapeRegex(code)}\\s*[:：]`),
+        new RegExp(`^####\\s+(?:知识点\\s+)?${this.escapeRegex(code)}\\b`),
       );
       if (startMatch) {
         capturing = true;
@@ -552,7 +554,7 @@ export class TextbookService {
       }
 
       if (capturing) {
-        const nextKpMatch = line.match(/^####\s+知识点\s+\d/);
+        const nextKpMatch = line.match(/^####\s+(?:知识点\s+)?\d/);
         const separatorMatch = line.match(/^---\s*$/);
         if (nextKpMatch || separatorMatch) {
           break;
@@ -853,12 +855,12 @@ export class TextbookService {
   ): { startIndex: number; endIndex: number } | null {
     for (let i = 0; i < lines.length; i++) {
       const startMatch = lines[i].match(
-        new RegExp(`^####\\s+知识点\\s+${this.escapeRegex(code)}\\s*[:：]`),
+        new RegExp(`^####\\s+(?:知识点\\s+)?${this.escapeRegex(code)}\\b`),
       );
       if (startMatch) {
         let endIndex = lines.length;
         for (let j = i + 1; j < lines.length; j++) {
-          const nextKpMatch = lines[j].match(/^####\s+知识点\s+\d/);
+          const nextKpMatch = lines[j].match(/^####\s+(?:知识点\s+)?\d/);
           const separatorMatch = lines[j].match(/^---\s*$/);
           const headingMatch = lines[j].match(/^(#{1,3})\s+/);
           if (nextKpMatch || separatorMatch || headingMatch) {
@@ -963,32 +965,174 @@ export class TextbookService {
   }
 
   /**
-   * 从 md 内容中提取所有知识点 code
+   * 共享的解析与校验逻辑
+   * 解析框架和 md 文件，执行所有校验，但不修改数据库或原文件
    */
-  private extractMdCodes(fileContent: string): string[] {
-    const codes: string[] = [];
-    const lines = fileContent.split('\n');
+  private async prepareExpansion(
+    textbookId: string,
+    frameworkFile: Express.Multer.File,
+    contentFile: Express.Multer.File,
+  ): Promise<{
+    report: ValidationReport;
+    textbook: {
+      id: string;
+      frameworkPath: string;
+      contentPath: string | null;
+      fileName: string;
+    };
+    frameworkType: FrameworkType;
+    newPoints: RawKnowledgePoint[];
+    explicitCodes: Set<string>;
+    mdContent: string;
+  }> {
+    const textbook = await this.prisma.textbook.findUnique({
+      where: { id: textbookId },
+    });
 
-    for (const line of lines) {
-      const level3Match = line.match(
-        /^####\s+知识点\s+(\d+(?:\.\d+)*)\s*[:：]/,
-      );
-      if (level3Match) {
-        codes.push(level3Match[1]);
-        continue;
-      }
-      const level2Match = line.match(/^###\s+(\d+(?:\.\d)*)\b/);
-      if (level2Match) {
-        codes.push(level2Match[1]);
-        continue;
-      }
-      const level1Match = line.match(/^##\s+(\d+(?:\.\d)*)\b/);
-      if (level1Match) {
-        codes.push(level1Match[1]);
-      }
+    if (!textbook) {
+      throw new NotFoundException(`教材不存在: ${textbookId}`);
     }
 
-    return codes;
+    const frameworkType = frameworkFile.originalname
+      .toLowerCase()
+      .endsWith('.xlsx')
+      ? 'xlsx'
+      : 'csv';
+
+    const tempFrameworkPath = await this.fileService.saveTempFile(
+      frameworkFile.buffer,
+      path.extname(frameworkFile.originalname),
+    );
+    const tempContentPath = await this.fileService.saveTempFile(
+      contentFile.buffer,
+      '.md',
+    );
+
+    try {
+      const parseResult = this.parserService.parseFrameworkFile(
+        tempFrameworkPath,
+        frameworkType,
+      );
+
+      if (
+        !parseResult.success ||
+        !parseResult.data ||
+        !parseResult.rawRecords
+      ) {
+        return {
+          report: {
+            valid: false,
+            errors: [
+              {
+                type: 'xlsx',
+                location: { file: 'xlsx' },
+                message: `解析框架文件失败: ${parseResult.error}`,
+              },
+            ],
+          },
+          textbook: {
+            id: textbook.id,
+            frameworkPath: textbook.frameworkPath,
+            contentPath: textbook.contentPath,
+            fileName: textbook.fileName,
+          },
+          frameworkType,
+          newPoints: [],
+          explicitCodes: new Set<string>(),
+          mdContent: '',
+        };
+      }
+
+      const newPoints = parseResult.data;
+      const explicitCodes = new Set(parseResult.explicitCodes ?? []);
+      const rawRecords = parseResult.rawRecords;
+
+      const errors: ValidationIssue[] = [];
+
+      const columnValidation =
+        this.parserService.validateRequiredColumns(rawRecords);
+      if (!columnValidation.valid) {
+        for (const err of columnValidation.errors) {
+          errors.push({
+            type: 'xlsx',
+            location: { file: 'xlsx' },
+            message: err,
+          });
+        }
+      }
+
+      const recordErrors =
+        this.parserService.validateExplicitRecords(rawRecords);
+      errors.push(...recordErrors);
+
+      const knowledgePointValidation =
+        this.parserService.validateKnowledgePoints(newPoints);
+      if (!knowledgePointValidation.valid) {
+        for (const err of knowledgePointValidation.errors) {
+          errors.push({
+            type: 'xlsx',
+            location: { file: 'xlsx' },
+            message: err,
+          });
+        }
+      }
+
+      const mdContent = contentFile.buffer
+        .toString('utf-8')
+        .replace(new RegExp(`^${String.fromCharCode(0xfeff)}`), '');
+      const mdCodes = this.parserService.extractMdCodes(mdContent);
+      const xlsxCodes = new Set(newPoints.map((p) => p.code));
+      const mdCodeErrors = mdCodes
+        .filter((code) => !xlsxCodes.has(code))
+        .map((code) => `md 中的知识点编号 ${code} 在 xlsx 中不存在`);
+
+      for (const err of mdCodeErrors) {
+        errors.push({
+          type: 'md',
+          location: { file: 'md' },
+          message: err,
+        });
+      }
+
+      const report: ValidationReport = {
+        valid: errors.length === 0,
+        errors,
+      };
+
+      return {
+        report,
+        textbook: {
+          id: textbook.id,
+          frameworkPath: textbook.frameworkPath,
+          contentPath: textbook.contentPath,
+          fileName: textbook.fileName,
+        },
+        frameworkType,
+        newPoints,
+        explicitCodes,
+        mdContent,
+      };
+    } finally {
+      await this.fileService.deleteTempFile(tempFrameworkPath);
+      await this.fileService.deleteTempFile(tempContentPath);
+    }
+  }
+
+  /**
+   * 校验扩充文件
+   * 仅解析和校验，不修改数据库或文件
+   */
+  async validateExpansionFiles(
+    textbookId: string,
+    frameworkFile: Express.Multer.File,
+    contentFile: Express.Multer.File,
+  ): Promise<ValidationReport> {
+    const { report } = await this.prepareExpansion(
+      textbookId,
+      frameworkFile,
+      contentFile,
+    );
+    return report;
   }
 
   /**
@@ -1000,197 +1144,125 @@ export class TextbookService {
     frameworkFile: Express.Multer.File,
     contentFile: Express.Multer.File,
   ): Promise<ExpandKnowledgePointsResponse> {
-    const textbook = await this.prisma.textbook.findUnique({
-      where: { id: textbookId },
-    });
+    const { report, textbook, newPoints, explicitCodes, mdContent } =
+      await this.prepareExpansion(textbookId, frameworkFile, contentFile);
 
-    if (!textbook) {
-      throw new NotFoundException(`教材不存在: ${textbookId}`);
+    if (!report.valid) {
+      throw new BadRequestException(
+        `数据校验失败: ${report.errors.map((e) => e.message).join('; ')}`,
+      );
     }
 
-    // 保存上传文件到临时位置以便解析
-    const tempFrameworkPath = await this.fileService.saveTempFile(
-      frameworkFile.buffer,
-      path.extname(frameworkFile.originalname),
-    );
-    const tempContentPath = await this.fileService.saveTempFile(
-      contentFile.buffer,
-      '.md',
-    );
-
-    try {
-      // 解析并校验框架文件
-      const frameworkType = frameworkFile.originalname
-        .toLowerCase()
-        .endsWith('.xlsx')
-        ? 'xlsx'
-        : 'csv';
-      const parseResult = this.parserService.parseFrameworkFile(
-        tempFrameworkPath,
-        frameworkType,
-      );
-
-      if (!parseResult.success || !parseResult.data) {
-        throw new BadRequestException(`解析框架文件失败: ${parseResult.error}`);
-      }
-
-      const newPoints = parseResult.data;
-
-      const columnValidation = this.parserService.validateRequiredColumns(
-        newPoints.map((p) => ({
-          code: p.code,
-          level1: p.level1,
-          level2: p.level2 || '',
-          level3: p.level3 || '',
-          name: p.name || '',
-          definition: p.definition || '',
-          characteristics: p.characteristics || '',
-          importanceLevel: p.importanceLevel,
-        })),
-      );
-      if (!columnValidation.valid) {
-        throw new BadRequestException(
-          `数据验证失败: ${columnValidation.errors.join('; ')}`,
+    return this.prisma.$transaction(async (tx) => {
+      return this.withTextbookAdvisoryLock(tx, textbookId, async () => {
+        const existingPoints = await tx.knowledgePoint.findMany({
+          where: { textbookId },
+          select: { code: true },
+        });
+        const existingCodes = new Set(existingPoints.map((p) => p.code));
+        const conflicts = newPoints.filter(
+          (p) => explicitCodes.has(p.code) && existingCodes.has(p.code),
         );
-      }
 
-      const validation = this.parserService.validateKnowledgePoints(newPoints);
-      if (!validation.valid) {
-        throw new BadRequestException(
-          `数据验证失败: ${validation.errors.join('; ')}`,
+        if (conflicts.length > 0) {
+          throw new ConflictException(
+            `以下知识点编号已存在: ${conflicts.map((p) => p.code).join(', ')}`,
+          );
+        }
+
+        const pointsToCreate = newPoints.filter(
+          (p) => !existingCodes.has(p.code),
         );
-      }
 
-      // 校验 md 中的 code 必须是 xlsx code 的子集
-      const mdContent = contentFile.buffer.toString('utf-8');
-      const mdCodes = this.extractMdCodes(mdContent);
-      const xlsxCodes = new Set(newPoints.map((p) => p.code));
-      const mdCodeErrors = mdCodes
-        .filter((code) => !xlsxCodes.has(code))
-        .map((code) => `md 中的知识点编号 ${code} 在 xlsx 中不存在`);
-      if (mdCodeErrors.length > 0) {
-        throw new BadRequestException(
-          `md 文件校验失败: ${mdCodeErrors.join('; ')}`,
+        const headers = [
+          '知识点编号',
+          '一级知识点',
+          '二级知识点',
+          '三级知识点',
+          '知识点名称',
+          '定义',
+          '特性/运算方式',
+          '重要性级别',
+        ];
+        const xlsxRows = pointsToCreate.map((p) => [
+          p.code,
+          p.level1,
+          p.level2 || '',
+          p.level3 || '',
+          p.name || '',
+          p.definition || '',
+          p.characteristics || '',
+          p.importanceLevel,
+        ]);
+        this.fileService.appendXlsxRows(
+          textbook.frameworkPath,
+          headers,
+          xlsxRows,
         );
-      }
 
-      // 获取 advisory lock 并在事务中执行写入
-      return this.prisma.$transaction(async (tx) => {
-        return this.withTextbookAdvisoryLock(tx, textbookId, async () => {
-          // 获取锁后重新检查编号冲突
-          const existingPoints = await tx.knowledgePoint.findMany({
-            where: { textbookId },
-            select: { code: true },
-          });
-          const existingCodes = new Set(existingPoints.map((p) => p.code));
-          const conflicts = newPoints.filter((p) => existingCodes.has(p.code));
-
-          if (conflicts.length > 0) {
-            throw new ConflictException(
-              `以下知识点编号已存在: ${conflicts.map((p) => p.code).join(', ')}`,
-            );
-          }
-
-          // 追加到 xlsx 文件
-          const headers = [
-            '知识点编号',
-            '一级知识点',
-            '二级知识点',
-            '三级知识点',
-            '知识点名称',
-            '定义',
-            '特性/运算方式',
-            '重要性级别',
-          ];
-          const xlsxRows = newPoints.map((p) => [
-            p.code,
-            p.level1,
-            p.level2 || '',
-            p.level3 || '',
-            p.name || '',
-            p.definition || '',
-            p.characteristics || '',
-            p.importanceLevel,
-          ]);
-          this.fileService.appendXlsxRows(
-            textbook.frameworkPath,
-            headers,
-            xlsxRows,
-          );
-
-          // 追加到 md 文件
-          let contentPath = textbook.contentPath;
-          if (!contentPath) {
-            contentPath = `${textbook.fileName}.md`;
-            fs.writeFileSync(
-              this.fileService.getFilePath(contentPath),
-              mdContent,
-            );
-            await tx.textbook.update({
-              where: { id: textbookId },
-              data: { contentPath },
-            });
-          }
-
-          const existingMdContent = fs.readFileSync(
-            this.fileService.getFilePath(contentPath),
-            'utf-8',
-          );
-          const mdBlocks = newPoints
-            .filter((p) => p.code.split('.').length >= 3)
-            .map((p) => ({
-              code: p.code,
-              level1: p.level1,
-              level2: p.level2 || p.level1,
-              level3: p.level3 || p.code,
-              name: p.name || p.level3 || p.code,
-              content:
-                this.extractMdContentForCode(mdContent, p.code) || '[待输入]',
-            }));
-          const newMdContent = this.appendMdContent(
-            existingMdContent,
-            mdBlocks,
-          );
+        let contentPath = textbook.contentPath;
+        if (!contentPath) {
+          contentPath = `${textbook.fileName}.md`;
           fs.writeFileSync(
             this.fileService.getFilePath(contentPath),
-            newMdContent,
+            mdContent,
           );
-
-          // 创建知识点记录
-          await tx.knowledgePoint.createMany({
-            data: newPoints.map((p) => ({
-              code: p.code,
-              name: p.name,
-              level1: p.level1,
-              level2: p.level2 || null,
-              level3: p.level3 || null,
-              definition: p.definition || null,
-              characteristics: p.characteristics || null,
-              importanceLevel: p.importanceLevel,
-              textbookId,
-            })),
-          });
-
-          // 更新教材最后修改时间
           await tx.textbook.update({
             where: { id: textbookId },
-            data: { lastModifiedAt: new Date() },
+            data: { contentPath },
           });
+        }
 
-          return {
-            success: true,
-            message: `成功新增 ${newPoints.length} 个知识点`,
-            data: {
-              addedCodes: newPoints.map((p) => p.code),
-              count: newPoints.length,
-            },
-          };
+        const existingMdContent = fs.readFileSync(
+          this.fileService.getFilePath(contentPath),
+          'utf-8',
+        );
+        const mdBlocks = pointsToCreate
+          .filter((p) => p.code.split('.').length >= 3)
+          .map((p) => ({
+            code: p.code,
+            level1: p.level1,
+            level2: p.level2 || p.level1,
+            level3: p.level3 || p.code,
+            name: p.name || p.level3 || p.code,
+            content:
+              this.extractMdContentForCode(mdContent, p.code) || '[待输入]',
+          }));
+        const newMdContent = this.appendMdContent(existingMdContent, mdBlocks);
+        fs.writeFileSync(
+          this.fileService.getFilePath(contentPath),
+          newMdContent,
+        );
+
+        await tx.knowledgePoint.createMany({
+          data: pointsToCreate.map((p) => ({
+            code: p.code,
+            name: p.name,
+            level1: p.level1,
+            level2: p.level2 || null,
+            level3: p.level3 || null,
+            definition: p.definition || null,
+            characteristics: p.characteristics || null,
+            importanceLevel: p.importanceLevel,
+            textbookId,
+          })),
         });
+
+        await tx.textbook.update({
+          where: { id: textbookId },
+          data: { lastModifiedAt: new Date() },
+        });
+
+        return {
+          success: true,
+          message: `成功新增 ${pointsToCreate.length} 个知识点`,
+          data: {
+            addedCodes: pointsToCreate.map((p) => p.code),
+            count: pointsToCreate.length,
+          },
+        };
       });
-    } finally {
-      await this.fileService.deleteTempFile(tempFrameworkPath);
-      await this.fileService.deleteTempFile(tempContentPath);
-    }
+    });
   }
 
   /**
@@ -1206,7 +1278,7 @@ export class TextbookService {
     let startIndex = -1;
     if (codeParts.length >= 3) {
       const level3Pattern = new RegExp(
-        `^####\\s+知识点\\s+${this.escapeRegex(code)}\\s*[:：]`,
+        `^####\\s+(?:知识点\\s+)?${this.escapeRegex(code)}\\b`,
       );
       for (let i = 0; i < lines.length; i++) {
         if (level3Pattern.test(lines[i])) {

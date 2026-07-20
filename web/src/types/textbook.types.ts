@@ -61,3 +61,32 @@ export interface UploadFileInfo {
   contentFile: File | null
   baseName: string
 }
+
+// 校验问题定位
+export interface ValidationIssueLocation {
+  file: 'xlsx' | 'md'
+  row?: number
+  code?: string
+}
+
+// 校验问题
+export interface ValidationIssue {
+  type: 'xlsx' | 'md'
+  location: ValidationIssueLocation
+  message: string
+}
+
+// 校验报告
+export interface ValidationReport {
+  valid: boolean
+  errors: ValidationIssue[]
+}
+
+// 扩充弹窗草稿
+export interface ExpansionDraft {
+  textbookId: string
+  frameworkFileName?: string
+  frameworkFileContent?: string
+  contentFileName?: string
+  contentFileContent?: string
+}
