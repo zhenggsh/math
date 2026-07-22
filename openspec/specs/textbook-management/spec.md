@@ -160,6 +160,14 @@ interface FileTreeNode {
 - 显示同步进度
 - 完成后显示结果摘要
 
+### R6.5: 操作列查看详情入口
+
+**R6.5.1** 教材列表表格的「操作」列必须提供「详情」按钮
+
+**R6.5.2** 点击「详情」按钮后，系统必须导航到 `/teacher/textbooks/:id`
+
+**R6.5.3** 只有教师或管理员角色可以看到「详情」按钮
+
 ## Interface
 
 ### TextbookController
