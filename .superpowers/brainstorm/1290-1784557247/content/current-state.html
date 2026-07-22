@@ -1,0 +1,72 @@
+<h2>教材管理 - 扩充知识点弹窗现状</h2>
+<p class="subtitle">我基于当前代码画出了这个弹窗的结构，并标注了几个可能存在体验问题的地方。请先看看，然后告诉我你最想优先解决哪一块。</p>
+
+<div class="mockup">
+  <div class="mockup-header">当前弹窗结构（竖向堆叠）</div>
+  <div class="mockup-body" style="font-family: system-ui; padding: 16px; background: #f5f5f5; border-radius: 8px;">
+    <div style="border: 2px dashed #999; border-radius: 8px; padding: 12px; margin-bottom: 12px; background: #fff;">
+      <strong>标题：扩充知识点</strong>
+      <div style="font-size: 12px; color: #666; margin-top: 4px;">说明文字 + 校验规则面板（可折叠）</div>
+      <span style="display: inline-block; margin-top: 6px; padding: 2px 6px; background: #ff4d4f; color: #fff; border-radius: 4px; font-size: 11px;">问题 1</span>
+      <span style="font-size: 12px; color: #333; margin-left: 6px;">规则面板与上传区、预览区全部竖向堆叠，弹窗可能过高</span>
+    </div>
+
+    <div style="border: 2px dashed #999; border-radius: 8px; padding: 12px; margin-bottom: 12px; background: #fff;">
+      <strong>框架文件 (.xlsx)</strong>
+      <div style="margin: 8px 0; padding: 6px; background: #f0f0f0; border-radius: 4px; font-size: 12px;">[选择文件按钮]</div>
+      <div style="margin-top: 8px; padding: 6px; background: #e6f7ff; border-radius: 4px; font-size: 12px;">xlsx 表格预览（可能很宽）</div>
+      <span style="display: inline-block; margin-top: 6px; padding: 2px 6px; background: #ff4d4f; color: #fff; border-radius: 4px; font-size: 11px;">问题 2</span>
+      <span style="font-size: 12px; color: #333; margin-left: 6px;">预览表格列多时需要横向滚动，可读性下降</span>
+    </div>
+
+    <div style="border: 2px dashed #999; border-radius: 8px; padding: 12px; margin-bottom: 12px; background: #fff;">
+      <strong>内容文件 (.md)</strong>
+      <div style="margin: 8px 0; padding: 6px; background: #f0f0f0; border-radius: 4px; font-size: 12px;">[选择文件按钮]</div>
+      <div style="margin-top: 8px; padding: 6px; background: #e6f7ff; border-radius: 4px; font-size: 12px;">md 文本预览（只读文本框）</div>
+      <span style="display: inline-block; margin-top: 6px; padding: 2px 6px; background: #ff4d4f; color: #fff; border-radius: 4px; font-size: 11px;">问题 3</span>
+      <span style="font-size: 12px; color: #333; margin-left: 6px;">md 内容无层级渲染，长文本难以快速定位</span>
+    </div>
+
+    <div style="border: 2px dashed #999; border-radius: 8px; padding: 12px; margin-bottom: 12px; background: #fff;">
+      <strong>校验结果</strong>
+      <div style="margin: 8px 0; padding: 6px; background: #fff1f0; border-radius: 4px; font-size: 12px;">错误列表（按 xlsx / md 分组）</div>
+      <span style="display: inline-block; margin-top: 6px; padding: 2px 6px; background: #ff4d4f; color: #fff; border-radius: 4px; font-size: 11px;">问题 4</span>
+      <span style="font-size: 12px; color: #333; margin-left: 6px;">错误与预览/表格行号没有联动，用户需要手动对照</span>
+    </div>
+
+    <div style="display: flex; justify-content: flex-end; gap: 8px; padding-top: 8px;">
+      <button class="mock-button" style="background: #fff; border: 1px solid #d9d9d9;">取消</button>
+      <button class="mock-button" style="background: #fff; border: 1px solid #d9d9d9;">开始校验</button>
+      <button class="mock-button" style="background: #1890ff; color: #fff; border: 1px solid #1890ff;">确认上传</button>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>接下来我想确认一个方向</h3>
+  <p>基于以上观察，我倾向于从<strong>信息层级</strong>和<strong>操作流程</strong>两个维度给建议。你更希望我先重点看哪一块？</p>
+</div>
+
+<div class="options">
+  <div class="option" data-choice="layout" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>布局与信息层级</h3>
+      <p>如何让规则、上传、预览、校验结果在弹窗内更紧凑、更清晰，减少纵向滚动。</p>
+    </div>
+  </div>
+  <div class="option" data-choice="flow" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>操作流与反馈</h3>
+      <p>如何让选文件 → 预览 → 校验 → 修正 → 提交的过程更顺滑，错误与预览联动。</p>
+    </div>
+  </div>
+  <div class="option" data-choice="both" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>两者都要看</h3>
+      <p>先给出布局建议，再给出操作流建议，最后给出综合方案。</p>
+    </div>
+  </div>
+</div>

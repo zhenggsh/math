@@ -1,0 +1,51 @@
+<h2>Part 3: MindMap Enhancement</h2>
+<p class="subtitle">Status: 🔄 Refining Layout</p>
+
+<div class="mockup">
+  <div class="mockup-header">Balanced Layout (Bidirectional)</div>
+  <div class="mockup-body">
+    <div style="display:flex;justify-content:center;align-items:center;min-height:200px;position:relative;">
+      <!-- Root -->
+      <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:#1890ff;color:white;padding:8px 16px;border-radius:4px;font-weight:bold;">Root</div>
+
+      <!-- Left connections -->
+      <div style="position:absolute;left:35%;top:30%;background:#fff;border:1px solid #1890ff;padding:6px 12px;border-radius:4px;">Left 1</div>
+      <div style="position:absolute;left:35%;top:50%;background:#fff;border:1px solid #1890ff;padding:6px 12px;border-radius:4px;">Left 2</div>
+      <div style="position:absolute;left:35%;top:70%;background:#fff;border:1px solid #1890ff;padding:6px 12px;border-radius:4px;">Left 3</div>
+
+      <!-- Right connections -->
+      <div style="position:absolute;left:65%;top:30%;background:#fff;border:1px solid #1890ff;padding:6px 12px;border-radius:4px;">Right 1</div>
+      <div style="position:absolute;left:65%;top:50%;background:#fff;border:1px solid #1890ff;padding:6px 12px;border-radius:4px;">Right 2</div>
+      <div style="position:absolute;left:65%;top:70%;background:#fff;border:1px solid #1890ff;padding:6px 12px;border-radius:4px;">Right 3</div>
+
+      <!-- Level 3 left -->
+      <div style="position:absolute;left:20%;top:25%;background:#f6ffed;border:1px solid #52c41a;padding:4px 8px;border-radius:4px;font-size:12px;">L1-1</div>
+      <div style="position:absolute;left:20%;top:35%;background:#f6ffed;border:1px solid #52c41a;padding:4px 8px;border-radius:4px;font-size:12px;">L1-2</div>
+
+      <!-- Level 3 right -->
+      <div style="position:absolute;left:80%;top:60%;background:#fff7e6;border:1px solid #faad14;padding:4px 8px;border-radius:4px;font-size:12px;">R2-1</div>
+      <div style="position:absolute;left:80%;top:70%;background:#fff7e6;border:1px solid #faad14;padding:4px 8px;border-radius:4px;font-size:12px;">R2-2</div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Layout Clarification</h3>
+  <p><strong>Balanced Layout:</strong> Children are distributed horizontally, not diagonally.</p>
+  <ul>
+    <li>Root node is centered</li>
+    <li>Left half of children extend <strong>horizontally left</strong> from root's left edge</li>
+    <li>Right half of children extend <strong>horizontally right</strong> from root's right edge</li>
+    <li>Each child's own children continue in the same direction (left or right)</li>
+  </ul>
+</div>
+
+<div class="section">
+  <h3>Features</h3>
+  <ul>
+    <li><strong>Layout Switcher:</strong> Tree ↔ Balanced dropdown in toolbar</li>
+    <li><strong>MiniMap:</strong> Collapsible panel (default: bottom-right), 200×150px</li>
+    <li><strong>Pan:</strong> Middle-mouse button drag</li>
+    <li><strong>Zoom:</strong> Mouse wheel (future) / toolbar buttons</li>
+  </ul>
+</div>

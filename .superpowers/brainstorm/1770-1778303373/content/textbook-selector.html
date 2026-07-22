@@ -1,0 +1,26 @@
+<h2>Part 1: Global Textbook Selector</h2>
+<p class="subtitle">Status: ✅ Approved</p>
+
+<div class="mockup">
+  <div class="mockup-header">App Layout Header</div>
+  <div class="mockup-body">
+    <div style="display:flex;align-items:center;gap:16px;padding:8px 16px;background:#001529;color:white;">
+      <div style="font-weight:bold;font-size:16px;">知识通</div>
+      <div style="flex:1;"></div>
+      <div class="mock-input" style="width:200px;background:white;color:#333;">
+        📚 高中数学必修一 +1...
+      </div>
+      <div>👤 用户 ▼</div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Design Decisions</h3>
+  <ul>
+    <li><strong>Context:</strong> <code>TextbookContext</code> at <code>web/src/contexts/TextbookContext.tsx</code></li>
+    <li><strong>Persistence:</strong> <code>localStorage</code> key <code>mathtong:selected-textbooks</code></li>
+    <li><strong>Default:</strong> Select first textbook on initial load</li>
+    <li><strong>Multi-select:</strong> Ant Design <code>Select mode="multiple"</code></li>
+  </ul>
+</div>

@@ -1,0 +1,38 @@
+<h2>Part 2: Node Hover Popover</h2>
+<p class="subtitle">Status: ✅ Approved</p>
+
+<div class="mockup">
+  <div class="mockup-header">TreeView Node with Popover</div>
+  <div class="mockup-body">
+    <div style="padding:16px;">
+      <div style="display:flex;align-items:center;gap:8px;padding:4px 8px;background:#f0f0f0;border-radius:4px;margin-bottom:8px;">
+        <span>📘</span>
+        <span>集合的表示法</span>
+        <span style="background:#ff4d4f;color:white;padding:0 6px;border-radius:2px;font-size:12px;">A</span>
+      </div>
+      <div style="border:1px solid #d9d9d9;border-radius:8px;padding:12px;max-width:280px;box-shadow:0 4px 12px rgba(0,0,0,0.15);">
+        <div style="font-weight:bold;margin-bottom:8px;">📘 集合的表示法</div>
+        <div style="border-top:1px solid #f0f0f0;padding:8px 0;">
+          <span style="color:#ff4d4f;font-weight:bold;">重要性: A</span>
+        </div>
+        <div style="border-top:1px solid #f0f0f0;padding:8px 0;color:#595959;font-size:13px;">
+          <div style="margin-bottom:4px;">定义:</div>
+          用特定的方法描述一个集合，如列举法、描述法等...
+        </div>
+        <div style="border-top:1px solid #f0f0f0;padding:8px 0;">
+          <span style="color:#52c41a;">✅ 已掌握</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Design Decisions</h3>
+  <ul>
+    <li><strong>Component:</strong> <code>KnowledgeNodePopover</code></li>
+    <li><strong>Trigger:</strong> Hover with 300ms delay</li>
+    <li><strong>Content:</strong> Title, Importance, Definition (max 6 lines), Learning Status</li>
+    <li><strong>Library:</strong> Ant Design <code>Popover</code></li>
+  </ul>
+</div>

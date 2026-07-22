@@ -1,0 +1,90 @@
+<h2>三个设计方向</h2>
+<p class="subtitle">C：我从<strong>布局</strong>和<strong>操作流</strong>两个维度整理了三个可选方案，每个都标了主要优缺点和实现成本。</p>
+
+<div class="cards">
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="font-family: system-ui; padding: 12px; background: #f5f5f5; border-radius: 6px; height: 220px; overflow: hidden;">
+        <div style="font-size: 12px; font-weight: bold; margin-bottom: 8px;">方案 A：紧凑单页</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; height: calc(100% - 24px);">
+          <div style="background: #fff; border-radius: 4px; padding: 8px; font-size: 11px;">
+            <div style="font-weight: bold; margin-bottom: 4px;">框架文件</div>
+            <div style="background: #f0f0f0; padding: 4px; border-radius: 2px; margin-bottom: 4px;">[上传]</div>
+            <div style="background: #e6f7ff; padding: 4px; border-radius: 2px;">xlsx 预览表</div>
+          </div>
+          <div style="background: #fff; border-radius: 4px; padding: 8px; font-size: 11px;">
+            <div style="font-weight: bold; margin-bottom: 4px;">内容文件</div>
+            <div style="background: #f0f0f0; padding: 4px; border-radius: 2px; margin-bottom: 4px;">[上传]</div>
+            <div style="background: #e6f7ff; padding: 4px; border-radius: 2px;">md 预览</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>方案 A：紧凑单页</h3>
+      <p>保持现有弹窗，但改为左右两栏布局：左上传/预览 xlsx，右上传/预览 md。校验规则折叠为「查看规则」链接或右上角帮助图标。</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>优点</h4><ul><li>改动最小，保留现有逻辑</li><li>两栏对比上传文件更直观</li><li>所有操作一步可达</li></ul></div>
+        <div class="cons"><h4>缺点</h4><ul><li>弹窗 still 较宽</li><li>错误与预览联动弱</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="font-family: system-ui; padding: 12px; background: #f5f5f5; border-radius: 6px; height: 220px; overflow: hidden;">
+        <div style="font-size: 12px; font-weight: bold; margin-bottom: 8px;">方案 B：分步向导</div>
+        <div style="background: #fff; border-radius: 4px; padding: 8px; font-size: 11px; height: calc(100% - 24px);">
+          <div style="display: flex; margin-bottom: 8px;">
+            <div style="flex: 1; text-align: center; padding: 4px; background: #1890ff; color: #fff; border-radius: 2px;">1. 上传</div>
+            <div style="flex: 1; text-align: center; padding: 4px; background: #f0f0f0; border-radius: 2px;">2. 预览</div>
+            <div style="flex: 1; text-align: center; padding: 4px; background: #f0f0f0; border-radius: 2px;">3. 校验</div>
+          </div>
+          <div style="background: #e6f7ff; padding: 8px; border-radius: 2px; text-align: center;">当前步骤：文件上传</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>方案 B：分步向导</h3>
+      <p>将流程拆成 3 步：上传文件 → 预览内容 → 校验并提交。每步只呈现必要信息，顶部有步骤条。</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>优点</h4><ul><li>认知负荷最低</li><li>每步目标清晰，适合新手</li><li>校验失败可退回上一步</li></ul></div>
+        <div class="cons"><h4>缺点</h4><ul><li>点击次数增加</li><li>实现复杂度更高</li><li>频繁上传者可能嫌慢</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="font-family: system-ui; padding: 12px; background: #f5f5f5; border-radius: 6px; height: 220px; overflow: hidden;">
+        <div style="font-size: 12px; font-weight: bold; margin-bottom: 8px;">方案 C：联动编辑器</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; height: calc(100% - 24px);">
+          <div style="background: #fff; border-radius: 4px; padding: 8px; font-size: 11px;">
+            <div style="font-weight: bold; margin-bottom: 4px;">xlsx 预览</div>
+            <div style="background: #e6f7ff; padding: 4px; border-radius: 2px;">1.1.1</div>
+            <div style="background: #fff1f0; padding: 4px; border-radius: 2px; margin-top: 4px;">✗ 已存在</div>
+          </div>
+          <div style="background: #fff; border-radius: 4px; padding: 8px; font-size: 11px;">
+            <div style="font-weight: bold; margin-bottom: 4px;">md 预览</div>
+            <div style="background: #e6f7ff; padding: 4px; border-radius: 2px;">1.1.1 标题</div>
+            <div style="background: #fff1f0; padding: 4px; border-radius: 2px; margin-top: 4px;">✗ 第 3 行层级错误</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>方案 C：联动编辑器</h3>
+      <p>左右分屏 + 行内错误高亮。xlsx 和 md 预览常驻，错误项直接标注在对应行/编号旁，并可点击错误跳到预览位置。</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>优点</h4><ul><li>错误定位最快</li><li>专业用户效率最高</li><li>视觉反馈最直观</li></ul></div>
+        <div class="cons"><h4>缺点</h4><ul><li>实现成本最高</li><li>对简单场景可能过重</li><li>需要维护预览-错误映射</li></ul></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top: 24px;">
+  <h3>我的推荐</h3>
+  <p>如果这是教师高频操作，<strong>方案 C 的体验上限最高</strong>，但实现成本也最高。如果希望立刻改善且不引入复杂状态机，<strong>方案 A 是性价比最好的选择</strong>：左右分栏 + 折叠规则 + 轻量错误高亮。方案 B 适合新手引导，但会拖慢熟练用户。</p>
+  <p><strong>你的倾向？</strong> 也可以选「A + 部分 C 的亮点」做成一个折中方案。</p>
+</div>
