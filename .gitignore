@@ -49,3 +49,12 @@ server/prisma/migrations/**/migration_lock.toml
 tmp/
 *.tmp
 .gstack/
+
+# Local agent settings
+.claude/settings.local.json
+
+# Test artifacts
+web/vitest-*.json
+
+# Conversation logs
+conversation-*.txt
