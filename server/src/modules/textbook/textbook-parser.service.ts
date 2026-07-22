@@ -313,17 +313,6 @@ export class TextbookParserService {
   }
 
   /**
-   * 将原始数据转换为知识点结构
-   * 自动生成一二级知识点记录（code 为 a 和 a.b）
-   */
-  private transformToKnowledgePoints(
-    rawData: Record<string, string>[],
-  ): RawKnowledgePoint[] {
-    const explicitPoints = this.transformToExplicitPoints(rawData);
-    return this.generateHierarchyPoints(explicitPoints);
-  }
-
-  /**
    * 根据三级知识点自动生成一二级知识点记录
    */
   private generateHierarchyPoints(

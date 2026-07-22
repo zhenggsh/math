@@ -315,7 +315,7 @@ describe('ExpandKnowledgePointsModal wizard', () => {
     fireEvent.click(screen.getByRole('button', { name: /下一步/i }))
     await waitFor(() => expect(screen.getByTestId('impact-summary')).toBeInTheDocument())
 
-    const submitButton = screen.getByRole('button', { name: /确认上传/i })
+    const submitButton = screen.getByRole('button', { name: /确认扩充/i })
     expect(submitButton).toBeEnabled()
     fireEvent.click(submitButton)
 

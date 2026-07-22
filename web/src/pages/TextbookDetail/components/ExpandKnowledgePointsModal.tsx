@@ -145,6 +145,8 @@ export const ExpandKnowledgePointsModal: React.FC<ExpandKnowledgePointsModalProp
   )
   const [xlsxPreview, setXlsxPreview] = useState<XlsxPreviewRow[] | null>(null)
   const [mdPreview, setMdPreview] = useState<string | null>(null)
+  const [xlsxPreviewError, setXlsxPreviewError] = useState<string | null>(null)
+  const [mdPreviewError, setMdPreviewError] = useState<string | null>(null)
   const [highlightedFrameworkCode, setHighlightedFrameworkCode] = useState<string | undefined>(
     undefined
   )
@@ -191,10 +193,15 @@ export const ExpandKnowledgePointsModal: React.FC<ExpandKnowledgePointsModalProp
     let cancelled = false
     parseFrameworkPreview(frameworkFile)
       .then(rows => {
-        if (!cancelled) setXlsxPreview(rows)
+        if (!cancelled) {
+          setXlsxPreview(rows)
+        }
       })
-      .catch(() => {
-        if (!cancelled) setXlsxPreview(null)
+      .catch((err: unknown) => {
+        if (!cancelled) {
+          setXlsxPreview(null)
+          setXlsxPreviewError(err instanceof Error ? err.message : '框架文件解析失败')
+        }
       })
     return () => {
       cancelled = true
@@ -208,10 +215,15 @@ export const ExpandKnowledgePointsModal: React.FC<ExpandKnowledgePointsModalProp
     let cancelled = false
     readTextFile(contentFile)
       .then(text => {
-        if (!cancelled) setMdPreview(text)
+        if (!cancelled) {
+          setMdPreview(text)
+        }
       })
-      .catch(() => {
-        if (!cancelled) setMdPreview(null)
+      .catch((err: unknown) => {
+        if (!cancelled) {
+          setMdPreview(null)
+          setMdPreviewError(err instanceof Error ? err.message : '内容文件读取失败')
+        }
       })
     return () => {
       cancelled = true
@@ -234,6 +246,7 @@ export const ExpandKnowledgePointsModal: React.FC<ExpandKnowledgePointsModalProp
       }
       setFrameworkFileList(fileList.length > 0 ? [fileList[fileList.length - 1]] : [])
       setXlsxPreview(null)
+      setXlsxPreviewError(null)
       onResetValidation()
       setHighlightedFrameworkCode(undefined)
     },
@@ -248,6 +261,7 @@ export const ExpandKnowledgePointsModal: React.FC<ExpandKnowledgePointsModalProp
       }
       setContentFileList(fileList.length > 0 ? [fileList[fileList.length - 1]] : [])
       setMdPreview(null)
+      setMdPreviewError(null)
       onResetValidation()
       setHighlightedMdLine(undefined)
     },
@@ -258,6 +272,7 @@ export const ExpandKnowledgePointsModal: React.FC<ExpandKnowledgePointsModalProp
     setFrameworkFile(null)
     setFrameworkFileList([])
     setXlsxPreview(null)
+    setXlsxPreviewError(null)
     onResetValidation()
     setHighlightedFrameworkCode(undefined)
     return true
@@ -267,6 +282,7 @@ export const ExpandKnowledgePointsModal: React.FC<ExpandKnowledgePointsModalProp
     setContentFile(null)
     setContentFileList([])
     setMdPreview(null)
+    setMdPreviewError(null)
     onResetValidation()
     setHighlightedMdLine(undefined)
     return true
@@ -561,6 +577,14 @@ export const ExpandKnowledgePointsModal: React.FC<ExpandKnowledgePointsModalProp
     >
       <Typography.Text>左右预览已关联，点击错误标签或框架文件行可定位到对应位置。</Typography.Text>
       {renderValidationResult()}
+      {(xlsxPreviewError || mdPreviewError) && (
+        <Alert
+          message={[xlsxPreviewError, mdPreviewError].filter(Boolean).join('；')}
+          type="error"
+          showIcon
+          style={{ marginBottom: 8, flexShrink: 0 }}
+        />
+      )}
       {isNarrow ? (
         // 窄屏（Drawer）：垂直堆叠，每个预览固定高度内部滚动
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16, overflow: 'auto' }}>
@@ -657,6 +681,7 @@ export const ExpandKnowledgePointsModal: React.FC<ExpandKnowledgePointsModalProp
   const renderConfirmStep = () => (
     <Space direction="vertical" style={{ width: '100%' }}>
       <Typography.Text>请确认以下知识点将被追加到当前教材。</Typography.Text>
+      {error && <Alert message={error} type="error" showIcon />}
       <ImpactPreview rows={xlsxPreview || []} />
     </Space>
   )
@@ -699,12 +724,12 @@ export const ExpandKnowledgePointsModal: React.FC<ExpandKnowledgePointsModalProp
         key="submit"
         type="primary"
         loading={loading}
-        disabled={loading || !bothFilesSelected}
+        disabled={loading || !bothFilesSelected || validationResult?.valid !== true}
         onClick={() => {
           void handleSubmit()
         }}
       >
-        确认上传
+        确认扩充
       </Button>
     )
 
@@ -721,6 +746,7 @@ export const ExpandKnowledgePointsModal: React.FC<ExpandKnowledgePointsModalProp
     bothFilesSelected,
     loading,
     validating,
+    validationResult,
     handleClose,
     handlePrev,
     handleNext,
@@ -765,10 +791,10 @@ export const ExpandKnowledgePointsModal: React.FC<ExpandKnowledgePointsModalProp
         <Drawer
           title="扩充知识点"
           placement="bottom"
-          height="90vh"
+          height="100vh"
           open={open}
           onClose={handleClose}
-          extra={footerButtons}
+          footer={footerButtons}
           maskClosable={!loading}
           keyboard={!loading}
         >
@@ -782,7 +808,7 @@ export const ExpandKnowledgePointsModal: React.FC<ExpandKnowledgePointsModalProp
           footer={footerButtons}
           maskClosable={!loading}
           keyboard={!loading}
-          width="100vw"
+          width={900}
           style={{ top: '10vh', margin: '0 auto', maxWidth: '100vw', paddingBottom: 0 }}
           styles={{
             body: {

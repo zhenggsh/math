@@ -68,8 +68,9 @@ export const useTextbookDetail = (id: string): UseTextbookDetailReturn => {
         }
         return result
       } catch (err) {
-        const message = extractErrorMessage(err, '扩充失败')
-        setExpandError(message)
+        const errorMessage = extractErrorMessage(err, '扩充失败')
+        message.error(errorMessage)
+        setExpandError(errorMessage)
         return null
       } finally {
         setExpanding(false)
