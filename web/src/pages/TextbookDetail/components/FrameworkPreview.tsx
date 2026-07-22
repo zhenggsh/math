@@ -1,26 +1,17 @@
 import React, { useEffect, useMemo, useRef } from 'react'
 import { Table, Typography, Empty } from 'antd'
 import type { ValidationIssue } from '../../../types/textbook.types'
-import type { XlsxPreviewRow } from '../../../utils/textbookFilePreview'
+import {
+  CODE_HEADERS,
+  getRecordCode,
+  type XlsxPreviewRow,
+} from '../../../utils/textbookFilePreview'
 
 interface FrameworkPreviewProps {
   rows: XlsxPreviewRow[]
   errors: ValidationIssue[]
   highlightedCode?: string
   onRowClick?: (code: string) => void
-}
-
-// 编号列别名（与后端 parser 一致）：预览行对象的 key 是原始表头
-const CODE_HEADERS = ['知识点编号', '编号', 'code']
-
-function getRecordCode(record: XlsxPreviewRow): string | undefined {
-  for (const header of CODE_HEADERS) {
-    const value = record[header]
-    if (value && value.trim() !== '') {
-      return value.trim()
-    }
-  }
-  return undefined
 }
 
 export const FrameworkPreview: React.FC<FrameworkPreviewProps> = ({

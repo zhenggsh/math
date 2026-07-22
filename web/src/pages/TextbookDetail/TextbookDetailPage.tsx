@@ -25,6 +25,7 @@ const TextbookDetailPage: React.FC = () => {
     validationResult,
     validationError,
     expand,
+    fetchTextbook,
     validate,
     resetValidation,
   } = useTextbookDetail(id || '')
@@ -45,10 +46,11 @@ const TextbookDetailPage: React.FC = () => {
 
   const handleExpand = async (frameworkFile: File, contentFile: File) => {
     const result = await expand(frameworkFile, contentFile)
-    if (result?.success && result.data?.addedCodes.length) {
-      setNewPointCodes(result.data.addedCodes)
-      setModalOpen(false)
-    } else if (result?.success) {
+    if (result?.success) {
+      await fetchTextbook()
+      if (result.data?.addedCodes.length) {
+        setNewPointCodes(result.data.addedCodes)
+      }
       setModalOpen(false)
     }
   }

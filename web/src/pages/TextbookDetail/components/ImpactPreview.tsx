@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react'
 import { Alert, Descriptions, Empty, Statistic, Tag, Typography } from 'antd'
 import type { XlsxPreviewRow } from '../../../utils/textbookFilePreview'
+import { getRecordCode, getRecordLevel1 } from '../../../utils/textbookFilePreview'
 
 interface ImpactPreviewProps {
   rows: XlsxPreviewRow[]
@@ -8,13 +9,13 @@ interface ImpactPreviewProps {
 
 export const ImpactPreview: React.FC<ImpactPreviewProps> = ({ rows }) => {
   const validCodes = useMemo(() => {
-    return rows.map(row => row.code).filter((code): code is string => Boolean(code))
+    return rows.map(row => getRecordCode(row)).filter((code): code is string => Boolean(code))
   }, [rows])
 
   const levelDistribution = useMemo(() => {
     const dist = new Map<string, number>()
     rows.forEach(row => {
-      const key = row.level1 || '未分类'
+      const key = getRecordLevel1(row) || '未分类'
       dist.set(key, (dist.get(key) || 0) + 1)
     })
     return Array.from(dist.entries()).map(([level, count]) => ({ level, count }))

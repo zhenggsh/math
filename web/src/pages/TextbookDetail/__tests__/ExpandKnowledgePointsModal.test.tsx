@@ -5,14 +5,18 @@ import { ExpandKnowledgePointsModal } from '../components/ExpandKnowledgePointsM
 import type { ValidationReport, ExpansionDraft } from '../../../types/textbook.types'
 import { downloadErrorReport } from '../../../utils/exportErrorReport'
 
-vi.mock('../../../utils/textbookFilePreview', () => ({
-  parseFrameworkPreview: vi
-    .fn()
-    .mockResolvedValue([
-      { code: '1.1.1', level1: '集合', level2: '集合的含义', importanceLevel: 'A' },
-    ]),
-  readTextFile: vi.fn().mockResolvedValue('#### 1.1.1 集合的含义\n\n内容'),
-}))
+vi.mock('../../../utils/textbookFilePreview', async importOriginal => {
+  const actual = await importOriginal<typeof import('../../../utils/textbookFilePreview')>()
+  return {
+    ...actual,
+    parseFrameworkPreview: vi
+      .fn()
+      .mockResolvedValue([
+        { code: '1.1.1', level1: '集合', level2: '集合的含义', importanceLevel: 'A' },
+      ]),
+    readTextFile: vi.fn().mockResolvedValue('#### 1.1.1 集合的含义\n\n内容'),
+  }
+})
 
 vi.mock('../../../utils/exportErrorReport', () => ({
   downloadErrorReport: vi.fn(),

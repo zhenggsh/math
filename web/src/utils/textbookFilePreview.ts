@@ -5,6 +5,37 @@ export interface XlsxPreviewRow {
   [header: string]: string
 }
 
+export const CODE_HEADERS = ['知识点编号', '编号', 'code']
+const LEVEL1_HEADERS = ['一级知识点', 'level1']
+const LEVEL2_HEADERS = ['二级知识点', 'level2']
+const LEVEL3_HEADERS = ['三级知识点', 'level3']
+
+function getHeaderValue(record: XlsxPreviewRow, headers: string[]): string | undefined {
+  for (const header of headers) {
+    const value = record[header]
+    if (value && value.trim() !== '') {
+      return value.trim()
+    }
+  }
+  return undefined
+}
+
+export function getRecordCode(record: XlsxPreviewRow): string | undefined {
+  return getHeaderValue(record, CODE_HEADERS)
+}
+
+export function getRecordLevel1(record: XlsxPreviewRow): string | undefined {
+  return getHeaderValue(record, LEVEL1_HEADERS)
+}
+
+export function getRecordLevel2(record: XlsxPreviewRow): string | undefined {
+  return getHeaderValue(record, LEVEL2_HEADERS)
+}
+
+export function getRecordLevel3(record: XlsxPreviewRow): string | undefined {
+  return getHeaderValue(record, LEVEL3_HEADERS)
+}
+
 export async function parseXlsxPreview(file: File, limit = 100): Promise<XlsxPreviewRow[]> {
   const arrayBuffer = await file.arrayBuffer()
   const data = new Uint8Array(arrayBuffer)
