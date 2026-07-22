@@ -5,6 +5,7 @@ import * as path from 'path';
 import * as os from 'os';
 import * as crypto from 'crypto';
 import * as xlsx from 'xlsx';
+import * as Papa from 'papaparse';
 import { TextbookFilePair, FrameworkType } from './types/textbook.types';
 
 @Injectable()
@@ -274,6 +275,39 @@ export class TextbookFileService {
 
     xlsx.writeFile(workbook, filePath);
     this.logger.log(`已追加 ${newRowCount} 行到 xlsx: ${filePath}`);
+  }
+
+  /**
+   * 在 csv 文件末尾追加新行
+   * CSV 是纯文本，直接按 UTF-8 文本追加，避免 SheetJS 读写导致的编码损坏
+   */
+  appendCsvRows(
+    fileName: string,
+    rows: (string | number | undefined)[][],
+  ): void {
+    if (rows.length === 0) {
+      return;
+    }
+
+    const filePath = this.getFilePath(fileName);
+    if (!fs.existsSync(filePath)) {
+      throw new BadRequestException(`文件不存在: ${filePath}`);
+    }
+
+    const csvText = Papa.unparse(
+      rows.map((row) => row.map((cell) => cell ?? '')),
+      { newline: '\n' },
+    );
+
+    // 确保原文件末尾有换行，再追加新行
+    const existing = fs.readFileSync(filePath, 'utf-8');
+    const needsNewline = existing.length > 0 && !existing.endsWith('\n');
+    fs.appendFileSync(
+      filePath,
+      `${needsNewline ? '\n' : ''}${csvText}\n`,
+      'utf-8',
+    );
+    this.logger.log(`已追加 ${rows.length} 行到 csv: ${filePath}`);
   }
 
   /**

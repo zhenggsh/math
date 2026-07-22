@@ -12,6 +12,7 @@ import {
   TextbookFilePair,
   FrameworkType,
   RawKnowledgePoint,
+  ValidationCheck,
   ValidationIssue,
   ValidationReport,
 } from './types/textbook.types';
@@ -1014,22 +1015,36 @@ export class TextbookService {
         frameworkType,
       );
 
+      const errors: ValidationIssue[] = [];
+      const checks: ValidationCheck[] = [];
+      const addCheck = (
+        key: string,
+        label: string,
+        checkErrors: ValidationIssue[],
+      ): void => {
+        checks.push({
+          key,
+          label,
+          passed: checkErrors.length === 0,
+          errors: checkErrors,
+        });
+        errors.push(...checkErrors);
+      };
+
       if (
         !parseResult.success ||
         !parseResult.data ||
         !parseResult.rawRecords
       ) {
-        return {
-          report: {
-            valid: false,
-            errors: [
-              {
-                type: 'xlsx',
-                location: { file: 'xlsx' },
-                message: `解析框架文件失败: ${parseResult.error}`,
-              },
-            ],
+        addCheck('parse', '框架文件可正常解析', [
+          {
+            type: 'xlsx',
+            location: { file: 'xlsx' },
+            message: `解析框架文件失败: ${parseResult.error}`,
           },
+        ]);
+        return {
+          report: { valid: false, errors, checks },
           textbook: {
             id: textbook.id,
             frameworkPath: textbook.frameworkPath,
@@ -1043,60 +1058,157 @@ export class TextbookService {
         };
       }
 
+      checks.push({
+        key: 'parse',
+        label: '框架文件可正常解析',
+        passed: true,
+        errors: [],
+      });
+
       const newPoints = parseResult.data;
       const explicitCodes = new Set(parseResult.explicitCodes ?? []);
       const rawRecords = parseResult.rawRecords;
 
-      const errors: ValidationIssue[] = [];
-
+      // 检查项：必需列完整
       const columnValidation =
         this.parserService.validateRequiredColumns(rawRecords);
-      if (!columnValidation.valid) {
-        for (const err of columnValidation.errors) {
-          errors.push({
-            type: 'xlsx',
-            location: { file: 'xlsx' },
-            message: err,
-          });
-        }
-      }
+      addCheck(
+        'columns',
+        '包含必需列（知识点编号、一级知识点）',
+        columnValidation.valid
+          ? []
+          : columnValidation.errors.map((msg) => ({
+              type: 'xlsx' as const,
+              location: { file: 'xlsx' as const },
+              message: msg,
+            })),
+      );
 
+      // 检查项：行数据完整、编号格式正确 / 无重复编号
+      // （validateExplicitRecords 与 validateKnowledgePoints 均可能产出"重复"类错误，
+      //   按 message 分类归并到对应检查项）
       const recordErrors =
         this.parserService.validateExplicitRecords(rawRecords);
-      errors.push(...recordErrors);
-
-      const knowledgePointValidation =
+      const kpValidation =
         this.parserService.validateKnowledgePoints(newPoints);
-      if (!knowledgePointValidation.valid) {
-        for (const err of knowledgePointValidation.errors) {
-          errors.push({
-            type: 'xlsx',
-            location: { file: 'xlsx' },
-            message: err,
-          });
+      const kpIssues: ValidationIssue[] = kpValidation.errors.map((msg) => ({
+        type: 'xlsx' as const,
+        location: { file: 'xlsx' as const },
+        message: msg,
+      }));
+      const formatIssues = [
+        ...recordErrors.filter((e) => !e.message.includes('重复')),
+        ...kpIssues.filter((e) => !e.message.includes('重复')),
+      ];
+      const duplicateIssues = [
+        ...recordErrors.filter((e) => e.message.includes('重复')),
+        ...kpIssues.filter((e) => e.message.includes('重复')),
+      ];
+      addCheck('code-format', '行数据完整且编号为数字层级格式', formatIssues);
+      addCheck('duplicates', '无重复知识点编号', duplicateIssues);
+
+      // 检查项：新编号不与数据库已有编号冲突（仅 explicit codes）
+      const existingPoints = await this.prisma.knowledgePoint.findMany({
+        where: { textbookId },
+        select: { code: true },
+      });
+      const existingCodes = new Set(existingPoints.map((p) => p.code));
+      const dbConflictIssues: ValidationIssue[] = [...explicitCodes]
+        .filter((code) => existingCodes.has(code))
+        .map((code) => ({
+          type: 'xlsx' as const,
+          location: { file: 'xlsx' as const, code },
+          message: `知识点编号 "${code}" 已在当前教材中存在`,
+        }));
+      addCheck(
+        'db-conflicts',
+        '新编号不与当前教材已有编号冲突',
+        dbConflictIssues,
+      );
+
+      // 检查项：上级编号已存在
+      // 可用编号 = 数据库已有编号 ∪ 本次上传的 explicit 编号；
+      // 本次上传自动生成的骨架父编号不计入（详见 design D4）
+      const availableCodes = new Set([...existingCodes, ...explicitCodes]);
+      const parentIssues: ValidationIssue[] = [];
+      for (const code of explicitCodes) {
+        const parts = code.split('.');
+        if (parts.length >= 2) {
+          const parentCode = parts.slice(0, -1).join('.');
+          if (!availableCodes.has(parentCode)) {
+            parentIssues.push({
+              type: 'xlsx',
+              location: { file: 'xlsx', code },
+              message: `编号 "${code}" 的上级编号 "${parentCode}" 在当前教材中不存在`,
+            });
+          }
         }
       }
+      addCheck('parents', '上级编号在当前教材中已存在', parentIssues);
 
       const mdContent = contentFile.buffer
         .toString('utf-8')
         .replace(new RegExp(`^${String.fromCharCode(0xfeff)}`), '');
+
+      // 检查项：内容文件非空
+      addCheck(
+        'md-empty',
+        '内容文件非空',
+        mdContent.trim() === ''
+          ? [
+              {
+                type: 'md',
+                location: { file: 'md' },
+                message: '内容文件为空',
+              },
+            ]
+          : [],
+      );
+
+      // 检查项：md 编号均在框架文件中存在
       const mdCodes = this.parserService.extractMdCodes(mdContent);
       const xlsxCodes = new Set(newPoints.map((p) => p.code));
-      const mdCodeErrors = mdCodes
+      const mdCodeIssues: ValidationIssue[] = mdCodes
         .filter((code) => !xlsxCodes.has(code))
-        .map((code) => `md 中的知识点编号 ${code} 在 xlsx 中不存在`);
+        .map((code) => ({
+          type: 'md' as const,
+          location: { file: 'md' as const, code },
+          message: `md 中的知识点编号 ${code} 在框架文件中不存在`,
+        }));
+      addCheck('md-codes', '内容文件编号均在框架文件中存在', mdCodeIssues);
 
-      for (const err of mdCodeErrors) {
-        errors.push({
-          type: 'md',
-          location: { file: 'md' },
-          message: err,
-        });
-      }
+      // 检查项：标题级别正确（一级 ##、二级 ###、三级 ####，即 # 数量 = 编号层级 + 1）
+      // 统一匹配所有携带编号的标题行，避免漏检 ## 等错误层级
+      const mdHeadingIssues: ValidationIssue[] = [];
+      mdContent.split('\n').forEach((line, index) => {
+        const heading = line.match(
+          /^(#{2,6})\s+(?:知识点\s+)?(\d+(?:\.\d+)*)\b/,
+        );
+        if (!heading) {
+          return;
+        }
+        const hashCount = heading[1].length;
+        const code = heading[2];
+        const codeLevel = code.split('.').length;
+        const expectedHashCount = codeLevel + 1;
+        if (hashCount !== expectedHashCount) {
+          mdHeadingIssues.push({
+            type: 'md',
+            location: { file: 'md', row: index + 1, code },
+            message: `第 ${index + 1} 行：编号 "${code}"（${codeLevel} 级）应使用 ${'#'.repeat(expectedHashCount)} 标题而非 ${heading[1]}`,
+          });
+        }
+      });
+      addCheck(
+        'md-headings',
+        '标题级别正确（一级 ##、二级 ###、三级 ####）',
+        mdHeadingIssues,
+      );
 
       const report: ValidationReport = {
         valid: errors.length === 0,
         errors,
+        checks,
       };
 
       return {
@@ -1194,11 +1306,16 @@ export class TextbookService {
           p.characteristics || '',
           p.importanceLevel,
         ]);
-        this.fileService.appendXlsxRows(
-          textbook.frameworkPath,
-          headers,
-          xlsxRows,
-        );
+        // 按原教材框架文件类型追加：xlsx 走 SheetJS，csv 走纯文本追加（避免编码损坏）
+        if (this.fileService.getFileType(textbook.frameworkPath) === 'csv') {
+          this.fileService.appendCsvRows(textbook.frameworkPath, xlsxRows);
+        } else {
+          this.fileService.appendXlsxRows(
+            textbook.frameworkPath,
+            headers,
+            xlsxRows,
+          );
+        }
 
         let contentPath = textbook.contentPath;
         if (!contentPath) {

@@ -1,18 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
-import {
-  Modal,
-  Drawer,
-  Upload,
-  Button,
-  Space,
-  Alert,
-  Typography,
-  Steps,
-  Row,
-  Col,
-  Spin,
-} from 'antd'
+import { Modal, Drawer, Upload, Button, Space, Alert, Typography, Steps, Spin } from 'antd'
 import { FileExcelOutlined, FileTextOutlined, InfoCircleOutlined } from '@ant-design/icons'
+import { Allotment } from 'allotment'
+import 'allotment/dist/style.css'
 import type { UploadFile, RcFile } from 'antd/es/upload'
 import type {
   ValidationIssue,
@@ -161,6 +151,7 @@ export const ExpandKnowledgePointsModal: React.FC<ExpandKnowledgePointsModalProp
   const [highlightedMdLine, setHighlightedMdLine] = useState<number | undefined>(undefined)
   const [rulesDrawerOpen, setRulesDrawerOpen] = useState(false)
   const [isNarrow, setIsNarrow] = useState(() => window.innerWidth < NARROW_BREAKPOINT)
+  const [resultCollapsed, setResultCollapsed] = useState(false)
 
   const clearDraft = useCallback(() => {
     sessionStorage.removeItem(draftKey)
@@ -285,6 +276,7 @@ export const ExpandKnowledgePointsModal: React.FC<ExpandKnowledgePointsModalProp
     if (!frameworkFile || !contentFile) return
     setHighlightedFrameworkCode(undefined)
     setHighlightedMdLine(undefined)
+    setResultCollapsed(false)
     await onValidate(frameworkFile, contentFile)
   }, [frameworkFile, contentFile, onValidate])
 
@@ -316,19 +308,62 @@ export const ExpandKnowledgePointsModal: React.FC<ExpandKnowledgePointsModalProp
     })
   }, [frameworkFile, contentFile, onCancel, saveDraft, clearDraft])
 
-  const handleErrorClick = useCallback((location: ValidationIssue['location']) => {
-    if (location.code) {
-      setHighlightedFrameworkCode(location.code)
-    }
-    if (location.row) {
-      setHighlightedMdLine(location.row)
-    }
-  }, [])
+  // 在 md 内容中查找知识点编号对应的行号（1-based）
+  // 优先精确匹配标题行（##/###/####），未命中时退化到其后代编号的第一行
+  const findMdLineByCode = useCallback(
+    (code: string): number | undefined => {
+      if (!mdPreview) return undefined
+      const escaped = code.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      const lines = mdPreview.split('\n')
+      const exactPattern = new RegExp(`^#{2,4}\\s+(?:知识点\\s+)?${escaped}(?![\\d.])`)
+      for (let i = 0; i < lines.length; i++) {
+        if (exactPattern.test(lines[i])) return i + 1
+      }
+      const childPattern = new RegExp(`^#{2,4}\\s+(?:知识点\\s+)?${escaped}\\.\\d`)
+      for (let i = 0; i < lines.length; i++) {
+        if (childPattern.test(lines[i])) return i + 1
+      }
+      return undefined
+    },
+    [mdPreview]
+  )
+
+  // 点击校验错误项：高亮框架行；有 md 行号则直接定位，
+  // 否则（如编号冲突类错误只携带 code 无 row）按编号在 md 中查找定位
+  const handleErrorClick = useCallback(
+    (location: ValidationIssue['location']) => {
+      if (location.code) {
+        setHighlightedFrameworkCode(location.code)
+        if (!location.row) {
+          const line = findMdLineByCode(location.code)
+          if (line !== undefined) {
+            setHighlightedMdLine(line)
+          }
+        }
+      }
+      if (location.row) {
+        setHighlightedMdLine(location.row)
+      }
+    },
+    [findMdLineByCode]
+  )
 
   const handleExportErrors = useCallback(() => {
     if (!validationResult) return
     downloadErrorReport(validationResult.errors, '校验错误报告.txt')
   }, [validationResult])
+
+  // 点击框架文件行：高亮该行，并定位内容文件预览到相同知识点位置
+  const handleFrameworkRowClick = useCallback(
+    (code: string) => {
+      setHighlightedFrameworkCode(code)
+      const line = findMdLineByCode(code)
+      if (line !== undefined) {
+        setHighlightedMdLine(line)
+      }
+    },
+    [findMdLineByCode]
+  )
 
   const noopCustomRequest = useCallback(() => {}, [])
 
@@ -365,53 +400,101 @@ export const ExpandKnowledgePointsModal: React.FC<ExpandKnowledgePointsModalProp
       return null
     }
 
-    if (validationResult.valid) {
-      return (
-        <Alert
-          message="校验通过，可以进入下一步确认扩充。"
-          type="success"
-          showIcon
-          style={{ marginBottom: 16 }}
-        />
-      )
-    }
-
-    const xlsxErrors = validationResult.errors.filter(e => e.type === 'xlsx')
-    const mdErrors = validationResult.errors.filter(e => e.type === 'md')
+    const hasFailures = !validationResult.valid
+    const totalCount = validationResult.checks.length
+    const passedCount = validationResult.checks.filter(c => c.passed).length
+    const failedCount = totalCount - passedCount
 
     return (
-      <div style={{ marginBottom: 16 }}>
-        <Alert
-          message="校验失败，请修正以下问题后重新校验："
-          type="error"
-          showIcon
-          style={{ marginBottom: 8 }}
-        />
-        <div>
-          {xlsxErrors.length > 0 && (
-            <div style={{ marginBottom: 8 }}>
-              <Typography.Text strong>框架文件 (xlsx)</Typography.Text>
-              <div style={{ marginTop: 4 }}>
-                {xlsxErrors.map((err, index) => (
-                  <ErrorTag key={`xlsx-${index}`} issue={err} onClick={handleErrorClick} />
-                ))}
-              </div>
-            </div>
-          )}
-          {mdErrors.length > 0 && (
-            <div style={{ marginBottom: 8 }}>
-              <Typography.Text strong>内容文件 (md)</Typography.Text>
-              <div style={{ marginTop: 4 }}>
-                {mdErrors.map((err, index) => (
-                  <ErrorTag key={`md-${index}`} issue={err} onClick={handleErrorClick} />
-                ))}
-              </div>
-            </div>
-          )}
-          <Button size="small" onClick={handleExportErrors} style={{ marginTop: 8 }}>
-            导出错误报告
-          </Button>
+      <div style={{ marginBottom: 8, flexShrink: 0 }}>
+        {/* 折叠标题栏：折叠后不占用高度空间 */}
+        <div
+          role="button"
+          tabIndex={0}
+          aria-expanded={!resultCollapsed}
+          onClick={() => setResultCollapsed(!resultCollapsed)}
+          onKeyDown={e => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              setResultCollapsed(!resultCollapsed)
+            }
+          }}
+          style={{
+            cursor: 'pointer',
+            userSelect: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '2px 0',
+          }}
+        >
+          <Typography.Text strong style={{ color: hasFailures ? '#ff4d4f' : '#52c41a' }}>
+            {resultCollapsed ? '▸' : '▾'}
+          </Typography.Text>
+          <Typography.Text strong>
+            校验结果：
+            {hasFailures ? `${failedCount} 项未通过` : '全部通过'}（{passedCount}/{totalCount}{' '}
+            项通过）
+          </Typography.Text>
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            {resultCollapsed ? '点击展开' : '点击折叠'}
+          </Typography.Text>
         </div>
+
+        {!resultCollapsed && (
+          <div style={{ maxHeight: 220, overflow: 'auto', marginTop: 4 }}>
+            <Alert
+              message={
+                hasFailures
+                  ? '校验未通过，请修正标记为 ✗ 的检查项后重新校验：'
+                  : '校验通过，可以进入下一步确认扩充。'
+              }
+              type={hasFailures ? 'error' : 'success'}
+              showIcon
+              style={{ marginBottom: 8 }}
+            />
+            {/* 逐项校验结果：通过 ✓ / 不通过 ✗ */}
+            <div>
+              {validationResult.checks.map(check => (
+                <div key={check.key} style={{ marginBottom: 4 }}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                    {check.passed ? (
+                      <Typography.Text style={{ color: '#52c41a', fontWeight: 600 }}>
+                        ✓
+                      </Typography.Text>
+                    ) : (
+                      <Typography.Text style={{ color: '#ff4d4f', fontWeight: 600 }}>
+                        ✗
+                      </Typography.Text>
+                    )}
+                    <Typography.Text
+                      type={check.passed ? 'secondary' : undefined}
+                      strong={!check.passed}
+                    >
+                      {check.label}
+                    </Typography.Text>
+                  </div>
+                  {!check.passed && check.errors.length > 0 && (
+                    <div style={{ paddingLeft: 24, marginTop: 2 }}>
+                      {check.errors.map((err, index) => (
+                        <ErrorTag
+                          key={`${check.key}-${index}`}
+                          issue={err}
+                          onClick={handleErrorClick}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+            {hasFailures && (
+              <Button size="small" onClick={handleExportErrors} style={{ marginTop: 8 }}>
+                导出错误报告
+              </Button>
+            )}
+          </div>
+        )}
       </div>
     )
   }
@@ -466,33 +549,109 @@ export const ExpandKnowledgePointsModal: React.FC<ExpandKnowledgePointsModalProp
   )
 
   const renderPreviewStep = () => (
-    <Space direction="vertical" style={{ width: '100%' }}>
-      <Typography.Text>左右预览已关联，点击错误标签可定位到对应位置。</Typography.Text>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        gap: 8,
+        overflow: 'hidden',
+        minWidth: 0,
+      }}
+    >
+      <Typography.Text>左右预览已关联，点击错误标签或框架文件行可定位到对应位置。</Typography.Text>
       {renderValidationResult()}
-      <Row gutter={[16, 16]}>
-        <Col xs={24} md={12}>
-          <Typography.Text strong>框架文件预览</Typography.Text>
-          <div style={{ marginTop: 8 }}>
-            <FrameworkPreview
-              rows={xlsxPreview || []}
-              errors={validationResult?.errors || []}
-              highlightedCode={highlightedFrameworkCode}
-              onRowClick={code => setHighlightedFrameworkCode(code)}
-            />
+      {isNarrow ? (
+        // 窄屏（Drawer）：垂直堆叠，每个预览固定高度内部滚动
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, overflow: 'auto' }}>
+          <div>
+            <Typography.Text strong>框架文件预览</Typography.Text>
+            <div style={{ marginTop: 8, height: 320, overflow: 'auto' }}>
+              <FrameworkPreview
+                rows={xlsxPreview || []}
+                errors={validationResult?.errors || []}
+                highlightedCode={highlightedFrameworkCode}
+                onRowClick={handleFrameworkRowClick}
+              />
+            </div>
           </div>
-        </Col>
-        <Col xs={24} md={12}>
-          <Typography.Text strong>内容文件预览</Typography.Text>
-          <div style={{ marginTop: 8 }}>
-            <MdPreview
-              content={mdPreview || ''}
-              errors={validationResult?.errors || []}
-              highlightedLine={highlightedMdLine}
-            />
+          <div>
+            <Typography.Text strong>内容文件预览</Typography.Text>
+            <div
+              style={{
+                marginTop: 8,
+                height: 320,
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
+              <MdPreview
+                content={mdPreview || ''}
+                errors={validationResult?.errors || []}
+                highlightedLine={highlightedMdLine}
+              />
+            </div>
           </div>
-        </Col>
-      </Row>
-    </Space>
+        </div>
+      ) : (
+        // 桌面（Modal）：Allotment 可拖动分隔，滚动发生在预览内部
+        <div
+          style={{ flex: 1, minHeight: 0, minWidth: 0, display: 'flex', flexDirection: 'column' }}
+        >
+          <Allotment proportionalLayout={false}>
+            <Allotment.Pane minSize={280}>
+              <div
+                style={{
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  paddingRight: 8,
+                }}
+              >
+                <Typography.Text strong>框架文件预览</Typography.Text>
+                <div style={{ marginTop: 8, flex: 1, minHeight: 0, minWidth: 0, overflow: 'auto' }}>
+                  <FrameworkPreview
+                    rows={xlsxPreview || []}
+                    errors={validationResult?.errors || []}
+                    highlightedCode={highlightedFrameworkCode}
+                    onRowClick={handleFrameworkRowClick}
+                  />
+                </div>
+              </div>
+            </Allotment.Pane>
+            <Allotment.Pane minSize={280}>
+              <div
+                style={{
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  paddingLeft: 8,
+                }}
+              >
+                <Typography.Text strong>内容文件预览</Typography.Text>
+                <div
+                  style={{
+                    marginTop: 8,
+                    flex: 1,
+                    minHeight: 0,
+                    minWidth: 0,
+                    display: 'flex',
+                    flexDirection: 'column',
+                  }}
+                >
+                  <MdPreview
+                    content={mdPreview || ''}
+                    errors={validationResult?.errors || []}
+                    highlightedLine={highlightedMdLine}
+                  />
+                </div>
+              </div>
+            </Allotment.Pane>
+          </Allotment>
+        </div>
+      )}
+    </div>
   )
 
   const renderConfirmStep = () => (
@@ -579,12 +738,25 @@ export const ExpandKnowledgePointsModal: React.FC<ExpandKnowledgePointsModalProp
   )
 
   const body = (
-    <Space direction="vertical" style={{ width: '100%' }}>
+    <div
+      style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', gap: 16 }}
+    >
       {steps}
-      {currentStep === 0 && renderUploadStep()}
-      {currentStep === 1 && renderPreviewStep()}
-      {currentStep === 2 && renderConfirmStep()}
-    </Space>
+      <div
+        style={{
+          flex: 1,
+          minHeight: 0,
+          minWidth: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        }}
+      >
+        {currentStep === 0 && renderUploadStep()}
+        {currentStep === 1 && renderPreviewStep()}
+        {currentStep === 2 && renderConfirmStep()}
+      </div>
+    </div>
   )
 
   return (
@@ -610,7 +782,14 @@ export const ExpandKnowledgePointsModal: React.FC<ExpandKnowledgePointsModalProp
           footer={footerButtons}
           maskClosable={!loading}
           keyboard={!loading}
-          width={960}
+          width="100vw"
+          style={{ top: '10vh', margin: '0 auto', maxWidth: '100vw', paddingBottom: 0 }}
+          styles={{
+            body: {
+              height: 'calc(80vh - 108px)',
+              overflow: 'hidden',
+            },
+          }}
         >
           {body}
         </Modal>

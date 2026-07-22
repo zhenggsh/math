@@ -22,7 +22,7 @@ export const ValidationRulesPanel: React.FC = () => {
           <ul>
             <li>文件不能为空。</li>
             <li>md 中出现的每个知识点编号必须在已上传的 xlsx 中存在。</li>
-            <li>二级知识点编号应使用 ### 标题，三级知识点编号应使用 #### 标题。</li>
+            <li>标题级别须与编号层级匹配：一级知识点使用 ## 标题，二级使用 ###，三级使用 ####。</li>
           </ul>
         </Typography.Paragraph>
       </Panel>

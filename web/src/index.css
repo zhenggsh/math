@@ -104,3 +104,66 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
 }
+
+/* ---------- 教材扩充：表格行高亮与错误标记 ---------- */
+
+@keyframes row-highlight-pulse {
+  0% {
+    background-color: #ffe7ba;
+  }
+  100% {
+    background-color: #fff7e6;
+  }
+}
+
+/* 扩充成功后新增知识点行高亮（短暂脉冲后保持浅黄） */
+.highlighted-new-point > td,
+.ant-table-tbody > tr.highlighted-new-point > td {
+  background-color: #fff7e6;
+  animation: row-highlight-pulse 2s ease-out;
+}
+
+/* 框架文件预览中点击错误 Tag 联动的目标行高亮 */
+.framework-row-highlighted > td,
+.ant-table-tbody > tr.framework-row-highlighted > td {
+  background-color: #fff7e6;
+  animation: row-highlight-pulse 2s ease-out;
+}
+
+/* 框架文件预览中校验失败的行标记为浅红 */
+.framework-row-error > td,
+.ant-table-tbody > tr.framework-row-error > td {
+  background-color: #fff1f0;
+}
+
+/* 错误行同时被点击联动时，以高亮色为准 */
+.framework-row-error.framework-row-highlighted > td,
+.ant-table-tbody > tr.framework-row-error.framework-row-highlighted > td {
+  background-color: #fff7e6;
+}
+
+@media (prefers-color-scheme: dark) {
+  @keyframes row-highlight-pulse {
+    0% {
+      background-color: rgba(250, 173, 20, 0.35);
+    }
+    100% {
+      background-color: rgba(250, 173, 20, 0.18);
+    }
+  }
+
+  .highlighted-new-point > td,
+  .ant-table-tbody > tr.highlighted-new-point > td,
+  .framework-row-highlighted > td,
+  .ant-table-tbody > tr.framework-row-highlighted > td,
+  .framework-row-error.framework-row-highlighted > td,
+  .ant-table-tbody > tr.framework-row-error.framework-row-highlighted > td {
+    background-color: rgba(250, 173, 20, 0.18);
+    animation: row-highlight-pulse 2s ease-out;
+  }
+
+  .framework-row-error > td,
+  .ant-table-tbody > tr.framework-row-error > td {
+    background-color: rgba(255, 77, 79, 0.18);
+  }
+}

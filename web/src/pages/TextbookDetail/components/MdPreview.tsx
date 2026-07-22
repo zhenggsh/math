@@ -34,7 +34,22 @@ export const MdPreview: React.FC<MdPreviewProps> = ({ content, errors, highlight
   }, [highlightedLine])
 
   if (!content) {
-    return <Empty description="选择文件后在此处预览" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+    return (
+      <div
+        style={{
+          height: '100%',
+          minHeight: 200,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          border: '1px solid #f0f0f0',
+          borderRadius: 6,
+          background: '#fafafa',
+        }}
+      >
+        <Empty description="选择文件后在此处预览" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+      </div>
+    )
   }
 
   return (
@@ -47,22 +62,27 @@ export const MdPreview: React.FC<MdPreviewProps> = ({ content, errors, highlight
         border: '1px solid #f0f0f0',
         borderRadius: 6,
         padding: 12,
-        maxHeight: 320,
+        height: '100%',
+        minHeight: 200,
         overflow: 'auto',
         background: '#fafafa',
+        boxSizing: 'border-box',
       }}
     >
       {lines.map((line, index) => {
         const lineNumber = index + 1
         const lineErrors = errorMap.get(lineNumber)
         const isHighlighted = highlightedLine === lineNumber
+        const lineBackground = isHighlighted ? '#fff7e6' : lineErrors ? '#fff1f0' : '#fafafa'
         return (
           <div
             key={`md-line-${lineNumber}`}
             data-line={lineNumber}
             style={{
               display: 'flex',
-              backgroundColor: isHighlighted ? '#fff7e6' : lineErrors ? '#fff1f0' : 'transparent',
+              width: 'max-content',
+              minWidth: '100%',
+              backgroundColor: lineBackground,
               padding: '2px 0',
               transition: 'background-color 0.3s',
             }}
@@ -74,13 +94,14 @@ export const MdPreview: React.FC<MdPreviewProps> = ({ content, errors, highlight
                 textAlign: 'right',
                 paddingRight: 12,
                 userSelect: 'none',
+                position: 'sticky',
+                left: 0,
+                backgroundColor: lineBackground,
               }}
             >
               {lineNumber}
             </span>
-            <span style={{ flex: 1, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
-              {line || ' '}
-            </span>
+            <span style={{ flex: 1, whiteSpace: 'pre' }}>{line || ' '}</span>
           </div>
         )
       })}

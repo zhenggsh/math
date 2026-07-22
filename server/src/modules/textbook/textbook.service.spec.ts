@@ -76,7 +76,7 @@ describe('TextbookService', () => {
               deleteMany: jest.fn(),
               count: jest.fn().mockResolvedValue(0),
               findUnique: jest.fn(),
-              findMany: jest.fn(),
+              findMany: jest.fn().mockResolvedValue([]),
             },
             $transaction: jest.fn((callback) =>
               callback({
@@ -119,6 +119,7 @@ describe('TextbookService', () => {
             getFileType: jest.fn().mockReturnValue('xlsx'),
             saveFile: jest.fn(),
             appendXlsxRows: jest.fn(),
+            appendCsvRows: jest.fn(),
             saveTempFile: jest.fn().mockResolvedValue('/tmp/expand.xlsx'),
             deleteTempFile: jest.fn(),
           },
@@ -488,7 +489,7 @@ describe('TextbookService', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
-    it('should throw ConflictException when code conflicts with existing', async () => {
+    it('should throw ConflictException when a concurrent insert conflicts in transaction', async () => {
       jest.spyOn(prismaService.textbook, 'findUnique').mockResolvedValue({
         id: 'tb-1',
         frameworkPath: 'math01.xlsx',
@@ -500,6 +501,10 @@ describe('TextbookService', () => {
         explicitCodes: ['1.1.1'],
         rawRecords: [],
       });
+      // prepare 阶段无冲突（DB 只有父编号 1.1），事务内模拟并发插入 1.1.1
+      jest
+        .spyOn(prismaService.knowledgePoint, 'findMany')
+        .mockResolvedValue([{ code: '1.1' }] as any);
       jest
         .spyOn(prismaService, '$transaction')
         .mockImplementation(async (callback: any) => {
@@ -520,6 +525,32 @@ describe('TextbookService', () => {
           mockContentFile,
         ),
       ).rejects.toThrow(ConflictException);
+    });
+
+    it('should throw BadRequestException when code already exists in database', async () => {
+      jest.spyOn(prismaService.textbook, 'findUnique').mockResolvedValue({
+        id: 'tb-1',
+        frameworkPath: 'math01.xlsx',
+        contentPath: 'math01.md',
+      } as any);
+      jest.spyOn(parserService, 'parseFrameworkFile').mockReturnValue({
+        success: true,
+        data: [{ code: '1.1.1', level1: '集合', importanceLevel: 'A' }],
+        explicitCodes: ['1.1.1'],
+        rawRecords: [],
+      });
+      // DB 中已存在 1.1.1 → prepare 阶段校验失败
+      jest
+        .spyOn(prismaService.knowledgePoint, 'findMany')
+        .mockResolvedValue([{ code: '1.1' }, { code: '1.1.1' }] as any);
+
+      await expect(
+        service.expandKnowledgePoints(
+          'tb-1',
+          mockFrameworkFile,
+          mockContentFile,
+        ),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('should successfully expand knowledge points', async () => {
@@ -545,6 +576,9 @@ describe('TextbookService', () => {
         explicitCodes: ['1.1.2'],
         rawRecords: [],
       });
+      jest
+        .spyOn(prismaService.knowledgePoint, 'findMany')
+        .mockResolvedValue([{ code: '1.1' }, { code: '1.1.1' }] as any);
       jest
         .spyOn(prismaService, '$transaction')
         .mockImplementation(async (callback: any) => {
@@ -612,6 +646,9 @@ describe('TextbookService', () => {
         rawRecords: [],
       });
       jest
+        .spyOn(prismaService.knowledgePoint, 'findMany')
+        .mockResolvedValue([{ code: '1.1' }, { code: '1.1.1' }] as any);
+      jest
         .spyOn(prismaService, '$transaction')
         .mockImplementation(async (callback: any) => {
           return await callback({
@@ -667,6 +704,9 @@ describe('TextbookService', () => {
         explicitCodes: ['1.1.2'],
         rawRecords: [],
       });
+      jest
+        .spyOn(prismaService.knowledgePoint, 'findMany')
+        .mockResolvedValue([{ code: '1.1' }, { code: '1.1.1' }] as any);
       jest
         .spyOn(prismaService, '$transaction')
         .mockImplementation(async (callback: any) => {
@@ -734,9 +774,13 @@ describe('TextbookService', () => {
             importanceLevel: 'A',
           },
         ],
-        explicitCodes: ['2.4.1'],
+        explicitCodes: ['2.4', '2.4.1'],
         rawRecords: [],
       });
+      // DB 中已有骨架 parent「2」；2.4 / 2.4.1 为本次上传的 explicit 编号
+      jest
+        .spyOn(prismaService.knowledgePoint, 'findMany')
+        .mockResolvedValue([{ code: '2' }] as any);
 
       const createManyMock = jest.fn();
       jest
@@ -801,6 +845,10 @@ describe('TextbookService', () => {
         frameworkPath: 'math01.xlsx',
         contentPath: 'math01.md',
       } as any);
+      // 上级编号 1.1 已存在，且无编号冲突
+      jest
+        .spyOn(prismaService.knowledgePoint, 'findMany')
+        .mockResolvedValue([{ code: '1.1' }] as any);
 
       const report = await service.validateExpansionFiles(
         'tb-1',
@@ -810,6 +858,20 @@ describe('TextbookService', () => {
 
       expect(report.valid).toBe(true);
       expect(report.errors).toHaveLength(0);
+      // 逐项校验：9 项全部通过
+      expect(report.checks).toHaveLength(9);
+      expect(report.checks.every((c) => c.passed)).toBe(true);
+      expect(report.checks.map((c) => c.key)).toEqual([
+        'parse',
+        'columns',
+        'code-format',
+        'duplicates',
+        'db-conflicts',
+        'parents',
+        'md-empty',
+        'md-codes',
+        'md-headings',
+      ]);
     });
 
     it('should return invalid report when xlsx parse fails', async () => {
@@ -850,6 +912,9 @@ describe('TextbookService', () => {
         valid: false,
         errors: ['缺少必填列: 知识点编号 / 编号 / code'],
       });
+      jest
+        .spyOn(prismaService.knowledgePoint, 'findMany')
+        .mockResolvedValue([{ code: '1.1' }] as any);
 
       const report = await service.validateExpansionFiles(
         'tb-1',
@@ -866,6 +931,12 @@ describe('TextbookService', () => {
           }),
         ]),
       );
+      // 逐项校验：columns 不通过，其余通过
+      const columnsCheck = report.checks.find((c) => c.key === 'columns');
+      expect(columnsCheck?.passed).toBe(false);
+      expect(
+        report.checks.filter((c) => c.key !== 'columns').every((c) => c.passed),
+      ).toBe(true);
     });
 
     it('should return invalid report when explicit records are invalid', async () => {
@@ -880,6 +951,9 @@ describe('TextbookService', () => {
         explicitCodes: ['1.1.1'],
         rawRecords: [],
       });
+      jest
+        .spyOn(prismaService.knowledgePoint, 'findMany')
+        .mockResolvedValue([{ code: '1.1' }] as any);
       jest.spyOn(parserService, 'validateExplicitRecords').mockReturnValue([
         {
           type: 'xlsx',
@@ -917,6 +991,9 @@ describe('TextbookService', () => {
         explicitCodes: ['1.1.1'],
         rawRecords: [],
       });
+      jest
+        .spyOn(prismaService.knowledgePoint, 'findMany')
+        .mockResolvedValue([{ code: '1.1' }] as any);
       jest.spyOn(parserService, 'validateKnowledgePoints').mockReturnValue({
         valid: false,
         errors: ['知识点编号 "1.1.1" 重复 (行: 1, 2)'],
@@ -951,6 +1028,9 @@ describe('TextbookService', () => {
         explicitCodes: ['1.1.1'],
         rawRecords: [],
       });
+      jest
+        .spyOn(prismaService.knowledgePoint, 'findMany')
+        .mockResolvedValue([{ code: '1.1' }] as any);
       jest.spyOn(parserService, 'extractMdCodes').mockReturnValue(['1.1.2']);
 
       const report = await service.validateExpansionFiles(
@@ -964,10 +1044,197 @@ describe('TextbookService', () => {
         expect.arrayContaining([
           expect.objectContaining({
             type: 'md',
-            message: 'md 中的知识点编号 1.1.2 在 xlsx 中不存在',
+            message: 'md 中的知识点编号 1.1.2 在框架文件中不存在',
           }),
         ]),
       );
+    });
+
+    it('should return invalid report when code conflicts with database', async () => {
+      jest.spyOn(prismaService.textbook, 'findUnique').mockResolvedValue({
+        id: 'tb-1',
+        frameworkPath: 'math01.xlsx',
+        contentPath: 'math01.md',
+      } as any);
+      jest.spyOn(parserService, 'parseFrameworkFile').mockReturnValue({
+        success: true,
+        data: [{ code: '1.1.1', level1: '集合', importanceLevel: 'A' }],
+        explicitCodes: ['1.1.1'],
+        rawRecords: [],
+      });
+      jest
+        .spyOn(prismaService.knowledgePoint, 'findMany')
+        .mockResolvedValue([{ code: '1.1' }, { code: '1.1.1' }] as any);
+
+      const report = await service.validateExpansionFiles(
+        'tb-1',
+        mockFrameworkFile,
+        mockContentFile,
+      );
+
+      expect(report.valid).toBe(false);
+      const check = report.checks.find((c) => c.key === 'db-conflicts');
+      expect(check?.passed).toBe(false);
+      expect(check?.errors[0].message).toContain('1.1.1');
+    });
+
+    it('should return invalid report when parent code does not exist in database', async () => {
+      jest.spyOn(prismaService.textbook, 'findUnique').mockResolvedValue({
+        id: 'tb-1',
+        frameworkPath: 'math01.xlsx',
+        contentPath: 'math01.md',
+      } as any);
+      jest.spyOn(parserService, 'parseFrameworkFile').mockReturnValue({
+        success: true,
+        data: [{ code: '9.9.9', level1: '新章节', importanceLevel: 'A' }],
+        explicitCodes: ['9.9.9'],
+        rawRecords: [],
+      });
+      jest
+        .spyOn(prismaService.knowledgePoint, 'findMany')
+        .mockResolvedValue([{ code: '1.1' }] as any);
+
+      const report = await service.validateExpansionFiles(
+        'tb-1',
+        mockFrameworkFile,
+        mockContentFile,
+      );
+
+      expect(report.valid).toBe(false);
+      const check = report.checks.find((c) => c.key === 'parents');
+      expect(check?.passed).toBe(false);
+      expect(check?.errors[0].message).toContain('9.9');
+    });
+
+    it('should return invalid report when md file is empty', async () => {
+      jest.spyOn(prismaService.textbook, 'findUnique').mockResolvedValue({
+        id: 'tb-1',
+        frameworkPath: 'math01.xlsx',
+        contentPath: 'math01.md',
+      } as any);
+      jest.spyOn(parserService, 'parseFrameworkFile').mockReturnValue({
+        success: true,
+        data: [{ code: '1.1.1', level1: '集合', importanceLevel: 'A' }],
+        explicitCodes: ['1.1.1'],
+        rawRecords: [],
+      });
+      jest
+        .spyOn(prismaService.knowledgePoint, 'findMany')
+        .mockResolvedValue([{ code: '1.1' }] as any);
+
+      const report = await service.validateExpansionFiles(
+        'tb-1',
+        mockFrameworkFile,
+        {
+          ...mockContentFile,
+          buffer: Buffer.from('   \n  '),
+        },
+      );
+
+      expect(report.valid).toBe(false);
+      const check = report.checks.find((c) => c.key === 'md-empty');
+      expect(check?.passed).toBe(false);
+    });
+
+    it('should return invalid report when md heading level is wrong', async () => {
+      jest.spyOn(prismaService.textbook, 'findUnique').mockResolvedValue({
+        id: 'tb-1',
+        frameworkPath: 'math01.xlsx',
+        contentPath: 'math01.md',
+      } as any);
+      jest.spyOn(parserService, 'parseFrameworkFile').mockReturnValue({
+        success: true,
+        data: [{ code: '1.1.1', level1: '集合', importanceLevel: 'A' }],
+        explicitCodes: ['1.1.1'],
+        rawRecords: [],
+      });
+      jest
+        .spyOn(prismaService.knowledgePoint, 'findMany')
+        .mockResolvedValue([{ code: '1.1' }] as any);
+      // 三级编号 1.1.1 使用了 ### 标题（应为 ####）
+      const report = await service.validateExpansionFiles(
+        'tb-1',
+        mockFrameworkFile,
+        {
+          ...mockContentFile,
+          buffer: Buffer.from('### 1.1.1 集合的含义\n\n内容'),
+        },
+      );
+
+      expect(report.valid).toBe(false);
+      const check = report.checks.find((c) => c.key === 'md-headings');
+      expect(check?.passed).toBe(false);
+      expect(check?.errors[0].location.row).toBe(1);
+    });
+
+    it('should return invalid report when level-3 code uses ## heading', async () => {
+      jest.spyOn(prismaService.textbook, 'findUnique').mockResolvedValue({
+        id: 'tb-1',
+        frameworkPath: 'math01.xlsx',
+        contentPath: 'math01.md',
+      } as any);
+      jest.spyOn(parserService, 'parseFrameworkFile').mockReturnValue({
+        success: true,
+        data: [{ code: '1.1.1', level1: '集合', importanceLevel: 'A' }],
+        explicitCodes: ['1.1.1'],
+        rawRecords: [],
+      });
+      jest
+        .spyOn(prismaService.knowledgePoint, 'findMany')
+        .mockResolvedValue([{ code: '1.1' }] as any);
+      // 三级编号 1.1.1 使用了 ## 标题（应为 ####）
+      const report = await service.validateExpansionFiles(
+        'tb-1',
+        mockFrameworkFile,
+        {
+          ...mockContentFile,
+          buffer: Buffer.from('## 1.1.1 集合的含义\n\n内容'),
+        },
+      );
+
+      expect(report.valid).toBe(false);
+      const check = report.checks.find((c) => c.key === 'md-headings');
+      expect(check?.passed).toBe(false);
+      expect(check?.errors[0].location.row).toBe(1);
+      expect(check?.errors[0].message).toContain('####');
+    });
+
+    it('should accept ## heading for level-1 code', async () => {
+      jest.spyOn(prismaService.textbook, 'findUnique').mockResolvedValue({
+        id: 'tb-1',
+        frameworkPath: 'math01.xlsx',
+        contentPath: 'math01.md',
+      } as any);
+      jest.spyOn(parserService, 'parseFrameworkFile').mockReturnValue({
+        success: true,
+        data: [
+          { code: '1.1.1', level1: '集合', importanceLevel: 'A' },
+          { code: '1.1', level1: '集合', importanceLevel: 'A' },
+          { code: '1', level1: '集合', importanceLevel: 'A' },
+        ],
+        explicitCodes: ['1.1.1', '1.1', '1'],
+        rawRecords: [],
+      });
+      jest
+        .spyOn(prismaService.knowledgePoint, 'findMany')
+        .mockResolvedValue([]);
+      jest
+        .spyOn(parserService, 'extractMdCodes')
+        .mockReturnValue(['1', '1.1', '1.1.1']);
+      // 一级 ##、二级 ###、三级 #### 均正确
+      const report = await service.validateExpansionFiles(
+        'tb-1',
+        mockFrameworkFile,
+        {
+          ...mockContentFile,
+          buffer: Buffer.from(
+            '## 1 集合\n\n### 1.1 集合的概念\n\n#### 1.1.1 集合的含义\n\n内容',
+          ),
+        },
+      );
+
+      const check = report.checks.find((c) => c.key === 'md-headings');
+      expect(check?.passed).toBe(true);
     });
 
     it('should throw NotFoundException when textbook does not exist', async () => {

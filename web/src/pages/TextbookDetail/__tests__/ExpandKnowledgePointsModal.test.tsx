@@ -46,13 +46,49 @@ function getFileInputs(container: HTMLElement): HTMLInputElement[] {
   return Array.from(container.querySelectorAll('input[type="file"]'))
 }
 
-const validReport: ValidationReport = { valid: true, errors: [] }
+const CHECK_LABELS: [string, string][] = [
+  ['parse', '框架文件可正常解析'],
+  ['columns', '包含必需列（知识点编号、一级知识点）'],
+  ['code-format', '行数据完整且编号为数字层级格式'],
+  ['duplicates', '无重复知识点编号'],
+  ['db-conflicts', '新编号不与当前教材已有编号冲突'],
+  ['parents', '上级编号在当前教材中已存在'],
+  ['md-empty', '内容文件非空'],
+  ['md-codes', '内容文件编号均在框架文件中存在'],
+  ['md-headings', '标题级别正确（一级 ##、二级 ###、三级 ####）'],
+]
+
+function buildChecks(
+  failures: Record<
+    string,
+    {
+      type: 'xlsx' | 'md'
+      location: { file: 'xlsx' | 'md'; row?: number; code?: string }
+      message: string
+    }[]
+  >
+) {
+  return CHECK_LABELS.map(([key, label]) => ({
+    key,
+    label,
+    passed: !failures[key],
+    errors: failures[key] ?? [],
+  }))
+}
+
+const validReport: ValidationReport = { valid: true, errors: [], checks: buildChecks({}) }
 const invalidReport: ValidationReport = {
   valid: false,
   errors: [
     { type: 'xlsx', location: { file: 'xlsx', code: '1.1.1' }, message: '已存在' },
     { type: 'md', location: { file: 'md', row: 3 }, message: '标题层级错误' },
   ],
+  checks: buildChecks({
+    'db-conflicts': [
+      { type: 'xlsx', location: { file: 'xlsx', code: '1.1.1' }, message: '已存在' },
+    ],
+    'md-headings': [{ type: 'md', location: { file: 'md', row: 3 }, message: '标题层级错误' }],
+  }),
 }
 
 const defaultProps = {
@@ -200,9 +236,52 @@ describe('ExpandKnowledgePointsModal wizard', () => {
     await waitFor(() => expect(screen.getByText(/编号 1\.1\.1/)).toBeInTheDocument())
     await waitFor(() => expect(screen.getAllByText(/标题层级错误/)).not.toHaveLength(0))
 
+    // 逐项提示：2 个失败项显示 ✗，7 个通过项显示 ✓，且检查项名称可见
+    expect(screen.getAllByText('✗')).toHaveLength(2)
+    expect(screen.getAllByText('✓')).toHaveLength(7)
+    expect(screen.getByText('新编号不与当前教材已有编号冲突')).toBeInTheDocument()
+    expect(screen.getByText('框架文件可正常解析')).toBeInTheDocument()
+
     const exportButton = screen.getByRole('button', { name: /导出错误报告/i })
     fireEvent.click(exportButton)
     expect(downloadErrorReport).toHaveBeenCalledWith(invalidReport.errors, '校验错误报告.txt')
+  })
+
+  it('collapses and expands the validation result area', async () => {
+    const { baseElement, rerender } = render(<ExpandKnowledgePointsModal {...defaultProps} />)
+
+    const fileInputs = getFileInputs(baseElement)
+    const xlsxFile = new File(['xlsx'], 'expand.xlsx', {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    })
+    const mdFile = new File(['md'], 'expand.md', { type: 'text/markdown' })
+    fireEvent.change(fileInputs[0], { target: { files: [xlsxFile] } })
+    fireEvent.change(fileInputs[1], { target: { files: [mdFile] } })
+
+    await waitFor(() => expect(screen.getByRole('button', { name: /下一步/i })).toBeEnabled())
+    fireEvent.click(screen.getByRole('button', { name: /下一步/i }))
+    await waitFor(() => expect(screen.getByText('框架文件预览')).toBeInTheDocument())
+
+    rerender(<ExpandKnowledgePointsModal {...defaultProps} validationResult={invalidReport} />)
+
+    // 默认展开：逐项检查可见
+    await waitFor(() =>
+      expect(screen.getByText('新编号不与当前教材已有编号冲突')).toBeInTheDocument()
+    )
+
+    // 点击标题栏折叠：检查项消失，仅占一行标题
+    const collapseBar = screen.getByRole('button', { name: /校验结果/ })
+    fireEvent.click(collapseBar)
+    await waitFor(() =>
+      expect(screen.queryByText('新编号不与当前教材已有编号冲突')).not.toBeInTheDocument()
+    )
+    expect(screen.getByText(/2 项未通过/)).toBeInTheDocument()
+
+    // 再次点击展开
+    fireEvent.click(screen.getByRole('button', { name: /校验结果/ }))
+    await waitFor(() =>
+      expect(screen.getByText('新编号不与当前教材已有编号冲突')).toBeInTheDocument()
+    )
   })
 
   it('submits selected files from the impact step', async () => {

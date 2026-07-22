@@ -243,7 +243,7 @@ export class TextbookController {
     @UploadedFiles() files: FileFields,
   ): Promise<ExpandKnowledgePointsResponse> {
     if (!files.framework || files.framework.length === 0) {
-      throw new BadRequestException('必须上传框架文件 (.xlsx)');
+      throw new BadRequestException('必须上传框架文件 (.xlsx 或 .csv)');
     }
     if (!files.content || files.content.length === 0) {
       throw new BadRequestException('必须上传内容文件 (.md)');
@@ -252,8 +252,8 @@ export class TextbookController {
     const frameworkFile = files.framework[0];
     const contentFile = files.content[0];
 
-    if (!frameworkFile.originalname.toLowerCase().endsWith('.xlsx')) {
-      throw new BadRequestException('框架文件必须是 .xlsx 格式');
+    if (!this.isFrameworkFile(frameworkFile.originalname)) {
+      throw new BadRequestException('框架文件必须是 .xlsx 或 .csv 格式');
     }
     if (!contentFile.originalname.toLowerCase().endsWith('.md')) {
       throw new BadRequestException('内容文件必须是 .md 格式');
@@ -282,7 +282,7 @@ export class TextbookController {
     @UploadedFiles() files: FileFields,
   ): Promise<ValidateKnowledgePointsResponse> {
     if (!files.framework || files.framework.length === 0) {
-      throw new BadRequestException('必须上传框架文件 (.xlsx)');
+      throw new BadRequestException('必须上传框架文件 (.xlsx 或 .csv)');
     }
     if (!files.content || files.content.length === 0) {
       throw new BadRequestException('必须上传内容文件 (.md)');
@@ -291,8 +291,8 @@ export class TextbookController {
     const frameworkFile = files.framework[0];
     const contentFile = files.content[0];
 
-    if (!frameworkFile.originalname.toLowerCase().endsWith('.xlsx')) {
-      throw new BadRequestException('框架文件必须是 .xlsx 格式');
+    if (!this.isFrameworkFile(frameworkFile.originalname)) {
+      throw new BadRequestException('框架文件必须是 .xlsx 或 .csv 格式');
     }
     if (!contentFile.originalname.toLowerCase().endsWith('.md')) {
       throw new BadRequestException('内容文件必须是 .md 格式');
@@ -395,5 +395,13 @@ export class TextbookController {
   private extractBaseName(fileName: string): string | null {
     const match = fileName.match(/^(.+?)\.(xlsx|csv)$/i);
     return match ? match[1] : null;
+  }
+
+  /**
+   * 检查文件名是否为支持的框架文件格式 (.xlsx 或 .csv)
+   */
+  private isFrameworkFile(fileName: string): boolean {
+    const lower = fileName.toLowerCase();
+    return lower.endsWith('.xlsx') || lower.endsWith('.csv');
   }
 }

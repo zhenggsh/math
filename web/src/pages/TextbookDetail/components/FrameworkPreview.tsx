@@ -10,6 +10,19 @@ interface FrameworkPreviewProps {
   onRowClick?: (code: string) => void
 }
 
+// 编号列别名（与后端 parser 一致）：预览行对象的 key 是原始表头
+const CODE_HEADERS = ['知识点编号', '编号', 'code']
+
+function getRecordCode(record: XlsxPreviewRow): string | undefined {
+  for (const header of CODE_HEADERS) {
+    const value = record[header]
+    if (value && value.trim() !== '') {
+      return value.trim()
+    }
+  }
+  return undefined
+}
+
 export const FrameworkPreview: React.FC<FrameworkPreviewProps> = ({
   rows,
   errors,
@@ -33,34 +46,37 @@ export const FrameworkPreview: React.FC<FrameworkPreviewProps> = ({
   const columns = useMemo(() => {
     const baseColumns =
       rows.length > 0
-        ? Object.keys(rows[0]).map(key => ({
-            title: key,
-            dataIndex: key,
-            key,
-            ellipsis: true,
-          }))
+        ? Object.keys(rows[0]).map(key => {
+            const isCodeColumn = CODE_HEADERS.includes(key)
+            return {
+              title: key,
+              dataIndex: key,
+              key,
+              ellipsis: true,
+              render: isCodeColumn
+                ? (value: string, record: XlsxPreviewRow) => {
+                    const code = getRecordCode(record)
+                    if (!code) {
+                      return value
+                    }
+                    return (
+                      <Typography.Link
+                        onClick={e => {
+                          e.stopPropagation()
+                          onRowClick?.(code)
+                        }}
+                      >
+                        {value}
+                      </Typography.Link>
+                    )
+                  }
+                : undefined,
+            }
+          })
         : []
-    return [
-      ...baseColumns,
-      {
-        title: '状态',
-        key: 'status',
-        width: 120,
-        render: (_value: unknown, record: XlsxPreviewRow) => {
-          const code = record.code
-          const rowErrors = code ? errorMap.get(code) : undefined
-          if (rowErrors && rowErrors.length > 0) {
-            return (
-              <Typography.Text type="danger">
-                ✗ {rowErrors.map(e => e.message).join('；')}
-              </Typography.Text>
-            )
-          }
-          return <Typography.Text type="success">✓</Typography.Text>
-        },
-      },
-    ]
-  }, [rows, errorMap])
+    // 原样展示 xlsx 内容，不附加状态列
+    return baseColumns
+  }, [rows, onRowClick])
 
   useEffect(() => {
     if (!highlightedCode || !tableRef.current) {
@@ -83,23 +99,30 @@ export const FrameworkPreview: React.FC<FrameworkPreviewProps> = ({
       <Table
         dataSource={rows}
         columns={columns}
-        rowKey={record => (record.code ? `framework-row-${record.code}` : JSON.stringify(record))}
+        rowKey={record => {
+          const code = getRecordCode(record)
+          return code ? `framework-row-${code}` : JSON.stringify(record)
+        }}
         pagination={false}
         size="small"
+        sticky
         scroll={{ x: 'max-content' }}
         onRow={record => ({
           onClick: () => {
-            if (record.code && onRowClick) {
-              onRowClick(record.code)
+            const code = getRecordCode(record)
+            if (code && onRowClick) {
+              onRowClick(code)
             }
           },
+          style: { cursor: getRecordCode(record) ? 'pointer' : 'default' },
         })}
         rowClassName={record => {
+          const code = getRecordCode(record)
           const classes: string[] = []
-          if (record.code && errorMap.has(record.code)) {
+          if (code && errorMap.has(code)) {
             classes.push('framework-row-error')
           }
-          if (record.code && record.code === highlightedCode) {
+          if (code && code === highlightedCode) {
             classes.push('framework-row-highlighted')
           }
           return classes.join(' ')

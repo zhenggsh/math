@@ -62,6 +62,29 @@ describe('TextbookController - expand', () => {
     );
   });
 
+  it('should accept .csv framework file for expansion', async () => {
+    const frameworkFile = {
+      originalname: 'expand.csv',
+      buffer: Buffer.from('csv'),
+    } as Express.Multer.File;
+    const contentFile = {
+      originalname: 'expand.md',
+      buffer: Buffer.from('md'),
+    } as Express.Multer.File;
+
+    const result = await controller.expand('tb-1', {
+      framework: [frameworkFile],
+      content: [contentFile],
+    });
+
+    expect(result.success).toBe(true);
+    expect(service.expandKnowledgePoints).toHaveBeenCalledWith(
+      'tb-1',
+      frameworkFile,
+      contentFile,
+    );
+  });
+
   describe('validate', () => {
     it('should validate expansion files', async () => {
       const frameworkFile = {
@@ -107,10 +130,10 @@ describe('TextbookController - expand', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
-    it('should throw BadRequestException when framework file is not .xlsx', async () => {
+    it('should throw BadRequestException when framework file is not .xlsx or .csv', async () => {
       const frameworkFile = {
-        originalname: 'expand.csv',
-        buffer: Buffer.from('csv'),
+        originalname: 'expand.txt',
+        buffer: Buffer.from('txt'),
       } as Express.Multer.File;
       const contentFile = {
         originalname: 'expand.md',
@@ -123,6 +146,29 @@ describe('TextbookController - expand', () => {
           content: [contentFile],
         }),
       ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should accept .csv framework file', async () => {
+      const frameworkFile = {
+        originalname: 'expand.csv',
+        buffer: Buffer.from('csv'),
+      } as Express.Multer.File;
+      const contentFile = {
+        originalname: 'expand.md',
+        buffer: Buffer.from('md'),
+      } as Express.Multer.File;
+
+      const result = await controller.validate('tb-1', {
+        framework: [frameworkFile],
+        content: [contentFile],
+      });
+
+      expect(result.success).toBe(true);
+      expect(service.validateExpansionFiles).toHaveBeenCalledWith(
+        'tb-1',
+        frameworkFile,
+        contentFile,
+      );
     });
 
     it('should throw BadRequestException when content file is not .md', async () => {

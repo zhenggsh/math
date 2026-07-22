@@ -76,10 +76,19 @@ export interface ValidationIssue {
   message: string
 }
 
+// 单项校验结果（逐项提示：通过 ✓ / 不通过 ✗）
+export interface ValidationCheck {
+  key: string // 检查项标识
+  label: string // 检查项名称
+  passed: boolean // 是否通过
+  errors: ValidationIssue[] // 该检查项的问题（通过时为空）
+}
+
 // 校验报告
 export interface ValidationReport {
   valid: boolean
   errors: ValidationIssue[]
+  checks: ValidationCheck[]
 }
 
 // 扩充弹窗草稿
