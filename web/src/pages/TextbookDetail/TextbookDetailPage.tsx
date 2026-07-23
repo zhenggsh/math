@@ -1,22 +1,26 @@
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
-import { Card, Button, Space, Typography, Descriptions, Spin, Alert, Table, Tag } from 'antd'
-import { ArrowLeftOutlined, PlusOutlined } from '@ant-design/icons'
+import { Card, Button, Space, Typography, Descriptions, Spin, Alert, Tag } from 'antd'
+import { ArrowLeftOutlined, PlusOutlined, ReloadOutlined, WarningOutlined } from '@ant-design/icons'
+import { Allotment } from 'allotment'
 import { useTextbookDetail } from './hooks/useTextbookDetail'
 import { ExpandKnowledgePointsModal } from './components/ExpandKnowledgePointsModal'
-import type { KnowledgePoint } from '../../types/knowledge.types'
+import { FrameworkPreview, MdPreview } from '../../components/textbook-preview'
+import { findMdLineByCode } from '../../utils/mdLineLocator'
 
 const { Title } = Typography
+const NARROW_BREAKPOINT = 768
 
 const TextbookDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const [modalOpen, setModalOpen] = useState(() => searchParams.get('expand') === '1')
-  const [newPointCodes, setNewPointCodes] = useState<string[]>([])
+  const [highlightedCodes, setHighlightedCodes] = useState<string[]>([])
+  const [highlightedMdLine, setHighlightedMdLine] = useState<number | undefined>(undefined)
+  const [isNarrow, setIsNarrow] = useState(() => window.innerWidth < NARROW_BREAKPOINT)
   const {
     textbook,
-    knowledgePoints,
     loading,
     error,
     expanding,
@@ -24,77 +28,60 @@ const TextbookDetailPage: React.FC = () => {
     validating,
     validationResult,
     validationError,
+    frameworkFile,
+    contentFile,
+    filesLoading,
+    filesError,
     expand,
     fetchTextbook,
+    fetchFiles,
     validate,
     resetValidation,
   } = useTextbookDetail(id || '')
 
   useEffect(() => {
-    if (newPointCodes.length === 0) {
+    const handleResize = () => setIsNarrow(window.innerWidth < NARROW_BREAKPOINT)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
+  // 扩充成功高亮：3 秒后自动取消（移植自原 newPointCodes 逻辑）
+  useEffect(() => {
+    if (highlightedCodes.length === 0) {
       return
     }
-    const element = document.querySelector('.highlighted-new-point')
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    }
-    const timer = setTimeout(() => {
-      setNewPointCodes([])
-    }, 3000)
+    const timer = setTimeout(() => setHighlightedCodes([]), 3000)
     return () => clearTimeout(timer)
-  }, [newPointCodes, knowledgePoints])
+  }, [highlightedCodes])
 
-  const handleExpand = async (frameworkFile: File, contentFile: File) => {
-    const result = await expand(frameworkFile, contentFile)
+  const handleFrameworkRowClick = useCallback(
+    (code: string) => {
+      if (!contentFile?.content) {
+        return
+      }
+      const line = findMdLineByCode(contentFile.content, code)
+      if (line !== undefined) {
+        setHighlightedMdLine(line)
+      }
+    },
+    [contentFile]
+  )
+
+  const handleExpand = async (framework: File, content: File) => {
+    const result = await expand(framework, content)
     if (result?.success) {
-      await fetchTextbook()
+      // 扩充写入了磁盘文件：重新拉取文件预览（不依赖 DB 刷新）
+      await Promise.all([fetchTextbook(), fetchFiles()])
       if (result.data?.addedCodes.length) {
-        setNewPointCodes(result.data.addedCodes)
+        setHighlightedCodes(result.data.addedCodes)
       }
       setModalOpen(false)
     }
   }
 
-  const handleValidate = async (frameworkFile: File, contentFile: File) => {
-    await validate(frameworkFile, contentFile)
+  const handleValidate = async (framework: File, content: File) => {
+    await validate(framework, content)
   }
-
-  const columns = [
-    {
-      title: '编号',
-      dataIndex: 'code',
-      key: 'code',
-    },
-    {
-      title: '名称',
-      dataIndex: 'name',
-      key: 'name',
-      render: (name: string | undefined) => name || '-',
-    },
-    {
-      title: '一级知识点',
-      dataIndex: 'level1',
-      key: 'level1',
-    },
-    {
-      title: '二级知识点',
-      dataIndex: 'level2',
-      key: 'level2',
-      render: (level2: string | undefined) => level2 || '-',
-    },
-    {
-      title: '三级知识点',
-      dataIndex: 'level3',
-      key: 'level3',
-      render: (level3: string | undefined) => level3 || '-',
-    },
-    {
-      title: '重要性',
-      dataIndex: 'importanceLevel',
-      key: 'importanceLevel',
-      render: (level: string) => <Tag color="blue">{level}</Tag>,
-    },
-  ]
 
   if (loading) {
     return (
@@ -126,6 +113,46 @@ const TextbookDetailPage: React.FC = () => {
     )
   }
 
+  // 文件 mtime 与 DB lastModifiedAt 分歧检测（容忍 1 秒内的取整差异）
+  const dbTime = new Date(textbook.lastModifiedAt).getTime()
+  const fileTime = frameworkFile?.lastModifiedAt
+    ? new Date(frameworkFile.lastModifiedAt).getTime()
+    : null
+  const diverged = fileTime !== null && Math.abs(fileTime - dbTime) > 1000
+
+  const frameworkPane = filesError ? (
+    <Alert message="文件加载失败" description={filesError} type="error" showIcon />
+  ) : filesLoading && !frameworkFile ? (
+    <div style={{ textAlign: 'center', padding: 24 }}>
+      <Spin />
+    </div>
+  ) : (
+    <FrameworkPreview
+      rows={frameworkFile?.rows ?? []}
+      errors={[]}
+      highlightedCodes={highlightedCodes}
+      emptyDescription="暂无框架文件内容"
+      onRowClick={handleFrameworkRowClick}
+    />
+  )
+
+  const mdPane = contentFile?.empty ? (
+    <FrameworkPreview rows={[]} errors={[]} emptyDescription="暂无内容文件" />
+  ) : filesError ? (
+    <Alert message="文件加载失败" description={filesError} type="error" showIcon />
+  ) : filesLoading && !contentFile ? (
+    <div style={{ textAlign: 'center', padding: 24 }}>
+      <Spin />
+    </div>
+  ) : (
+    <MdPreview
+      content={contentFile?.content ?? ''}
+      errors={[]}
+      highlightedLine={highlightedMdLine}
+      emptyDescription="暂无内容文件"
+    />
+  )
+
   return (
     <div style={{ padding: 24 }}>
       <Space direction="vertical" style={{ width: '100%' }} size="large">
@@ -142,10 +169,25 @@ const TextbookDetailPage: React.FC = () => {
             <Title level={3} style={{ margin: 0 }}>
               {textbook.name}
             </Title>
+            {diverged && (
+              <Tag icon={<WarningOutlined />} color="warning">
+                文件与数据库不一致
+              </Tag>
+            )}
           </Space>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => setModalOpen(true)}>
-            扩充知识点
-          </Button>
+          <Space>
+            <Button
+              icon={<ReloadOutlined />}
+              onClick={() => {
+                void fetchFiles()
+              }}
+            >
+              重新加载
+            </Button>
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => setModalOpen(true)}>
+              扩充知识点
+            </Button>
+          </Space>
         </Space>
 
         <Card title="教材信息">
@@ -161,20 +203,29 @@ const TextbookDetailPage: React.FC = () => {
             <Descriptions.Item label="最后修改">
               {new Date(textbook.lastModifiedAt).toLocaleString('zh-CN')}
             </Descriptions.Item>
+            {frameworkFile?.sheetName && (
+              <Descriptions.Item label="框架工作表">{frameworkFile.sheetName}</Descriptions.Item>
+            )}
           </Descriptions>
         </Card>
 
-        <Card title="知识点列表">
-          <Table
-            dataSource={knowledgePoints}
-            rowKey="id"
-            columns={columns}
-            pagination={{ pageSize: 20 }}
-            scroll={{ x: 800 }}
-            rowClassName={(record: KnowledgePoint) =>
-              newPointCodes.includes(record.code) ? 'highlighted-new-point' : ''
-            }
-          />
+        <Card
+          title={`教材文件预览（${frameworkFile?.fileName ?? '…'} / ${contentFile?.fileName ?? '…'}）`}
+          styles={{ body: { height: 480, padding: 12 } }}
+        >
+          {isNarrow ? (
+            <Space direction="vertical" style={{ width: '100%' }} size="middle">
+              <div style={{ height: 300, overflow: 'auto' }}>{frameworkPane}</div>
+              <div style={{ height: 300, overflow: 'auto' }}>{mdPane}</div>
+            </Space>
+          ) : (
+            <div style={{ height: '100%' }}>
+              <Allotment proportionalLayout={false}>
+                <Allotment.Pane minSize={280}>{frameworkPane}</Allotment.Pane>
+                <Allotment.Pane minSize={320}>{mdPane}</Allotment.Pane>
+              </Allotment>
+            </div>
+          )}
         </Card>
       </Space>
 

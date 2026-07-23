@@ -37,7 +37,7 @@ export const MdPreview: React.FC<MdPreviewProps> = ({
         element.scrollIntoView({ behavior: 'smooth', block: 'center' })
       }
     }
-  }, [highlightedLine])
+  }, [highlightedLine, content])
 
   if (!content) {
     return (
