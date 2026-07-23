@@ -35,6 +35,12 @@ export interface ParseResult {
   error?: string;
 }
 
+// 检测到的知识点框架 sheet（xlsx）
+export interface DetectedFrameworkSheet {
+  sheetName: string;
+  records: Record<string, string>[];
+}
+
 // 校验问题定位
 export interface ValidationIssueLocation {
   file: 'xlsx' | 'md';

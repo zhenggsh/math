@@ -2,6 +2,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { TextbookFileService } from './textbook-file.service';
+import { TextbookParserService } from './textbook-parser.service';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const fs = require('fs');
@@ -16,6 +17,7 @@ describe('TextbookFileService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TextbookFileService,
+        TextbookParserService,
         {
           provide: ConfigService,
           useValue: {

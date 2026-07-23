@@ -7,13 +7,17 @@ import * as crypto from 'crypto';
 import * as xlsx from 'xlsx';
 import * as Papa from 'papaparse';
 import { TextbookFilePair, FrameworkType } from './types/textbook.types';
+import { TextbookParserService } from './textbook-parser.service';
 
 @Injectable()
 export class TextbookFileService {
   private readonly logger = new Logger(TextbookFileService.name);
   private readonly uploadDir: string;
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly parserService: TextbookParserService,
+  ) {
     // 上传目录默认为项目根目录下的 iksm 文件夹
     this.uploadDir =
       this.configService.get<string>('IKSM_DIR') ||
@@ -227,8 +231,9 @@ export class TextbookFileService {
   }
 
   /**
-   * 在 xlsx 文件末尾追加新行
-   * 保持原工作表结构（best-effort）
+   * 在 xlsx 框架 sheet 末尾追加新行
+   * 目标 sheet 由 parser 的框架检测确定（不使用 SheetNames[0]）；
+   * 列按目标 sheet 表头名映射（兼容不同列序）
    */
   appendXlsxRows(
     fileName: string,
@@ -244,22 +249,57 @@ export class TextbookFileService {
       throw new BadRequestException(`文件不存在: ${filePath}`);
     }
 
-    const workbook = xlsx.readFile(filePath);
-    const sheetName = workbook.SheetNames[0];
-    const worksheet = workbook.Sheets[sheetName];
+    const detected = this.parserService.detectFrameworkSheet(filePath);
+    if (!detected) {
+      throw new BadRequestException(
+        `未找到合规的知识点框架工作表: ${fileName}`,
+      );
+    }
 
-    // Determine the last row with data
+    const workbook = xlsx.readFile(filePath);
+    const worksheet = workbook.Sheets[detected.sheetName];
+
+    // 读取目标 sheet 的表头行（第一个非空行），建立 表头名 -> 列索引 映射
+    const sheetData = xlsx.utils.sheet_to_json<unknown[]>(worksheet, {
+      header: 1,
+      defval: '',
+    });
+    let headerRowIndex = 0;
+    while (headerRowIndex < sheetData.length) {
+      const row = sheetData[headerRowIndex] as unknown as string[];
+      if (
+        row.some(
+          (cell) =>
+            cell !== undefined && cell !== null && String(cell).trim() !== '',
+        )
+      ) {
+        break;
+      }
+      headerRowIndex++;
+    }
+    const sheetHeaders = (sheetData[headerRowIndex] as unknown as string[]).map(
+      (cell) => String(cell ?? '').trim(),
+    );
+
+    const columnIndexes = headers.map((header) => {
+      const index = sheetHeaders.indexOf(header.trim());
+      if (index === -1) {
+        throw new BadRequestException(
+          `框架 sheet "${detected.sheetName}" 中不存在列: ${header}`,
+        );
+      }
+      return index;
+    });
+
     const range = xlsx.utils.decode_range(worksheet['!ref'] || 'A1');
     const lastRow = range.e.r;
 
-    // Ensure we append after the last data row
-    const newRowCount = rows.length;
-    for (let i = 0; i < newRowCount; i++) {
+    for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
       for (let j = 0; j < row.length; j++) {
         const cellAddress = xlsx.utils.encode_cell({
           r: lastRow + 1 + i,
-          c: j,
+          c: columnIndexes[j],
         });
         const value = row[j] ?? '';
         worksheet[cellAddress] = {
@@ -269,12 +309,13 @@ export class TextbookFileService {
       }
     }
 
-    // Update range
-    range.e.r = Math.max(range.e.r, lastRow + newRowCount);
+    range.e.r = Math.max(range.e.r, lastRow + rows.length);
     worksheet['!ref'] = xlsx.utils.encode_range(range);
 
     xlsx.writeFile(workbook, filePath);
-    this.logger.log(`已追加 ${newRowCount} 行到 xlsx: ${filePath}`);
+    this.logger.log(
+      `已追加 ${rows.length} 行到 xlsx: ${filePath} (sheet: ${detected.sheetName})`,
+    );
   }
 
   /**

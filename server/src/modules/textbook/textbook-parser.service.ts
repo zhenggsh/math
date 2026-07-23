@@ -7,6 +7,7 @@ import {
   FrameworkType,
   ParseResult,
   ValidationIssue,
+  DetectedFrameworkSheet,
 } from './types/textbook.types';
 
 @Injectable()
@@ -80,9 +81,7 @@ export class TextbookParserService {
    * 遍历所有工作表，返回第一个包含合规框架结构的 sheet 名与全量行记录；
    * 未找到时返回 null。供 appendXlsxRows 与 framework-file 端点复用。
    */
-  detectFrameworkSheet(
-    filePath: string,
-  ): { sheetName: string; records: Record<string, string>[] } | null {
+  detectFrameworkSheet(filePath: string): DetectedFrameworkSheet | null {
     const workbook = xlsx.readFile(filePath);
 
     for (const sheetName of workbook.SheetNames) {
