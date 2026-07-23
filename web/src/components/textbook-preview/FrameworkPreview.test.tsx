@@ -1,8 +1,8 @@
 import React from 'react'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
-import { FrameworkPreview } from '../components/FrameworkPreview'
-import type { ValidationIssue } from '../../../types/textbook.types'
+import { FrameworkPreview } from './FrameworkPreview'
+import type { ValidationIssue } from '../../types/textbook.types'
 
 const rows = [
   { code: '1.1.1', level1: '集合', level2: '集合的含义' },

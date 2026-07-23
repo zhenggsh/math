@@ -1,14 +1,20 @@
 import React, { useMemo, useRef, useEffect } from 'react'
 import { Empty, Typography } from 'antd'
-import type { ValidationIssue } from '../../../types/textbook.types'
+import type { ValidationIssue } from '../../types/textbook.types'
 
 interface MdPreviewProps {
   content: string
   errors: ValidationIssue[]
   highlightedLine?: number
+  emptyDescription?: string
 }
 
-export const MdPreview: React.FC<MdPreviewProps> = ({ content, errors, highlightedLine }) => {
+export const MdPreview: React.FC<MdPreviewProps> = ({
+  content,
+  errors,
+  highlightedLine,
+  emptyDescription = '选择文件后在此处预览',
+}) => {
   const lines = useMemo(() => content.split('\n'), [content])
   const errorMap = useMemo(() => {
     const map = new Map<number, ValidationIssue[]>()
@@ -47,7 +53,7 @@ export const MdPreview: React.FC<MdPreviewProps> = ({ content, errors, highlight
           background: '#fafafa',
         }}
       >
-        <Empty description="选择文件后在此处预览" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+        <Empty description={emptyDescription} image={Empty.PRESENTED_IMAGE_SIMPLE} />
       </div>
     )
   }

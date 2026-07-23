@@ -1,23 +1,25 @@
 import React, { useEffect, useMemo, useRef } from 'react'
 import { Table, Typography, Empty } from 'antd'
-import type { ValidationIssue } from '../../../types/textbook.types'
+import type { ValidationIssue } from '../../types/textbook.types'
 import {
   CODE_HEADERS,
   getRecordCode,
   type XlsxPreviewRow,
-} from '../../../utils/textbookFilePreview'
+} from '../../utils/textbookFilePreview'
 
 interface FrameworkPreviewProps {
   rows: XlsxPreviewRow[]
   errors: ValidationIssue[]
-  highlightedCode?: string
+  highlightedCodes?: string[]
+  emptyDescription?: string
   onRowClick?: (code: string) => void
 }
 
 export const FrameworkPreview: React.FC<FrameworkPreviewProps> = ({
   rows,
   errors,
-  highlightedCode,
+  highlightedCodes,
+  emptyDescription = '选择文件后在此处预览',
   onRowClick,
 }) => {
   const tableRef = useRef<HTMLDivElement>(null)
@@ -70,19 +72,19 @@ export const FrameworkPreview: React.FC<FrameworkPreviewProps> = ({
   }, [rows, onRowClick])
 
   useEffect(() => {
-    if (!highlightedCode || !tableRef.current) {
+    if (!highlightedCodes || highlightedCodes.length === 0 || !tableRef.current) {
       return
     }
     const element = tableRef.current.querySelector(
-      `[data-row-key="framework-row-${highlightedCode}"]`
+      `[data-row-key="framework-row-${highlightedCodes[0]}"]`
     )
     if (element) {
       element.scrollIntoView({ behavior: 'smooth', block: 'center' })
     }
-  }, [highlightedCode])
+  }, [highlightedCodes, rows])
 
   if (rows.length === 0) {
-    return <Empty description="选择文件后在此处预览" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+    return <Empty description={emptyDescription} image={Empty.PRESENTED_IMAGE_SIMPLE} />
   }
 
   return (
@@ -113,7 +115,7 @@ export const FrameworkPreview: React.FC<FrameworkPreviewProps> = ({
           if (code && errorMap.has(code)) {
             classes.push('framework-row-error')
           }
-          if (code && code === highlightedCode) {
+          if (code && highlightedCodes?.includes(code)) {
             classes.push('framework-row-highlighted')
           }
           return classes.join(' ')

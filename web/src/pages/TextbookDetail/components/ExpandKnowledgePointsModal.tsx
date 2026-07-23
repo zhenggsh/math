@@ -10,8 +10,7 @@ import type {
   ExpansionDraft,
 } from '../../../types/textbook.types'
 import { ValidationRulesPanel } from './ValidationRulesPanel'
-import { FrameworkPreview } from './FrameworkPreview'
-import { MdPreview } from './MdPreview'
+import { FrameworkPreview, MdPreview } from '../../../components/textbook-preview'
 import { ErrorTag } from './ErrorTag'
 import { ImpactPreview } from './ImpactPreview'
 import {
@@ -594,7 +593,7 @@ export const ExpandKnowledgePointsModal: React.FC<ExpandKnowledgePointsModalProp
               <FrameworkPreview
                 rows={xlsxPreview || []}
                 errors={validationResult?.errors || []}
-                highlightedCode={highlightedFrameworkCode}
+                highlightedCodes={highlightedFrameworkCode ? [highlightedFrameworkCode] : []}
                 onRowClick={handleFrameworkRowClick}
               />
             </div>
@@ -638,7 +637,7 @@ export const ExpandKnowledgePointsModal: React.FC<ExpandKnowledgePointsModalProp
                   <FrameworkPreview
                     rows={xlsxPreview || []}
                     errors={validationResult?.errors || []}
-                    highlightedCode={highlightedFrameworkCode}
+                    highlightedCodes={highlightedFrameworkCode ? [highlightedFrameworkCode] : []}
                     onRowClick={handleFrameworkRowClick}
                   />
                 </div>

@@ -1,8 +1,8 @@
 import React from 'react'
 import { render, screen } from '@testing-library/react'
 import { describe, it, expect } from 'vitest'
-import { MdPreview } from '../components/MdPreview'
-import type { ValidationIssue } from '../../../types/textbook.types'
+import { MdPreview } from './MdPreview'
+import type { ValidationIssue } from '../../types/textbook.types'
 
 const content = '#### 1.1.1 集合的含义\n\n这是内容。\n### 1.1.2 元素与集合'
 
