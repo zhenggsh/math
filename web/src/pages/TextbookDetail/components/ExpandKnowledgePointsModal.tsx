@@ -326,7 +326,7 @@ export const ExpandKnowledgePointsModal: React.FC<ExpandKnowledgePointsModalProp
 
   // 在 md 内容中查找知识点编号对应的行号（1-based），共享实现见 utils/mdLineLocator
   const locateMdLine = useCallback(
-    (code: string): number | undefined => findMdLineByCode(mdPreview, code),
+    (code: string): number | undefined => findMdLineByCode(mdPreview ?? '', code),
     [mdPreview]
   )
 
