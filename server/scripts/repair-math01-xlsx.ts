@@ -138,6 +138,12 @@ async function main(): Promise<void> {
 
     // 2b. 封面还原：仅保留前 COVER_KEEP_ROWS 行，并更新统计
     const counts = countLevels(merged);
+    // 重要性级别（框架 sheet 第 5 列）分布统计
+    const impCounts: Record<string, number> = {};
+    for (const row of merged.slice(1)) {
+      const imp = String(row[5] ?? '').trim();
+      if (imp) impCounts[imp] = (impCounts[imp] ?? 0) + 1;
+    }
     const coverSheet = workbook.Sheets['封面'];
     const coverRows = xlsx.utils.sheet_to_json<string[]>(coverSheet, {
       header: 1,
@@ -148,6 +154,10 @@ async function main(): Promise<void> {
       if (row[0] === '一级节点(a)') return [row[0], String(counts.level1)];
       if (row[0] === '二级节点(a.b)') return [row[0], String(counts.level2)];
       if (row[0] === '三级知识点(a.b.c)') return [row[0], String(counts.level3)];
+      // A/B/C 类统计行：保持行首标签不变，只更新数值（无对应行则不新增）
+      const impMatch = String(row[0] ?? '').match(/^([ABC])类/);
+      if (impMatch)
+        return [row[0], String(impCounts[impMatch[1]] ?? 0)];
       if (row[0] === '知识点框架')
         return [row[0], `完整知识点数据（${merged.length - 1}行）`];
       return row;
@@ -156,7 +166,7 @@ async function main(): Promise<void> {
 
     xlsx.writeFile(workbook, filePath);
     console.log(
-      `math01.xlsx 修复完成：框架 sheet ${merged.length - 1} 行，统计 ${JSON.stringify(counts)}`,
+      `math01.xlsx 修复完成：框架 sheet ${merged.length - 1} 行，统计 ${JSON.stringify(counts)}，重要性分布 ${JSON.stringify(impCounts)}`,
     );
 
     // 3. 验证
