@@ -6,9 +6,9 @@ export interface XlsxPreviewRow {
 }
 
 export const CODE_HEADERS = ['知识点编号', '编号', 'code']
-const LEVEL1_HEADERS = ['一级知识点', 'level1']
-const LEVEL2_HEADERS = ['二级知识点', 'level2']
-const LEVEL3_HEADERS = ['三级知识点', 'level3']
+const LEVEL1_HEADERS = ['一级知识点', '一级', 'level1']
+const LEVEL2_HEADERS = ['二级知识点', '二级', 'level2']
+const LEVEL3_HEADERS = ['三级知识点', '三级', 'level3']
 
 function getHeaderValue(record: XlsxPreviewRow, headers: string[]): string | undefined {
   for (const header of headers) {
