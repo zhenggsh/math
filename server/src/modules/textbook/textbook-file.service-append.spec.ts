@@ -196,5 +196,41 @@ describe('TextbookFileService - appendXlsxRows', () => {
         '1.1.2',
       ]);
     });
+
+    it('框架 sheet 从 B 列开始时，按绝对列偏移写入（编号落 H 列，A 列无数据）', () => {
+      // 回归测试：math02.xlsx 的框架 sheet 物理范围是 B2:H67（非 A 列起始）
+      const offsetFile = 'append-offset.xlsx';
+      const wb = xlsx.utils.book_new();
+      const ws = xlsx.utils.aoa_to_sheet([]);
+      xlsx.utils.sheet_add_aoa(
+        ws,
+        [
+          ['一级知识点', '二级知识点', '三级知识点', '定义', '特性', '重要性级别', '知识点编号'],
+          ['函数', '函数的概念', '函数的定义', '对应关系', '确定性', 'A', '9.1.1'],
+        ],
+        { origin: 'B2' },
+      );
+      // sheet_add_aoa 会把 !ref 扩展到 A1，手动收窄为 B2 起始以复现 math02 结构
+      ws['!ref'] = 'B2:H3';
+      xlsx.utils.book_append_sheet(wb, ws, '知识点框架');
+      xlsx.writeFile(wb, path.join(tmpDir, offsetFile));
+
+      service.appendXlsxRows(
+        offsetFile,
+        ['一级知识点', '二级知识点', '三级知识点', '定义', '特性', '重要性级别', '知识点编号'],
+        [['函数', '函数的概念', '函数的表示', '解析法', '互异性', 'B', '9.9.1']],
+      );
+
+      const wb2 = xlsx.readFile(path.join(tmpDir, offsetFile));
+      const ws2 = wb2.Sheets['知识点框架'];
+      const range = xlsx.utils.decode_range(ws2['!ref'] || 'A1');
+      const lastR = range.e.r;
+      // 各列值落在 B-H 绝对列（c: 1-7），编号在 H 列
+      expect(ws2[xlsx.utils.encode_cell({ r: lastR, c: 1 })]?.v).toBe('函数'); // B 一级知识点
+      expect(ws2[xlsx.utils.encode_cell({ r: lastR, c: 4 })]?.v).toBe('解析法'); // E 定义
+      expect(ws2[xlsx.utils.encode_cell({ r: lastR, c: 7 })]?.v).toBe('9.9.1'); // H 知识点编号
+      // A 列（c: 0）无数据，一级值不被丢弃
+      expect(ws2[xlsx.utils.encode_cell({ r: lastR, c: 0 })]).toBeUndefined();
+    });
   });
 });

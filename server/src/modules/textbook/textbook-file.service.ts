@@ -259,7 +259,12 @@ export class TextbookFileService {
     const workbook = xlsx.readFile(filePath);
     const worksheet = workbook.Sheets[detected.sheetName];
 
+    // sheet 物理范围：起始列/行不一定是 A1（如 math02 从 B2 开始）
+    const range = xlsx.utils.decode_range(worksheet['!ref'] || 'A1');
+
     // 读取目标 sheet 的表头行（第一个非空行），建立 表头名 -> 列索引 映射
+    // 注意：sheet_to_json(header:1) 返回的数组下标相对 range 起始列，
+    // 写单元格时需加 range.s.c 偏移转换为绝对列
     const sheetData = xlsx.utils.sheet_to_json<unknown[]>(worksheet, {
       header: 1,
       defval: '',
@@ -291,15 +296,17 @@ export class TextbookFileService {
       return index;
     });
 
-    const range = xlsx.utils.decode_range(worksheet['!ref'] || 'A1');
     const lastRow = range.e.r;
+    let maxCol = range.e.c;
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
       for (let j = 0; j < row.length; j++) {
+        const absCol = range.s.c + columnIndexes[j];
+        maxCol = Math.max(maxCol, absCol);
         const cellAddress = xlsx.utils.encode_cell({
           r: lastRow + 1 + i,
-          c: columnIndexes[j],
+          c: absCol,
         });
         const value = row[j] ?? '';
         worksheet[cellAddress] = {
@@ -310,6 +317,7 @@ export class TextbookFileService {
     }
 
     range.e.r = Math.max(range.e.r, lastRow + rows.length);
+    range.e.c = Math.max(range.e.c, maxCol);
     worksheet['!ref'] = xlsx.utils.encode_range(range);
 
     xlsx.writeFile(workbook, filePath);
