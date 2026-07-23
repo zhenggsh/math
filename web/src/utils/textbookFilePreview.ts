@@ -36,31 +36,94 @@ export function getRecordLevel3(record: XlsxPreviewRow): string | undefined {
   return getHeaderValue(record, LEVEL3_HEADERS)
 }
 
-export async function parseXlsxPreview(file: File, limit = 100): Promise<XlsxPreviewRow[]> {
-  const arrayBuffer = await file.arrayBuffer()
-  const data = new Uint8Array(arrayBuffer)
-  const workbook = XLSX.read(data, { type: 'array' })
+const CODE_PATTERN = /^\d+(\.\d+){2,}/
 
-  const sheetName = workbook.SheetNames[0]
-  if (!sheetName) {
-    return []
+/**
+ * 判断记录集是否为合规知识点框架（与服务端 isValidKnowledgeFramework 镜像）：
+ * 任一记录的编号列匹配 a.b.c 模式，或同时存在一级与三级知识点列
+ */
+function isValidFrameworkRecords(records: XlsxPreviewRow[]): boolean {
+  if (records.length === 0) {
+    return false
   }
+  const hasCode = records.some(record => {
+    const code = getRecordCode(record)
+    return code !== undefined && CODE_PATTERN.test(code)
+  })
+  if (hasCode) {
+    return true
+  }
+  const hasLevel1 = records.some(r => getRecordLevel1(r) !== undefined)
+  const hasLevel3 = records.some(r => getRecordLevel3(r) !== undefined)
+  return hasLevel1 && hasLevel3
+}
 
-  const worksheet = workbook.Sheets[sheetName]
+/**
+ * worksheet → 记录数组（与服务端 sheetToRecords 镜像）：
+ * 第一个非空行作为表头（trim），空表头列跳过
+ */
+function sheetToRecords(worksheet: XLSX.WorkSheet): XlsxPreviewRow[] {
   const rawRows = XLSX.utils.sheet_to_json<unknown[]>(worksheet, { header: 1 })
   if (rawRows.length === 0) {
     return []
   }
 
-  const headers = rawRows[0].map(String)
-  return rawRows.slice(1, limit + 1).map(row => {
+  let headerRowIndex = 0
+  while (headerRowIndex < rawRows.length) {
+    const row = rawRows[headerRowIndex]
+    if (
+      row.some(cell => {
+        const value = cell as string | number | boolean | null | undefined
+        return value !== undefined && value !== null && String(value).trim() !== ''
+      })
+    ) {
+      break
+    }
+    headerRowIndex++
+  }
+  if (headerRowIndex >= rawRows.length) {
+    return []
+  }
+
+  const headers = rawRows[headerRowIndex].map(cell => {
+    const value = cell as string | number | boolean | null | undefined
+    return value === undefined || value === null ? '' : String(value).trim()
+  })
+  return rawRows.slice(headerRowIndex + 1).map(row => {
     const record: XlsxPreviewRow = {}
     headers.forEach((header, index) => {
-      const value = row[index] as string | number | boolean | null | undefined
-      record[header] = value === undefined || value === null ? '' : String(value)
+      if (header !== '') {
+        const value = row[index] as string | number | boolean | null | undefined
+        record[header] = value === undefined || value === null ? '' : String(value)
+      }
     })
     return record
   })
+}
+
+/**
+ * 检测 workbook 中的框架 sheet（与服务端 detectFrameworkSheet 镜像）
+ */
+function detectFrameworkSheet(workbook: XLSX.WorkBook): XlsxPreviewRow[] | null {
+  for (const sheetName of workbook.SheetNames) {
+    const records = sheetToRecords(workbook.Sheets[sheetName])
+    if (isValidFrameworkRecords(records)) {
+      return records
+    }
+  }
+  return null
+}
+
+export async function parseXlsxPreview(file: File, limit = 100): Promise<XlsxPreviewRow[]> {
+  const arrayBuffer = await file.arrayBuffer()
+  const data = new Uint8Array(arrayBuffer)
+  const workbook = XLSX.read(data, { type: 'array' })
+
+  const records = detectFrameworkSheet(workbook)
+  if (!records) {
+    return []
+  }
+  return records.slice(0, limit)
 }
 
 export async function parseCsvPreview(file: File, limit = 100): Promise<XlsxPreviewRow[]> {

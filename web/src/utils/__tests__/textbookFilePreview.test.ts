@@ -40,7 +40,7 @@ describe('textbookFilePreview', () => {
 
   it('limits xlsx preview rows', async () => {
     const workbook = XLSX.utils.book_new()
-    const data = [['编号'], ...Array.from({ length: 5 }, (_, i) => [`${i + 1}`])]
+    const data = [['编号'], ...Array.from({ length: 5 }, (_, i) => [`1.1.${i + 1}`])]
     const worksheet = XLSX.utils.aoa_to_sheet(data)
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Sheet1')
     const buffer = new Uint8Array(
