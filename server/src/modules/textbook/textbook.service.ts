@@ -16,6 +16,8 @@ import {
   ValidationCheck,
   ValidationIssue,
   ValidationReport,
+  FrameworkFileContent,
+  ContentFileContent,
 } from './types/textbook.types';
 import type { ExpandKnowledgePointsResponse } from './dto/expand-knowledge-points.dto';
 import * as fs from 'fs';
@@ -445,19 +447,14 @@ export class TextbookService {
    * 读取并解析 iksm 磁盘上的框架文件（文件是真相源，不读 DB 知识点）
    * 供教材详情页文件预览使用
    */
-  async getFrameworkFileContent(textbookId: string): Promise<{
-    fileName: string;
-    fileType: FrameworkType;
-    sheetName?: string;
-    rows: Record<string, string>[];
-    totalRows: number;
-    lastModifiedAt: Date;
-  }> {
+  async getFrameworkFileContent(
+    textbookId: string,
+  ): Promise<FrameworkFileContent> {
     const textbook = await this.prisma.textbook.findUnique({
       where: { id: textbookId },
     });
     if (!textbook) {
-      throw new NotFoundException('教材不存在');
+      throw new NotFoundException(`教材不存在: ${textbookId}`);
     }
 
     const filePath = this.fileService.getFilePath(textbook.frameworkPath);
@@ -492,18 +489,12 @@ export class TextbookService {
    * 读取 iksm 磁盘上的 md 内容文件原文（文件是真相源）
    * 供教材详情页文件预览使用
    */
-  async getContentFileContent(textbookId: string): Promise<{
-    fileName: string | null;
-    content: string;
-    totalLines: number;
-    lastModifiedAt: Date | null;
-    empty: boolean;
-  }> {
+  async getContentFileContent(textbookId: string): Promise<ContentFileContent> {
     const textbook = await this.prisma.textbook.findUnique({
       where: { id: textbookId },
     });
     if (!textbook) {
-      throw new NotFoundException('教材不存在');
+      throw new NotFoundException(`教材不存在: ${textbookId}`);
     }
 
     if (!textbook.contentPath) {

@@ -18,6 +18,10 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '@prisma/client';
 import { FrameworkType } from './types/textbook.types';
+import type {
+  FrameworkFileContent,
+  ContentFileContent,
+} from './types/textbook.types';
 import { ExpandKnowledgePointsResponse } from './dto/expand-knowledge-points.dto';
 import { ValidateKnowledgePointsResponse } from './dto/validate-knowledge-points.dto';
 
@@ -125,7 +129,9 @@ export class TextbookController {
    */
   @Get(':id/framework-file')
   @Roles(Role.TEACHER, Role.ADMIN)
-  async getFrameworkFile(@Param('id') id: string) {
+  async getFrameworkFile(
+    @Param('id') id: string,
+  ): Promise<{ success: boolean; data: FrameworkFileContent }> {
     const data = await this.textbookService.getFrameworkFileContent(id);
     return { success: true, data };
   }
@@ -135,7 +141,9 @@ export class TextbookController {
    */
   @Get(':id/content-file')
   @Roles(Role.TEACHER, Role.ADMIN)
-  async getContentFile(@Param('id') id: string) {
+  async getContentFile(
+    @Param('id') id: string,
+  ): Promise<{ success: boolean; data: ContentFileContent }> {
     const data = await this.textbookService.getContentFileContent(id);
     return { success: true, data };
   }

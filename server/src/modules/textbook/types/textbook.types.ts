@@ -35,6 +35,25 @@ export interface ParseResult {
   error?: string;
 }
 
+// 框架文件预览内容（GET /textbooks/:id/framework-file 响应 data）
+export interface FrameworkFileContent {
+  fileName: string;
+  fileType: FrameworkType;
+  sheetName?: string; // xlsx 时：检测到的框架 sheet 名
+  rows: Record<string, string>[]; // 全量行，不截断
+  totalRows: number;
+  lastModifiedAt: Date; // 磁盘文件 mtime
+}
+
+// 内容文件预览内容（GET /textbooks/:id/content-file 响应 data）
+export interface ContentFileContent {
+  fileName: string | null;
+  content: string; // md 原文
+  totalLines: number;
+  lastModifiedAt: Date | null;
+  empty: boolean; // contentPath 为空时为 true
+}
+
 // 检测到的知识点框架 sheet（xlsx）
 export interface DetectedFrameworkSheet {
   sheetName: string;
