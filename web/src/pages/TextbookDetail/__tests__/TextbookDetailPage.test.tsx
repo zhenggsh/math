@@ -4,7 +4,13 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import TextbookDetailPage from '../TextbookDetailPage'
 import type { ContentFileContent } from '../../../types/textbook.types'
 
-const { mockHookReturn, mockFetchFiles, defaultContentFile } = vi.hoisted(() => {
+const {
+  mockHookReturn,
+  mockFetchFiles,
+  defaultTextbook,
+  defaultFrameworkFile,
+  defaultContentFile,
+} = vi.hoisted(() => {
   const defaultContentFile = {
     fileName: 'math01.md',
     content: '## 1 集合\n\n### 1.1 集合的概念\n\n#### 知识点 1.1.1：集合的含义\n内容\n',
@@ -12,18 +18,37 @@ const { mockHookReturn, mockFetchFiles, defaultContentFile } = vi.hoisted(() => 
     lastModifiedAt: '2026-07-22T10:00:00.000Z',
     empty: false,
   }
+  const defaultTextbook = {
+    id: 't1',
+    name: '高中数学必修一',
+    fileName: 'math01',
+    frameworkType: 'xlsx',
+    hasContent: true,
+    knowledgePointCount: 83,
+    lastModifiedAt: '2026-07-20T10:00:00.000Z',
+    createdAt: '2026-03-01T00:00:00.000Z',
+  }
+  const defaultFrameworkFile = {
+    fileName: 'math01.xlsx',
+    fileType: 'xlsx' as const,
+    sheetName: '知识点框架',
+    rows: [
+      {
+        一级知识点: '集合',
+        二级知识点: '集合的概念',
+        三级知识点: '集合的含义',
+        定义: '总体',
+        特性: '确定性',
+        重要性级别: 'A',
+        知识点编号: '1.1.1',
+      },
+    ],
+    totalRows: 1,
+    lastModifiedAt: '2026-07-22T10:00:00.000Z',
+  }
   const mockFetchFiles = vi.fn()
   const mockHookReturn = {
-    textbook: {
-      id: 't1',
-      name: '高中数学必修一',
-      fileName: 'math01',
-      frameworkType: 'xlsx',
-      hasContent: true,
-      knowledgePointCount: 83,
-      lastModifiedAt: '2026-07-20T10:00:00.000Z',
-      createdAt: '2026-03-01T00:00:00.000Z',
-    },
+    textbook: { ...defaultTextbook },
     knowledgePoints: [],
     loading: false,
     error: null as string | null,
@@ -32,24 +57,7 @@ const { mockHookReturn, mockFetchFiles, defaultContentFile } = vi.hoisted(() => 
     validating: false,
     validationResult: null,
     validationError: null as string | null,
-    frameworkFile: {
-      fileName: 'math01.xlsx',
-      fileType: 'xlsx' as const,
-      sheetName: '知识点框架',
-      rows: [
-        {
-          一级知识点: '集合',
-          二级知识点: '集合的概念',
-          三级知识点: '集合的含义',
-          定义: '总体',
-          特性: '确定性',
-          重要性级别: 'A',
-          知识点编号: '1.1.1',
-        },
-      ],
-      totalRows: 1,
-      lastModifiedAt: '2026-07-22T10:00:00.000Z',
-    },
+    frameworkFile: { ...defaultFrameworkFile },
     contentFile: { ...defaultContentFile } as ContentFileContent,
     filesLoading: false,
     filesError: null as string | null,
@@ -59,7 +67,13 @@ const { mockHookReturn, mockFetchFiles, defaultContentFile } = vi.hoisted(() => 
     validate: vi.fn(),
     resetValidation: vi.fn(),
   }
-  return { mockHookReturn, mockFetchFiles, defaultContentFile }
+  return {
+    mockHookReturn,
+    mockFetchFiles,
+    defaultTextbook,
+    defaultFrameworkFile,
+    defaultContentFile,
+  }
 })
 
 vi.mock('../hooks/useTextbookDetail', () => ({
@@ -67,7 +81,24 @@ vi.mock('../hooks/useTextbookDetail', () => ({
 }))
 
 vi.mock('../components/ExpandKnowledgePointsModal', () => ({
-  ExpandKnowledgePointsModal: () => null,
+  ExpandKnowledgePointsModal: (props: {
+    open: boolean
+    onSubmit: (frameworkFile: File, contentFile: File) => void
+  }) => {
+    if (!props.open) {
+      return null
+    }
+    return (
+      <button
+        data-testid="mock-submit"
+        onClick={() => {
+          props.onSubmit(new File([], 'expand.xlsx'), new File([], 'expand.md'))
+        }}
+      >
+        确认上传
+      </button>
+    )
+  },
 }))
 
 let scrollIntoViewMock: ReturnType<typeof vi.fn>
@@ -76,7 +107,11 @@ beforeEach(() => {
   scrollIntoViewMock = vi.fn()
   Element.prototype.scrollIntoView = scrollIntoViewMock
   mockFetchFiles.mockClear()
+  mockHookReturn.fetchTextbook.mockClear()
+  mockHookReturn.expand.mockReset()
   // 恢复 mockHookReturn 的默认值（有用例会修改这些字段，防止用例间互相污染）
+  mockHookReturn.textbook = { ...defaultTextbook }
+  mockHookReturn.frameworkFile = { ...defaultFrameworkFile }
   mockHookReturn.contentFile = { ...defaultContentFile }
   mockHookReturn.filesError = null
 })
@@ -132,5 +167,29 @@ describe('TextbookDetailPage 文件预览', () => {
     mockHookReturn.filesError = '框架文件不存在: math01.xlsx'
     renderPage()
     expect(screen.getAllByText(/math01\.xlsx/).length).toBeGreaterThan(0)
+  })
+
+  it('扩充成功后刷新文件、高亮新增编号并关闭弹窗', async () => {
+    mockHookReturn.expand.mockResolvedValue({
+      success: true,
+      message: 'ok',
+      data: { addedCodes: ['1.1.1'], count: 1 },
+    })
+    renderPage()
+
+    fireEvent.click(screen.getByText('扩充知识点'))
+    fireEvent.click(screen.getByTestId('mock-submit'))
+
+    await waitFor(() => {
+      expect(mockHookReturn.expand).toHaveBeenCalledTimes(1)
+      expect(mockHookReturn.fetchTextbook).toHaveBeenCalledTimes(1)
+      expect(mockFetchFiles).toHaveBeenCalled()
+    })
+    // 防 jsdom 假绿：高亮 class 必须作用于刷新后的行集
+    await waitFor(() => {
+      const row = document.querySelector('[data-row-key="framework-row-1.1.1"]')
+      expect(row?.className).toContain('framework-row-highlighted')
+    })
+    expect(screen.queryByTestId('mock-submit')).not.toBeInTheDocument()
   })
 })

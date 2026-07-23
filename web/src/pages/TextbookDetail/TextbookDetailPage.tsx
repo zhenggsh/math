@@ -79,6 +79,12 @@ const TextbookDetailPage: React.FC = () => {
     }
   }
 
+  const handleReloadFiles = useCallback(() => {
+    // 内容可能变化：清空旧行号高亮，避免高亮到错误行
+    setHighlightedMdLine(undefined)
+    void fetchFiles()
+  }, [fetchFiles])
+
   const handleValidate = async (framework: File, content: File) => {
     await validate(framework, content)
   }
@@ -176,12 +182,7 @@ const TextbookDetailPage: React.FC = () => {
             )}
           </Space>
           <Space>
-            <Button
-              icon={<ReloadOutlined />}
-              onClick={() => {
-                void fetchFiles()
-              }}
-            >
+            <Button icon={<ReloadOutlined />} onClick={handleReloadFiles}>
               重新加载
             </Button>
             <Button type="primary" icon={<PlusOutlined />} onClick={() => setModalOpen(true)}>
@@ -221,8 +222,13 @@ const TextbookDetailPage: React.FC = () => {
           ) : (
             <div style={{ height: '100%' }}>
               <Allotment proportionalLayout={false}>
-                <Allotment.Pane minSize={280}>{frameworkPane}</Allotment.Pane>
-                <Allotment.Pane minSize={320}>{mdPane}</Allotment.Pane>
+                {/* pane 会裁剪 overflow：包一层滚动容器，滚动发生在预览内部 */}
+                <Allotment.Pane minSize={280}>
+                  <div style={{ height: '100%', overflow: 'auto' }}>{frameworkPane}</div>
+                </Allotment.Pane>
+                <Allotment.Pane minSize={320}>
+                  <div style={{ height: '100%', overflow: 'auto' }}>{mdPane}</div>
+                </Allotment.Pane>
               </Allotment>
             </div>
           )}
