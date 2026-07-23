@@ -30,9 +30,19 @@ export class TextbookParserService {
       }
 
       let rawData: Record<string, string>[] = [];
+      let sheetName: string | undefined;
 
       if (fileType === 'xlsx') {
-        rawData = this.parseXlsx(filePath);
+        const detected = this.detectFrameworkSheet(filePath);
+        if (!detected) {
+          this.logger.warn(`未找到合规的知识点框架工作表: ${filePath}`);
+        } else {
+          sheetName = detected.sheetName;
+          rawData = detected.records;
+          this.logger.log(
+            `选择工作表 "${sheetName}" 作为知识点框架 (${rawData.length} 行)`,
+          );
+        }
       } else if (fileType === 'csv') {
         rawData = this.parseCsv(filePath);
       } else {
@@ -53,6 +63,7 @@ export class TextbookParserService {
         data: knowledgePoints,
         explicitCodes,
         rawRecords: rawData,
+        sheetName,
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : '未知错误';
@@ -65,71 +76,77 @@ export class TextbookParserService {
   }
 
   /**
-   * 解析 XLSX 文件
-   * 遍历所有工作表，返回第一个包含合规知识点编号的框架数据
+   * 检测 xlsx 文件中的知识点框架 sheet（公开）
+   * 遍历所有工作表，返回第一个包含合规框架结构的 sheet 名与全量行记录；
+   * 未找到时返回 null。供 appendXlsxRows 与 framework-file 端点复用。
    */
-  private parseXlsx(filePath: string): Record<string, string>[] {
+  detectFrameworkSheet(
+    filePath: string,
+  ): { sheetName: string; records: Record<string, string>[] } | null {
     const workbook = xlsx.readFile(filePath);
 
     for (const sheetName of workbook.SheetNames) {
-      const worksheet = workbook.Sheets[sheetName];
-
-      // 转换为 JSON，使用第一行作为表头
-      const data = xlsx.utils.sheet_to_json<Record<string, string>>(worksheet, {
-        header: 1,
-        defval: '',
-      });
-
-      if (data.length === 0) {
-        continue;
-      }
-
-      // 找到第一个非空行作为表头（跳过开头的空行）
-      let headerRowIndex = 0;
-      while (headerRowIndex < data.length) {
-        const row = data[headerRowIndex] as unknown as string[];
-        if (
-          row.some(
-            (cell) =>
-              cell !== undefined && cell !== null && String(cell).trim() !== '',
-          )
-        ) {
-          break;
-        }
-        headerRowIndex++;
-      }
-
-      if (headerRowIndex >= data.length) {
-        continue;
-      }
-
-      const headers = data[headerRowIndex] as unknown as string[];
-      const rows = data.slice(headerRowIndex + 1);
-
-      const records = rows.map((row) => {
-        const record: Record<string, string> = {};
-        headers.forEach((header: string, index: number) => {
-          if (
-            header !== undefined &&
-            header !== null &&
-            String(header).trim() !== ''
-          ) {
-            record[String(header).trim()] = String(row[index] || '');
-          }
-        });
-        return record;
-      });
-
+      const records = this.sheetToRecords(workbook.Sheets[sheetName]);
       if (this.isValidKnowledgeFramework(records)) {
-        this.logger.log(
-          `选择工作表 "${sheetName}" 作为知识点框架 (${records.length} 行)`,
-        );
-        return records;
+        return { sheetName, records };
       }
     }
+    return null;
+  }
 
-    this.logger.warn(`未找到合规的知识点框架工作表: ${filePath}`);
-    return [];
+  /**
+   * 将 worksheet 转为记录数组：第一个非空行作为表头（trim），
+   * 空表头列跳过，单元格统一转字符串
+   */
+  private sheetToRecords(
+    worksheet: xlsx.WorkSheet,
+  ): Record<string, string>[] {
+    const data = xlsx.utils.sheet_to_json<unknown[]>(worksheet, {
+      header: 1,
+      defval: '',
+    });
+
+    if (data.length === 0) {
+      return [];
+    }
+
+    // 找到第一个非空行作为表头（跳过开头的空行）
+    let headerRowIndex = 0;
+    while (headerRowIndex < data.length) {
+      const row = data[headerRowIndex] as unknown as string[];
+      if (
+        row.some(
+          (cell) =>
+            cell !== undefined && cell !== null && String(cell).trim() !== '',
+        )
+      ) {
+        break;
+      }
+      headerRowIndex++;
+    }
+
+    if (headerRowIndex >= data.length) {
+      return [];
+    }
+
+    const headers = data[headerRowIndex] as unknown as string[];
+    const rows = data.slice(headerRowIndex + 1);
+
+    return rows.map((row) => {
+      const record: Record<string, string> = {};
+      headers.forEach((header: string, index: number) => {
+        if (
+          header !== undefined &&
+          header !== null &&
+          String(header).trim() !== ''
+        ) {
+          const value = (row as unknown[])[index];
+          record[String(header).trim()] =
+            value === undefined || value === null ? '' : String(value);
+        }
+      });
+      return record;
+    });
   }
 
   /**

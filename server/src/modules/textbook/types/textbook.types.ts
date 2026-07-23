@@ -31,6 +31,7 @@ export interface ParseResult {
   data?: RawKnowledgePoint[];
   explicitCodes?: string[];
   rawRecords?: Record<string, string>[];
+  sheetName?: string; // xlsx 时：检测到的框架 sheet 名
   error?: string;
 }
 

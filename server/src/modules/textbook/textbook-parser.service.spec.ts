@@ -208,6 +208,102 @@ describe('TextbookParserService', () => {
     });
   });
 
+  describe('detectFrameworkSheet', () => {
+    // 顶层 jest.mock('fs')/jest.mock('xlsx') 会 automock 这两个模块，
+    // 本组测试需要真实文件读写，因此使用 requireActual 获取真实实现
+    const realXlsx = jest.requireActual<typeof import('xlsx')>('xlsx');
+    const realFs = jest.requireActual<typeof import('fs')>('fs');
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const os = require('os') as typeof import('os');
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const path = require('path') as typeof import('path');
+
+    let tmpFile: string;
+
+    beforeEach(() => {
+      // 外层 beforeEach 的 clearAllMocks 不会清空 mockReturnValueOnce 队列，
+      // 需 mockReset 彻底清除残留 mock（含既有用例未消耗的 Once 值），
+      // 再将服务内部对 xlsx/fs 的调用委托给真实实现（本组测试需要真实解析）
+      mockedXlsx.readFile.mockReset();
+      (mockedXlsx.utils.sheet_to_json as jest.Mock).mockReset();
+      (fs.readFileSync as jest.Mock).mockReset();
+      (fs.writeFileSync as jest.Mock).mockReset();
+      (fs.existsSync as jest.Mock).mockReset();
+      mockedXlsx.readFile.mockImplementation((filename: string) =>
+        realXlsx.readFile(filename),
+      );
+      (mockedXlsx.utils.sheet_to_json as jest.Mock).mockImplementation(
+        (worksheet: unknown, opts: unknown) =>
+          realXlsx.utils.sheet_to_json(
+            worksheet as xlsx.WorkSheet,
+            opts as object,
+          ),
+      );
+      // 真实 xlsx 的 readFile/writeFile 内部依赖 fs，这里同样委托给真实实现
+      (fs.readFileSync as jest.Mock).mockImplementation(realFs.readFileSync);
+      (fs.writeFileSync as jest.Mock).mockImplementation(realFs.writeFileSync);
+      (fs.existsSync as jest.Mock).mockImplementation(realFs.existsSync);
+    });
+
+    const buildWorkbook = (sheets: Record<string, unknown[][]>) => {
+      const wb = realXlsx.utils.book_new();
+      for (const [name, aoa] of Object.entries(sheets)) {
+        realXlsx.utils.book_append_sheet(
+          wb,
+          realXlsx.utils.aoa_to_sheet(aoa),
+          name,
+        );
+      }
+      tmpFile = path.join(os.tmpdir(), `fw-detect-${Date.now()}.xlsx`);
+      realXlsx.writeFile(wb, tmpFile);
+    };
+
+    afterEach(() => {
+      if (tmpFile && realFs.existsSync(tmpFile)) realFs.unlinkSync(tmpFile);
+    });
+
+    it('封面在前时选中框架 sheet 并返回 sheetName 与全量行', () => {
+      buildWorkbook({
+        封面: [['高中数学必修一 知识点框架'], ['知识点总数', '2']],
+        知识点框架: [
+          [
+            '一级知识点',
+            '二级知识点',
+            '三级知识点',
+            '定义',
+            '特性',
+            '重要性级别',
+            '知识点编号',
+          ],
+          ['集合', '集合的概念', '集合的含义', '研究对象的总体', '确定性', 'A', '1.1.1'],
+          ['集合', '集合的概念', '集合的表示', '列举法与描述法', '互异性', 'B', '1.1.2'],
+        ],
+      });
+      const result = service.detectFrameworkSheet(tmpFile);
+      expect(result).not.toBeNull();
+      expect(result!.sheetName).toBe('知识点框架');
+      expect(result!.records).toHaveLength(2);
+      expect(result!.records[0]['知识点编号']).toBe('1.1.1');
+    });
+
+    it('无合规框架 sheet 时返回 null', () => {
+      buildWorkbook({ 封面: [['只有封面'], ['没有任何框架数据']] });
+      expect(service.detectFrameworkSheet(tmpFile)).toBeNull();
+    });
+
+    it('表头带空格时 trim 后仍能映射列', () => {
+      buildWorkbook({
+        知识点框架: [
+          ['一级知识点 ', ' 知识点编号'],
+          ['集合', '1.1.1'],
+        ],
+      });
+      const result = service.detectFrameworkSheet(tmpFile);
+      expect(result).not.toBeNull();
+      expect(result!.records[0]['知识点编号']).toBe('1.1.1');
+    });
+  });
+
   describe('validateKnowledgePoints', () => {
     it('should return valid for correct data', () => {
       const points = [
