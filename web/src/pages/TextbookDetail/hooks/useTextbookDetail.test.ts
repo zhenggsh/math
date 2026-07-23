@@ -1,13 +1,20 @@
 import { renderHook, waitFor, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useTextbookDetail } from './useTextbookDetail'
-import type { TextbookDetail, ValidationReport } from '../../../types/textbook.types'
+import type {
+  TextbookDetail,
+  ValidationReport,
+  FrameworkFileContent,
+  ContentFileContent,
+} from '../../../types/textbook.types'
 import type { KnowledgePoint } from '../../../types/knowledge.types'
 
 const mocks = vi.hoisted(() => ({
   mockGetTextbook: vi.fn<[], Promise<TextbookDetail>>(),
   mockExpandTextbook: vi.fn<[string, File, File], Promise<unknown>>(),
   mockValidateTextbook: vi.fn<[string, File, File], Promise<ValidationReport>>(),
+  mockGetFrameworkFile: vi.fn<[string], Promise<FrameworkFileContent>>(),
+  mockGetContentFile: vi.fn<[string], Promise<ContentFileContent>>(),
   mockGetKnowledgeTree: vi.fn<[], Promise<KnowledgePoint[]>>(),
 }))
 
@@ -17,6 +24,8 @@ vi.mock('../../../services/textbook.service', () => ({
     mocks.mockExpandTextbook(id, frameworkFile, contentFile),
   validateTextbook: (id: string, frameworkFile: File, contentFile: File) =>
     mocks.mockValidateTextbook(id, frameworkFile, contentFile),
+  getFrameworkFile: (id: string) => mocks.mockGetFrameworkFile(id),
+  getContentFile: (id: string) => mocks.mockGetContentFile(id),
 }))
 
 vi.mock('../../../services/knowledgeApi', () => ({
@@ -24,6 +33,23 @@ vi.mock('../../../services/knowledgeApi', () => ({
     getKnowledgeTree: () => mocks.mockGetKnowledgeTree(),
   },
 }))
+
+const mockFrameworkFile: FrameworkFileContent = {
+  fileName: 'math01.xlsx',
+  fileType: 'xlsx',
+  sheetName: '知识点框架',
+  rows: [],
+  totalRows: 0,
+  lastModifiedAt: '2026-07-22T00:00:00.000Z',
+}
+
+const mockContentFile: ContentFileContent = {
+  fileName: 'math01.md',
+  content: '',
+  totalLines: 0,
+  lastModifiedAt: '2026-07-22T00:00:00.000Z',
+  empty: false,
+}
 
 const mockTextbookDetail: TextbookDetail = {
   id: 'tb-1',
@@ -47,6 +73,8 @@ function createAxiosLikeError(message: string): Error {
 describe('useTextbookDetail', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mocks.mockGetFrameworkFile.mockResolvedValue(mockFrameworkFile)
+    mocks.mockGetContentFile.mockResolvedValue(mockContentFile)
   })
 
   it('should display backend error message when expand fails with 400', async () => {
@@ -60,9 +88,8 @@ describe('useTextbookDetail', () => {
 
     await waitFor(() => expect(result.current.loading).toBe(false))
 
-    const expandResult = await result.current.expand(
-      new File([], 'expand.xlsx'),
-      new File([], 'expand.md')
+    const expandResult = await act(async () =>
+      result.current.expand(new File([], 'expand.xlsx'), new File([], 'expand.md'))
     )
 
     expect(expandResult).toBeNull()
@@ -82,13 +109,58 @@ describe('useTextbookDetail', () => {
 
     await waitFor(() => expect(result.current.loading).toBe(false))
 
-    const expandResult = await result.current.expand(
-      new File([], 'expand.xlsx'),
-      new File([], 'expand.md')
+    const expandResult = await act(async () =>
+      result.current.expand(new File([], 'expand.xlsx'), new File([], 'expand.md'))
     )
 
     expect(expandResult).toBeNull()
     await waitFor(() => expect(result.current.expandError).toBe('网络错误'))
+  })
+
+  describe('fetchFiles', () => {
+    it('should populate frameworkFile and contentFile after mount', async () => {
+      mocks.mockGetTextbook.mockResolvedValue(mockTextbookDetail)
+      mocks.mockGetKnowledgeTree.mockResolvedValue([])
+
+      const { result } = renderHook(() => useTextbookDetail('tb-1'))
+
+      await waitFor(() => expect(result.current.filesLoading).toBe(false))
+
+      expect(result.current.frameworkFile).toEqual(mockFrameworkFile)
+      expect(result.current.contentFile).toEqual(mockContentFile)
+      expect(result.current.filesError).toBeNull()
+    })
+
+    it('should set filesError and reset filesLoading when getFrameworkFile rejects', async () => {
+      mocks.mockGetTextbook.mockResolvedValue(mockTextbookDetail)
+      mocks.mockGetKnowledgeTree.mockResolvedValue([])
+      mocks.mockGetFrameworkFile.mockRejectedValue(createAxiosLikeError('框架文件不存在'))
+
+      const { result } = renderHook(() => useTextbookDetail('tb-1'))
+
+      await waitFor(() => expect(result.current.filesLoading).toBe(false))
+
+      expect(result.current.filesError).toBe('框架文件不存在')
+      expect(result.current.frameworkFile).toBeNull()
+      expect(result.current.contentFile).toBeNull()
+    })
+
+    it('should clear stale file data when refetch fails', async () => {
+      mocks.mockGetTextbook.mockResolvedValue(mockTextbookDetail)
+      mocks.mockGetKnowledgeTree.mockResolvedValue([])
+
+      const { result } = renderHook(() => useTextbookDetail('tb-1'))
+
+      await waitFor(() => expect(result.current.frameworkFile).not.toBeNull())
+
+      mocks.mockGetFrameworkFile.mockRejectedValue(new Error('网络错误'))
+      await act(async () => result.current.fetchFiles())
+
+      expect(result.current.filesError).toBe('网络错误')
+      expect(result.current.frameworkFile).toBeNull()
+      expect(result.current.contentFile).toBeNull()
+      expect(result.current.filesLoading).toBe(false)
+    })
   })
 
   describe('validate', () => {

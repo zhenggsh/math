@@ -133,6 +133,8 @@ export const useTextbookDetail = (id: string): UseTextbookDetailReturn => {
     } catch (err) {
       const message = extractErrorMessage(err, '加载教材文件失败')
       setFilesError(message)
+      setFrameworkFile(null)
+      setContentFile(null)
     } finally {
       setFilesLoading(false)
     }
