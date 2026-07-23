@@ -121,6 +121,16 @@ export class TextbookController {
   }
 
   /**
+   * 获取教材框架文件内容（iksm 磁盘文件预览）
+   */
+  @Get(':id/framework-file')
+  @Roles(Role.TEACHER, Role.ADMIN)
+  async getFrameworkFile(@Param('id') id: string) {
+    const data = await this.textbookService.getFrameworkFileContent(id);
+    return { success: true, data };
+  }
+
+  /**
    * 同步所有教材
    * 扫描文件目录，与数据库同步
    */

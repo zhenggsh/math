@@ -8,9 +8,13 @@ import {
   ConflictException,
   NotFoundException,
   BadRequestException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
 import { RawKnowledgePoint, ParseResult } from './types/textbook.types';
 import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
+import * as xlsx from 'xlsx';
 
 jest.mock('fs');
 
@@ -1247,6 +1251,110 @@ describe('TextbookService', () => {
           mockContentFile,
         ),
       ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('getFrameworkFileContent', () => {
+    // 顶层 jest.mock('fs') 会 automock fs 模块，本组测试需要真实文件读写，
+    // 参考 textbook-parser.service.spec.ts 的 detectFrameworkSheet 组，委托真实实现
+    const realFs = jest.requireActual<typeof import('fs')>('fs');
+    const realParser = new TextbookParserService();
+
+    beforeEach(() => {
+      (fs.existsSync as jest.Mock).mockImplementation(realFs.existsSync);
+      (fs.readFileSync as jest.Mock).mockImplementation(realFs.readFileSync);
+      (fs.writeFileSync as jest.Mock).mockImplementation(realFs.writeFileSync);
+      (fs.statSync as jest.Mock).mockImplementation(realFs.statSync);
+      (fs.unlinkSync as jest.Mock).mockImplementation(realFs.unlinkSync);
+      // parseFrameworkFile 委托给真实 parser（本组测试需要真实解析 xlsx）
+      jest
+        .spyOn(parserService, 'parseFrameworkFile')
+        .mockImplementation((p, t) => realParser.parseFrameworkFile(p, t));
+    });
+
+    it('xlsx 教材返回全量行、sheetName 与 mtime', async () => {
+      const tmpFile = path.join(os.tmpdir(), `fw-${Date.now()}.xlsx`);
+      const wb = xlsx.utils.book_new();
+      xlsx.utils.book_append_sheet(
+        wb,
+        xlsx.utils.aoa_to_sheet([['封面']]),
+        '封面',
+      );
+      xlsx.utils.book_append_sheet(
+        wb,
+        xlsx.utils.aoa_to_sheet([
+          [
+            '一级知识点',
+            '二级知识点',
+            '三级知识点',
+            '定义',
+            '特性',
+            '重要性级别',
+            '知识点编号',
+          ],
+          ['集合', '集合的概念', '集合的含义', '定义', '特性', 'A', '1.1.1'],
+        ]),
+        '知识点框架',
+      );
+      xlsx.writeFile(wb, tmpFile);
+
+      jest.spyOn(fileService, 'getFilePath').mockReturnValue(tmpFile);
+      jest.spyOn(prismaService.textbook, 'findUnique').mockResolvedValue({
+        id: 't1',
+        frameworkPath: 'math01.xlsx',
+        frameworkType: 'xlsx',
+      } as any);
+
+      const result = await service.getFrameworkFileContent('t1');
+      expect(result.fileName).toBe('math01.xlsx');
+      expect(result.fileType).toBe('xlsx');
+      expect(result.sheetName).toBe('知识点框架');
+      expect(result.rows).toHaveLength(1);
+      expect(result.totalRows).toBe(1);
+      expect(new Date(result.lastModifiedAt).getTime()).toBeGreaterThan(0);
+      fs.unlinkSync(tmpFile);
+    });
+
+    it('教材不存在抛 NotFoundException', async () => {
+      jest.spyOn(prismaService.textbook, 'findUnique').mockResolvedValue(null);
+      await expect(service.getFrameworkFileContent('nope')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('磁盘文件缺失抛 NotFoundException', async () => {
+      jest.spyOn(prismaService.textbook, 'findUnique').mockResolvedValue({
+        id: 't1',
+        frameworkPath: 'ghost.xlsx',
+        frameworkType: 'xlsx',
+      } as any);
+      jest
+        .spyOn(fileService, 'getFilePath')
+        .mockReturnValue('/nonexistent/ghost.xlsx');
+      await expect(service.getFrameworkFileContent('t1')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('无合规框架 sheet 抛 UnprocessableEntityException', async () => {
+      const tmpFile = path.join(os.tmpdir(), `bad-${Date.now()}.xlsx`);
+      const wb = xlsx.utils.book_new();
+      xlsx.utils.book_append_sheet(
+        wb,
+        xlsx.utils.aoa_to_sheet([['只有封面']]),
+        '封面',
+      );
+      xlsx.writeFile(wb, tmpFile);
+      jest.spyOn(prismaService.textbook, 'findUnique').mockResolvedValue({
+        id: 't1',
+        frameworkPath: 'bad.xlsx',
+        frameworkType: 'xlsx',
+      } as any);
+      jest.spyOn(fileService, 'getFilePath').mockReturnValue(tmpFile);
+      await expect(service.getFrameworkFileContent('t1')).rejects.toThrow(
+        UnprocessableEntityException,
+      );
+      fs.unlinkSync(tmpFile);
     });
   });
 });

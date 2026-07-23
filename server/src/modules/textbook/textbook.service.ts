@@ -4,6 +4,7 @@ import {
   NotFoundException,
   ConflictException,
   BadRequestException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TextbookParserService } from './textbook-parser.service';
@@ -437,6 +438,49 @@ export class TextbookService {
       contentRef: point.contentRef,
       textbookId: point.textbookId,
       content,
+    };
+  }
+
+  /**
+   * 读取并解析 iksm 磁盘上的框架文件（文件是真相源，不读 DB 知识点）
+   * 供教材详情页文件预览使用
+   */
+  async getFrameworkFileContent(textbookId: string): Promise<{
+    fileName: string;
+    fileType: FrameworkType;
+    sheetName?: string;
+    rows: Record<string, string>[];
+    totalRows: number;
+    lastModifiedAt: Date;
+  }> {
+    const textbook = await this.prisma.textbook.findUnique({
+      where: { id: textbookId },
+    });
+    if (!textbook) {
+      throw new NotFoundException('教材不存在');
+    }
+
+    const filePath = this.fileService.getFilePath(textbook.frameworkPath);
+    if (!fs.existsSync(filePath)) {
+      throw new NotFoundException(`框架文件不存在: ${textbook.frameworkPath}`);
+    }
+
+    const fileType = textbook.frameworkType as FrameworkType;
+    const result = this.parserService.parseFrameworkFile(filePath, fileType);
+    if (!result.success || !result.rawRecords || result.rawRecords.length === 0) {
+      throw new UnprocessableEntityException(
+        result.error ?? '框架文件解析失败',
+      );
+    }
+
+    const stats = fs.statSync(filePath);
+    return {
+      fileName: textbook.frameworkPath,
+      fileType,
+      sheetName: result.sheetName,
+      rows: result.rawRecords,
+      totalRows: result.rawRecords.length,
+      lastModifiedAt: stats.mtime,
     };
   }
 
