@@ -1,6 +1,6 @@
 import React from 'react'
 import { render, screen, fireEvent } from '@testing-library/react'
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeAll } from 'vitest'
 import { FrameworkPreview } from './FrameworkPreview'
 import type { ValidationIssue } from '../../types/textbook.types'
 
@@ -14,6 +14,11 @@ const errors: ValidationIssue[] = [
 ]
 
 describe('FrameworkPreview', () => {
+  // jsdom 未实现 scrollIntoView，高亮滚动 effect 需要 mock
+  beforeAll(() => {
+    Element.prototype.scrollIntoView = vi.fn()
+  })
+
   it('renders original xlsx content without status column', () => {
     render(<FrameworkPreview rows={rows} errors={errors} />)
 
@@ -27,6 +32,16 @@ describe('FrameworkPreview', () => {
     render(<FrameworkPreview rows={[]} errors={[]} />)
 
     expect(screen.getByText(/选择文件后/i)).toBeInTheDocument()
+  })
+
+  it('applies highlighted class to rows in highlightedCodes', () => {
+    const { container } = render(
+      <FrameworkPreview rows={rows} errors={[]} highlightedCodes={['1.1.2']} />
+    )
+
+    const highlighted = container.querySelector('.framework-row-highlighted')
+    expect(highlighted).not.toBeNull()
+    expect(highlighted).toHaveAttribute('data-row-key', 'framework-row-1.1.2')
   })
 
   it('calls onRowClick with code when clicking a row', () => {

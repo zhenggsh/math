@@ -71,17 +71,20 @@ export const FrameworkPreview: React.FC<FrameworkPreviewProps> = ({
     return baseColumns
   }, [rows, onRowClick])
 
+  // 滚动定位到第一个高亮行（highlight 作用于全部 highlightedCodes，scroll 只到首个）
+  const scrollTarget = highlightedCodes?.[0]
+
   useEffect(() => {
-    if (!highlightedCodes || highlightedCodes.length === 0 || !tableRef.current) {
+    if (!scrollTarget || !tableRef.current) {
       return
     }
     const element = tableRef.current.querySelector(
-      `[data-row-key="framework-row-${highlightedCodes[0]}"]`
+      `[data-row-key="framework-row-${scrollTarget}"]`
     )
     if (element) {
       element.scrollIntoView({ behavior: 'smooth', block: 'center' })
     }
-  }, [highlightedCodes, rows])
+  }, [scrollTarget, rows])
 
   if (rows.length === 0) {
     return <Empty description={emptyDescription} image={Empty.PRESENTED_IMAGE_SIMPLE} />
