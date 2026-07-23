@@ -19,6 +19,7 @@ import {
   type XlsxPreviewRow,
 } from '../../../utils/textbookFilePreview'
 import { downloadErrorReport } from '../../../utils/exportErrorReport'
+import { findMdLineByCode } from '../../../utils/mdLineLocator'
 
 interface ExpandKnowledgePointsModalProps {
   open: boolean
@@ -323,23 +324,9 @@ export const ExpandKnowledgePointsModal: React.FC<ExpandKnowledgePointsModalProp
     })
   }, [frameworkFile, contentFile, onCancel, saveDraft, clearDraft])
 
-  // 在 md 内容中查找知识点编号对应的行号（1-based）
-  // 优先精确匹配标题行（##/###/####），未命中时退化到其后代编号的第一行
-  const findMdLineByCode = useCallback(
-    (code: string): number | undefined => {
-      if (!mdPreview) return undefined
-      const escaped = code.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-      const lines = mdPreview.split('\n')
-      const exactPattern = new RegExp(`^#{2,4}\\s+(?:知识点\\s+)?${escaped}(?![\\d.])`)
-      for (let i = 0; i < lines.length; i++) {
-        if (exactPattern.test(lines[i])) return i + 1
-      }
-      const childPattern = new RegExp(`^#{2,4}\\s+(?:知识点\\s+)?${escaped}\\.\\d`)
-      for (let i = 0; i < lines.length; i++) {
-        if (childPattern.test(lines[i])) return i + 1
-      }
-      return undefined
-    },
+  // 在 md 内容中查找知识点编号对应的行号（1-based），共享实现见 utils/mdLineLocator
+  const locateMdLine = useCallback(
+    (code: string): number | undefined => findMdLineByCode(mdPreview, code),
     [mdPreview]
   )
 
@@ -350,7 +337,7 @@ export const ExpandKnowledgePointsModal: React.FC<ExpandKnowledgePointsModalProp
       if (location.code) {
         setHighlightedFrameworkCode(location.code)
         if (!location.row) {
-          const line = findMdLineByCode(location.code)
+          const line = locateMdLine(location.code)
           if (line !== undefined) {
             setHighlightedMdLine(line)
           }
@@ -360,7 +347,7 @@ export const ExpandKnowledgePointsModal: React.FC<ExpandKnowledgePointsModalProp
         setHighlightedMdLine(location.row)
       }
     },
-    [findMdLineByCode]
+    [locateMdLine]
   )
 
   const handleExportErrors = useCallback(() => {
@@ -372,12 +359,12 @@ export const ExpandKnowledgePointsModal: React.FC<ExpandKnowledgePointsModalProp
   const handleFrameworkRowClick = useCallback(
     (code: string) => {
       setHighlightedFrameworkCode(code)
-      const line = findMdLineByCode(code)
+      const line = locateMdLine(code)
       if (line !== undefined) {
         setHighlightedMdLine(line)
       }
     },
-    [findMdLineByCode]
+    [locateMdLine]
   )
 
   const noopCustomRequest = useCallback(() => {}, [])
