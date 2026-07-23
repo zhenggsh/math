@@ -1,8 +1,20 @@
 import { useState, useEffect, useCallback } from 'react'
 import { message } from 'antd'
-import { getTextbook, expandTextbook, validateTextbook } from '../../../services/textbook.service'
+import {
+  getTextbook,
+  expandTextbook,
+  validateTextbook,
+  getFrameworkFile,
+  getContentFile,
+} from '../../../services/textbook.service'
 import { knowledgeApi } from '../../../services/knowledgeApi'
-import type { TextbookDetail, ExpandResult, ValidationReport } from '../../../types/textbook.types'
+import type {
+  TextbookDetail,
+  ExpandResult,
+  ValidationReport,
+  FrameworkFileContent,
+  ContentFileContent,
+} from '../../../types/textbook.types'
 import type { KnowledgePoint } from '../../../types/knowledge.types'
 
 function extractErrorMessage(err: unknown, fallback: string): string {
@@ -25,6 +37,11 @@ interface UseTextbookDetailReturn {
   validating: boolean
   validationResult: ValidationReport | null
   validationError: string | null
+  frameworkFile: FrameworkFileContent | null
+  contentFile: ContentFileContent | null
+  filesLoading: boolean
+  filesError: string | null
+  fetchFiles: () => Promise<void>
   fetchTextbook: () => Promise<void>
   expand: (frameworkFile: File, contentFile: File) => Promise<ExpandResult | null>
   validate: (frameworkFile: File, contentFile: File) => Promise<ValidationReport | null>
@@ -41,6 +58,10 @@ export const useTextbookDetail = (id: string): UseTextbookDetailReturn => {
   const [validating, setValidating] = useState(false)
   const [validationResult, setValidationResult] = useState<ValidationReport | null>(null)
   const [validationError, setValidationError] = useState<string | null>(null)
+  const [frameworkFile, setFrameworkFile] = useState<FrameworkFileContent | null>(null)
+  const [contentFile, setContentFile] = useState<ContentFileContent | null>(null)
+  const [filesLoading, setFilesLoading] = useState(false)
+  const [filesError, setFilesError] = useState<string | null>(null)
 
   const fetchTextbook = useCallback(async () => {
     setLoading(true)
@@ -99,6 +120,24 @@ export const useTextbookDetail = (id: string): UseTextbookDetailReturn => {
     [id]
   )
 
+  const fetchFiles = useCallback(async () => {
+    setFilesLoading(true)
+    setFilesError(null)
+    try {
+      const [framework, content] = await Promise.all([
+        getFrameworkFile(id),
+        getContentFile(id),
+      ])
+      setFrameworkFile(framework)
+      setContentFile(content)
+    } catch (err) {
+      const message = extractErrorMessage(err, '加载教材文件失败')
+      setFilesError(message)
+    } finally {
+      setFilesLoading(false)
+    }
+  }, [id])
+
   const resetValidation = useCallback(() => {
     setValidating(false)
     setValidationResult(null)
@@ -108,6 +147,10 @@ export const useTextbookDetail = (id: string): UseTextbookDetailReturn => {
   useEffect(() => {
     void fetchTextbook()
   }, [fetchTextbook])
+
+  useEffect(() => {
+    void fetchFiles()
+  }, [fetchFiles])
 
   return {
     textbook,
@@ -119,6 +162,11 @@ export const useTextbookDetail = (id: string): UseTextbookDetailReturn => {
     validating,
     validationResult,
     validationError,
+    frameworkFile,
+    contentFile,
+    filesLoading,
+    filesError,
+    fetchFiles,
     fetchTextbook,
     expand,
     validate,

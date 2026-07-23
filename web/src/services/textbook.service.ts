@@ -8,6 +8,8 @@ import type {
   UploadResult,
   ExpandResult,
   ValidationReport,
+  FrameworkFileContent,
+  ContentFileContent,
 } from '../types/textbook.types'
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
@@ -124,5 +126,21 @@ export const validateTextbook = async (
     `/${textbookId}/validate`,
     formData
   )
+  return response.data.data
+}
+
+/**
+ * 获取教材框架文件（xlsx/csv）解析内容
+ */
+export const getFrameworkFile = async (id: string): Promise<FrameworkFileContent> => {
+  const response = await textbookApi.get(`/${id}/framework-file`)
+  return response.data.data
+}
+
+/**
+ * 获取教材内容文件（md）原文
+ */
+export const getContentFile = async (id: string): Promise<ContentFileContent> => {
+  const response = await textbookApi.get(`/${id}/content-file`)
   return response.data.data
 }

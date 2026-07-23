@@ -99,3 +99,22 @@ export interface ExpansionDraft {
   contentFileName?: string
   contentFileContent?: string
 }
+
+/** GET /textbooks/:id/framework-file 响应 */
+export interface FrameworkFileContent {
+  fileName: string
+  fileType: 'xlsx' | 'csv'
+  sheetName?: string
+  rows: import('../utils/textbookFilePreview').XlsxPreviewRow[]
+  totalRows: number
+  lastModifiedAt: string
+}
+
+/** GET /textbooks/:id/content-file 响应 */
+export interface ContentFileContent {
+  fileName: string | null
+  content: string
+  totalLines: number
+  lastModifiedAt: string | null
+  empty: boolean
+}
