@@ -163,5 +163,38 @@ describe('TextbookFileService - appendXlsxRows', () => {
         service.appendXlsxRows(fileName, ['不存在的列'], [['x']]),
       ).toThrow(BadRequestException);
     });
+
+    it('调用方规范表头（与真实教材 sheet 一致）追加成功且各列落位正确', () => {
+      // 回归测试：headers 与 textbook.service.ts expandKnowledgePoints 调用方保持一致
+      const callerHeaders = [
+        '一级知识点',
+        '二级知识点',
+        '三级知识点',
+        '定义',
+        '特性',
+        '重要性级别',
+        '知识点编号',
+      ];
+      service.appendXlsxRows(fileName, callerHeaders, [
+        ['集合', '集合的概念', '集合的表示', '列举法与描述法', '互异性', 'B', '1.1.2'],
+      ]);
+
+      const wb = xlsx.readFile(path.join(tmpDir, fileName));
+      // 封面不被修改
+      const cover = xlsx.utils.sheet_to_json<string[]>(wb.Sheets['封面'], { header: 1 });
+      expect(cover).toHaveLength(2);
+      // 框架 sheet 新增行，各列值按表头落位
+      const fw = xlsx.utils.sheet_to_json<string[]>(wb.Sheets['知识点框架'], { header: 1 });
+      expect(fw).toHaveLength(3);
+      expect(fw[2]).toEqual([
+        '集合',
+        '集合的概念',
+        '集合的表示',
+        '列举法与描述法',
+        '互异性',
+        'B',
+        '1.1.2',
+      ]);
+    });
   });
 });

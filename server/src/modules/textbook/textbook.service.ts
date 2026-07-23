@@ -1286,25 +1286,24 @@ export class TextbookService {
           (p) => !existingCodes.has(p.code),
         );
 
+        // 与真实教材框架 sheet 表头一致（编号在最后，无“知识点名称”列）
         const headers = [
-          '知识点编号',
           '一级知识点',
           '二级知识点',
           '三级知识点',
-          '知识点名称',
           '定义',
-          '特性/运算方式',
+          '特性',
           '重要性级别',
+          '知识点编号',
         ];
         const xlsxRows = pointsToCreate.map((p) => [
-          p.code,
           p.level1,
           p.level2 || '',
           p.level3 || '',
-          p.name || '',
           p.definition || '',
           p.characteristics || '',
           p.importanceLevel,
+          p.code,
         ]);
         // 按原教材框架文件类型追加：xlsx 走 SheetJS，csv 走纯文本追加（避免编码损坏）
         if (this.fileService.getFileType(textbook.frameworkPath) === 'csv') {
