@@ -131,6 +131,16 @@ export class TextbookController {
   }
 
   /**
+   * 获取教材内容文件原文（iksm 磁盘 md 文件预览）
+   */
+  @Get(':id/content-file')
+  @Roles(Role.TEACHER, Role.ADMIN)
+  async getContentFile(@Param('id') id: string) {
+    const data = await this.textbookService.getContentFileContent(id);
+    return { success: true, data };
+  }
+
+  /**
    * 同步所有教材
    * 扫描文件目录，与数据库同步
    */

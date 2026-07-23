@@ -467,7 +467,11 @@ export class TextbookService {
 
     const fileType = textbook.frameworkType as FrameworkType;
     const result = this.parserService.parseFrameworkFile(filePath, fileType);
-    if (!result.success || !result.rawRecords || result.rawRecords.length === 0) {
+    if (
+      !result.success ||
+      !result.rawRecords ||
+      result.rawRecords.length === 0
+    ) {
       throw new UnprocessableEntityException(
         result.error ?? '框架文件解析失败',
       );
@@ -481,6 +485,50 @@ export class TextbookService {
       rows: result.rawRecords,
       totalRows: result.rawRecords.length,
       lastModifiedAt: stats.mtime,
+    };
+  }
+
+  /**
+   * 读取 iksm 磁盘上的 md 内容文件原文（文件是真相源）
+   * 供教材详情页文件预览使用
+   */
+  async getContentFileContent(textbookId: string): Promise<{
+    fileName: string | null;
+    content: string;
+    totalLines: number;
+    lastModifiedAt: Date | null;
+    empty: boolean;
+  }> {
+    const textbook = await this.prisma.textbook.findUnique({
+      where: { id: textbookId },
+    });
+    if (!textbook) {
+      throw new NotFoundException('教材不存在');
+    }
+
+    if (!textbook.contentPath) {
+      return {
+        fileName: null,
+        content: '',
+        totalLines: 0,
+        lastModifiedAt: null,
+        empty: true,
+      };
+    }
+
+    const filePath = this.fileService.getFilePath(textbook.contentPath);
+    if (!fs.existsSync(filePath)) {
+      throw new NotFoundException(`内容文件不存在: ${textbook.contentPath}`);
+    }
+
+    const content = fs.readFileSync(filePath, 'utf-8');
+    const stats = fs.statSync(filePath);
+    return {
+      fileName: textbook.contentPath,
+      content,
+      totalLines: content.split('\n').length,
+      lastModifiedAt: stats.mtime,
+      empty: false,
     };
   }
 

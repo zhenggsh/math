@@ -1357,4 +1357,68 @@ describe('TextbookService', () => {
       fs.unlinkSync(tmpFile);
     });
   });
+
+  describe('getContentFileContent', () => {
+    // 顶层 jest.mock('fs') 会 automock fs 模块，本组测试需要真实文件读写，委托真实实现
+    const realFs = jest.requireActual<typeof import('fs')>('fs');
+
+    beforeEach(() => {
+      (fs.existsSync as jest.Mock).mockImplementation(realFs.existsSync);
+      (fs.readFileSync as jest.Mock).mockImplementation(realFs.readFileSync);
+      (fs.writeFileSync as jest.Mock).mockImplementation(realFs.writeFileSync);
+      (fs.statSync as jest.Mock).mockImplementation(realFs.statSync);
+      (fs.unlinkSync as jest.Mock).mockImplementation(realFs.unlinkSync);
+    });
+
+    it('返回完整 md 原文与行数', async () => {
+      const tmpFile = path.join(os.tmpdir(), `content-${Date.now()}.md`);
+      fs.writeFileSync(
+        tmpFile,
+        '## 1 集合\n\n### 1.1 集合的概念\n\n#### 知识点 1.1.1：集合的含义\n内容\n',
+      );
+      jest.spyOn(prismaService.textbook, 'findUnique').mockResolvedValue({
+        id: 't1',
+        contentPath: 'math01.md',
+      } as any);
+      jest.spyOn(fileService, 'getFilePath').mockReturnValue(tmpFile);
+
+      const result = await service.getContentFileContent('t1');
+      expect(result.fileName).toBe('math01.md');
+      expect(result.content).toContain('集合的含义');
+      expect(result.totalLines).toBe(7);
+      expect(result.empty).toBe(false);
+      fs.unlinkSync(tmpFile);
+    });
+
+    it('contentPath 为空返回空状态标记', async () => {
+      jest.spyOn(prismaService.textbook, 'findUnique').mockResolvedValue({
+        id: 't1',
+        contentPath: null,
+      } as any);
+      const result = await service.getContentFileContent('t1');
+      expect(result.empty).toBe(true);
+      expect(result.content).toBe('');
+      expect(result.totalLines).toBe(0);
+    });
+
+    it('磁盘文件缺失抛 NotFoundException', async () => {
+      jest.spyOn(prismaService.textbook, 'findUnique').mockResolvedValue({
+        id: 't1',
+        contentPath: 'ghost.md',
+      } as any);
+      jest
+        .spyOn(fileService, 'getFilePath')
+        .mockReturnValue('/nonexistent/ghost.md');
+      await expect(service.getContentFileContent('t1')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('教材不存在抛 NotFoundException', async () => {
+      jest.spyOn(prismaService.textbook, 'findUnique').mockResolvedValue(null);
+      await expect(service.getContentFileContent('nope')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
 });
