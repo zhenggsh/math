@@ -2,16 +2,16 @@ import { describe, it, expect } from 'vitest'
 import { findMdLineByCode } from '../mdLineLocator'
 
 const MD = [
-  '# 数学必修一',           // 1
-  '## 1 集合',              // 2
-  '### 1.1 集合的概念',      // 3
+  '# 数学必修一', // 1
+  '## 1 集合', // 2
+  '### 1.1 集合的概念', // 3
   '#### 知识点 1.1.1：集合的含义', // 4
-  '内容一',                  // 5
+  '内容一', // 5
   '#### 知识点 1.1.10：集合的其他', // 6
-  '内容十',                  // 7
-  '### 1.10 另一个二级',      // 8
-  '#### 2.4.1 任意角的概念',  // 9
-  '内容',                    // 10
+  '内容十', // 7
+  '### 1.10 另一个二级', // 8
+  '#### 2.4.1 任意角的概念', // 9
+  '内容', // 10
 ].join('\n')
 
 describe('findMdLineByCode', () => {
@@ -41,5 +41,9 @@ describe('findMdLineByCode', () => {
 
   it('无 # 标题前缀的行不匹配', () => {
     expect(findMdLineByCode('1.1.1 不是标题', '1.1.1')).toBeUndefined()
+  })
+
+  it('空编号返回 undefined', () => {
+    expect(findMdLineByCode(MD, '')).toBeUndefined()
   })
 })

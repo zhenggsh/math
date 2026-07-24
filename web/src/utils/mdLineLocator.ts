@@ -8,7 +8,7 @@
  * （原样搬迁自 ExpandKnowledgePointsModal 内联实现）
  */
 export function findMdLineByCode(mdText: string, code: string): number | undefined {
-  if (!mdText) {
+  if (!mdText || !code) {
     return undefined
   }
   const escaped = code.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')

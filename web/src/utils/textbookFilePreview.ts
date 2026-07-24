@@ -39,7 +39,8 @@ export function getRecordLevel3(record: XlsxPreviewRow): string | undefined {
 const CODE_PATTERN = /^\d+(\.\d+){2,}/
 
 /**
- * 判断记录集是否为合规知识点框架（与服务端 isValidKnowledgeFramework 镜像）：
+ * 判断记录集是否为合规知识点框架（镜像 server/src/modules/textbook/textbook-parser.service.ts
+ * 的 isValidKnowledgeFramework —— 修改时必须与服务端保持同步）
  * 任一记录的编号列匹配 a.b.c 模式，或同时存在一级与三级知识点列
  */
 function isValidFrameworkRecords(records: XlsxPreviewRow[]): boolean {
@@ -59,11 +60,12 @@ function isValidFrameworkRecords(records: XlsxPreviewRow[]): boolean {
 }
 
 /**
- * worksheet → 记录数组（与服务端 sheetToRecords 镜像）：
+ * worksheet → 记录数组（镜像 server/src/modules/textbook/textbook-parser.service.ts
+ * 的 sheetToRecords —— 修改时必须与服务端保持同步）：
  * 第一个非空行作为表头（trim），空表头列跳过
  */
 function sheetToRecords(worksheet: XLSX.WorkSheet): XlsxPreviewRow[] {
-  const rawRows = XLSX.utils.sheet_to_json<unknown[]>(worksheet, { header: 1 })
+  const rawRows = XLSX.utils.sheet_to_json<unknown[]>(worksheet, { header: 1, defval: '' })
   if (rawRows.length === 0) {
     return []
   }
@@ -102,7 +104,8 @@ function sheetToRecords(worksheet: XLSX.WorkSheet): XlsxPreviewRow[] {
 }
 
 /**
- * 检测 workbook 中的框架 sheet（与服务端 detectFrameworkSheet 镜像）
+ * 检测 workbook 中的框架 sheet（镜像 server/src/modules/textbook/textbook-parser.service.ts
+ * 的 detectFrameworkSheet —— 修改时必须与服务端保持同步）
  */
 function detectFrameworkSheet(workbook: XLSX.WorkBook): XlsxPreviewRow[] | null {
   for (const sheetName of workbook.SheetNames) {

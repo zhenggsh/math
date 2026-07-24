@@ -144,4 +144,18 @@ describe('parseXlsxPreview 多 sheet', () => {
     expect(rows[0]['一级']).toBe('集合')
     expect(rows[0]['三级']).toBe('集合的含义')
   })
+
+  it('表头前有前置空行时仍能正确检测表头', async () => {
+    const file = buildXlsxFile({
+      框架: [
+        [],
+        [],
+        ['一级知识点', '二级知识点', '三级知识点', '定义', '特性', '重要性级别', '知识点编号'],
+        ['集合', '集合的概念', '集合的含义', '总体', '确定性', 'A', '1.1.1'],
+      ],
+    })
+    const rows = await parseXlsxPreview(file)
+    expect(rows).toHaveLength(1)
+    expect(rows[0]['知识点编号']).toBe('1.1.1')
+  })
 })
