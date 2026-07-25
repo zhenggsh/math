@@ -124,10 +124,7 @@ export const useTextbookDetail = (id: string): UseTextbookDetailReturn => {
     setFilesLoading(true)
     setFilesError(null)
     try {
-      const [framework, content] = await Promise.all([
-        getFrameworkFile(id),
-        getContentFile(id),
-      ])
+      const [framework, content] = await Promise.all([getFrameworkFile(id), getContentFile(id)])
       setFrameworkFile(framework)
       setContentFile(content)
     } catch (err) {

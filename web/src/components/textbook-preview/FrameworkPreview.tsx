@@ -1,11 +1,7 @@
 import React, { useEffect, useMemo, useRef } from 'react'
 import { Table, Typography, Empty } from 'antd'
 import type { ValidationIssue } from '../../types/textbook.types'
-import {
-  CODE_HEADERS,
-  getRecordCode,
-  type XlsxPreviewRow,
-} from '../../utils/textbookFilePreview'
+import { CODE_HEADERS, getRecordCode, type XlsxPreviewRow } from '../../utils/textbookFilePreview'
 
 interface FrameworkPreviewProps {
   rows: XlsxPreviewRow[]
@@ -78,9 +74,7 @@ export const FrameworkPreview: React.FC<FrameworkPreviewProps> = ({
     if (!scrollTarget || !tableRef.current) {
       return
     }
-    const element = tableRef.current.querySelector(
-      `[data-row-key="framework-row-${scrollTarget}"]`
-    )
+    const element = tableRef.current.querySelector(`[data-row-key="framework-row-${scrollTarget}"]`)
     if (element) {
       element.scrollIntoView({ behavior: 'smooth', block: 'center' })
     }
