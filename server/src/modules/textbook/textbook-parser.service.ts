@@ -97,9 +97,7 @@ export class TextbookParserService {
    * 将 worksheet 转为记录数组：第一个非空行作为表头（trim），
    * 空表头列跳过，单元格统一转字符串
    */
-  private sheetToRecords(
-    worksheet: xlsx.WorkSheet,
-  ): Record<string, string>[] {
+  private sheetToRecords(worksheet: xlsx.WorkSheet): Record<string, string>[] {
     const data = xlsx.utils.sheet_to_json<unknown[]>(worksheet, {
       header: 1,
       defval: '',
@@ -139,7 +137,12 @@ export class TextbookParserService {
           header !== null &&
           String(header).trim() !== ''
         ) {
-          const value = (row as unknown[])[index];
+          const value = row[index] as
+            | string
+            | number
+            | boolean
+            | null
+            | undefined;
           record[String(header).trim()] =
             value === undefined || value === null ? '' : String(value);
         }

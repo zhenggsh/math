@@ -213,10 +213,10 @@ describe('TextbookParserService', () => {
     // 本组测试需要真实文件读写，因此使用 requireActual 获取真实实现
     const realXlsx = jest.requireActual<typeof import('xlsx')>('xlsx');
     const realFs = jest.requireActual<typeof import('fs')>('fs');
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const os = require('os') as typeof import('os');
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const path = require('path') as typeof import('path');
+
+    const os = jest.requireActual<typeof import('os')>('os');
+
+    const path = jest.requireActual<typeof import('path')>('path');
 
     let tmpFile: string;
 
@@ -275,8 +275,24 @@ describe('TextbookParserService', () => {
             '重要性级别',
             '知识点编号',
           ],
-          ['集合', '集合的概念', '集合的含义', '研究对象的总体', '确定性', 'A', '1.1.1'],
-          ['集合', '集合的概念', '集合的表示', '列举法与描述法', '互异性', 'B', '1.1.2'],
+          [
+            '集合',
+            '集合的概念',
+            '集合的含义',
+            '研究对象的总体',
+            '确定性',
+            'A',
+            '1.1.1',
+          ],
+          [
+            '集合',
+            '集合的概念',
+            '集合的表示',
+            '列举法与描述法',
+            '互异性',
+            'B',
+            '1.1.2',
+          ],
         ],
       });
       const result = service.detectFrameworkSheet(tmpFile);

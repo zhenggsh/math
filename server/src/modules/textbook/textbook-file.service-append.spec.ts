@@ -118,14 +118,33 @@ describe('TextbookFileService - appendXlsxRows', () => {
       const wb = xlsx.utils.book_new();
       xlsx.utils.book_append_sheet(
         wb,
-        xlsx.utils.aoa_to_sheet([['高中数学必修一 知识点框架'], ['知识点总数', '1']]),
+        xlsx.utils.aoa_to_sheet([
+          ['高中数学必修一 知识点框架'],
+          ['知识点总数', '1'],
+        ]),
         '封面',
       );
       xlsx.utils.book_append_sheet(
         wb,
         xlsx.utils.aoa_to_sheet([
-          ['一级知识点', '二级知识点', '三级知识点', '定义', '特性', '重要性级别', '知识点编号'],
-          ['集合', '集合的概念', '集合的含义', '研究对象的总体', '确定性', 'A', '1.1.1'],
+          [
+            '一级知识点',
+            '二级知识点',
+            '三级知识点',
+            '定义',
+            '特性',
+            '重要性级别',
+            '知识点编号',
+          ],
+          [
+            '集合',
+            '集合的概念',
+            '集合的含义',
+            '研究对象的总体',
+            '确定性',
+            'A',
+            '1.1.1',
+          ],
         ]),
         '知识点框架',
       );
@@ -142,16 +161,38 @@ describe('TextbookFileService - appendXlsxRows', () => {
     it('追加行写入框架 sheet 而非封面，且按表头名对齐列', () => {
       service.appendXlsxRows(
         fileName,
-        ['知识点编号', '一级知识点', '二级知识点', '三级知识点', '定义', '特性', '重要性级别'],
-        [['1.1.2', '集合', '集合的概念', '集合的表示', '列举法', '互异性', 'B']],
+        [
+          '知识点编号',
+          '一级知识点',
+          '二级知识点',
+          '三级知识点',
+          '定义',
+          '特性',
+          '重要性级别',
+        ],
+        [
+          [
+            '1.1.2',
+            '集合',
+            '集合的概念',
+            '集合的表示',
+            '列举法',
+            '互异性',
+            'B',
+          ],
+        ],
       );
 
       const wb = xlsx.readFile(path.join(tmpDir, fileName));
       // 封面不被修改
-      const cover = xlsx.utils.sheet_to_json<string[]>(wb.Sheets['封面'], { header: 1 });
+      const cover = xlsx.utils.sheet_to_json<string[]>(wb.Sheets['封面'], {
+        header: 1,
+      });
       expect(cover).toHaveLength(2);
       // 框架 sheet 新增行且编号在最后一列
-      const fw = xlsx.utils.sheet_to_json<string[]>(wb.Sheets['知识点框架'], { header: 1 });
+      const fw = xlsx.utils.sheet_to_json<string[]>(wb.Sheets['知识点框架'], {
+        header: 1,
+      });
       expect(fw).toHaveLength(3);
       expect(fw[2][6]).toBe('1.1.2'); // 知识点编号列
       expect(fw[2][0]).toBe('集合'); // 一级知识点列
@@ -176,15 +217,27 @@ describe('TextbookFileService - appendXlsxRows', () => {
         '知识点编号',
       ];
       service.appendXlsxRows(fileName, callerHeaders, [
-        ['集合', '集合的概念', '集合的表示', '列举法与描述法', '互异性', 'B', '1.1.2'],
+        [
+          '集合',
+          '集合的概念',
+          '集合的表示',
+          '列举法与描述法',
+          '互异性',
+          'B',
+          '1.1.2',
+        ],
       ]);
 
       const wb = xlsx.readFile(path.join(tmpDir, fileName));
       // 封面不被修改
-      const cover = xlsx.utils.sheet_to_json<string[]>(wb.Sheets['封面'], { header: 1 });
+      const cover = xlsx.utils.sheet_to_json<string[]>(wb.Sheets['封面'], {
+        header: 1,
+      });
       expect(cover).toHaveLength(2);
       // 框架 sheet 新增行，各列值按表头落位
-      const fw = xlsx.utils.sheet_to_json<string[]>(wb.Sheets['知识点框架'], { header: 1 });
+      const fw = xlsx.utils.sheet_to_json<string[]>(wb.Sheets['知识点框架'], {
+        header: 1,
+      });
       expect(fw).toHaveLength(3);
       expect(fw[2]).toEqual([
         '集合',
@@ -205,8 +258,24 @@ describe('TextbookFileService - appendXlsxRows', () => {
       xlsx.utils.sheet_add_aoa(
         ws,
         [
-          ['一级知识点', '二级知识点', '三级知识点', '定义', '特性', '重要性级别', '知识点编号'],
-          ['函数', '函数的概念', '函数的定义', '对应关系', '确定性', 'A', '9.1.1'],
+          [
+            '一级知识点',
+            '二级知识点',
+            '三级知识点',
+            '定义',
+            '特性',
+            '重要性级别',
+            '知识点编号',
+          ],
+          [
+            '函数',
+            '函数的概念',
+            '函数的定义',
+            '对应关系',
+            '确定性',
+            'A',
+            '9.1.1',
+          ],
         ],
         { origin: 'B2' },
       );
@@ -217,18 +286,42 @@ describe('TextbookFileService - appendXlsxRows', () => {
 
       service.appendXlsxRows(
         offsetFile,
-        ['一级知识点', '二级知识点', '三级知识点', '定义', '特性', '重要性级别', '知识点编号'],
-        [['函数', '函数的概念', '函数的表示', '解析法', '互异性', 'B', '9.9.1']],
+        [
+          '一级知识点',
+          '二级知识点',
+          '三级知识点',
+          '定义',
+          '特性',
+          '重要性级别',
+          '知识点编号',
+        ],
+        [
+          [
+            '函数',
+            '函数的概念',
+            '函数的表示',
+            '解析法',
+            '互异性',
+            'B',
+            '9.9.1',
+          ],
+        ],
       );
 
       const wb2 = xlsx.readFile(path.join(tmpDir, offsetFile));
       const ws2 = wb2.Sheets['知识点框架'];
       const range = xlsx.utils.decode_range(ws2['!ref'] || 'A1');
       const lastR = range.e.r;
+      const cellV = (r: number, c: number): unknown => {
+        const cell = ws2[xlsx.utils.encode_cell({ r, c })] as
+          | { v?: unknown }
+          | undefined;
+        return cell?.v;
+      };
       // 各列值落在 B-H 绝对列（c: 1-7），编号在 H 列
-      expect(ws2[xlsx.utils.encode_cell({ r: lastR, c: 1 })]?.v).toBe('函数'); // B 一级知识点
-      expect(ws2[xlsx.utils.encode_cell({ r: lastR, c: 4 })]?.v).toBe('解析法'); // E 定义
-      expect(ws2[xlsx.utils.encode_cell({ r: lastR, c: 7 })]?.v).toBe('9.9.1'); // H 知识点编号
+      expect(cellV(lastR, 1)).toBe('函数'); // B 一级知识点
+      expect(cellV(lastR, 4)).toBe('解析法'); // E 定义
+      expect(cellV(lastR, 7)).toBe('9.9.1'); // H 知识点编号
       // A 列（c: 0）无数据，一级值不被丢弃
       expect(ws2[xlsx.utils.encode_cell({ r: lastR, c: 0 })]).toBeUndefined();
     });
