@@ -3,7 +3,12 @@ import { TextbookController } from './textbook.controller';
 import { TextbookService } from './textbook.service';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  NotFoundException,
+  ForbiddenException,
+  ExecutionContext,
+} from '@nestjs/common';
 
 describe('TextbookController - expand', () => {
   let controller: TextbookController;
@@ -210,5 +215,55 @@ describe('TextbookController - expand', () => {
         }),
       ).rejects.toThrow(NotFoundException);
     });
+  });
+});
+
+describe('TextbookController - 文件预览端点权限控制', () => {
+  let controller: TextbookController;
+  let rolesGuard: RolesGuard;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [TextbookController],
+      providers: [{ provide: TextbookService, useValue: {} }, RolesGuard],
+    }).compile();
+
+    controller = module.get<TextbookController>(TextbookController);
+    rolesGuard = module.get<RolesGuard>(RolesGuard);
+  });
+
+  const buildContext = (
+    handler: unknown,
+    role: 'STUDENT' | 'TEACHER' | 'ADMIN',
+  ): ExecutionContext =>
+    ({
+      getHandler: () => handler,
+      getClass: () => TextbookController,
+      switchToHttp: () => ({
+        getRequest: () => ({ user: { role } }),
+      }),
+    }) as unknown as ExecutionContext;
+
+  it('STUDENT 访问 framework-file 被 RolesGuard 拒绝（403）', () => {
+    const context = buildContext(controller.getFrameworkFile, 'STUDENT');
+    expect(() => rolesGuard.canActivate(context)).toThrow(ForbiddenException);
+  });
+
+  it('STUDENT 访问 content-file 被 RolesGuard 拒绝（403）', () => {
+    const context = buildContext(controller.getContentFile, 'STUDENT');
+    expect(() => rolesGuard.canActivate(context)).toThrow(ForbiddenException);
+  });
+
+  it('TEACHER 可以访问两个文件预览端点', () => {
+    expect(
+      rolesGuard.canActivate(
+        buildContext(controller.getFrameworkFile, 'TEACHER'),
+      ),
+    ).toBe(true);
+    expect(
+      rolesGuard.canActivate(
+        buildContext(controller.getContentFile, 'TEACHER'),
+      ),
+    ).toBe(true);
   });
 });
