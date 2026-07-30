@@ -378,3 +378,26 @@ describe('ExpandKnowledgePointsModal wizard', () => {
     expect(baseElement.querySelector('.ant-modal-body')).not.toBeInTheDocument()
   })
 })
+
+describe('ExpandKnowledgePointsModal edit mode', () => {
+  it('shows enter edit mode button after files are selected', async () => {
+    const { baseElement } = render(<ExpandKnowledgePointsModal {...defaultProps} />)
+
+    const fileInputs = getFileInputs(baseElement)
+    const xlsxFile = new File(['xlsx'], 'expand.xlsx', {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    })
+    const mdFile = new File(['md'], 'expand.md', { type: 'text/markdown' })
+
+    fireEvent.change(fileInputs[0], { target: { files: [xlsxFile] } })
+    fireEvent.change(fileInputs[1], { target: { files: [mdFile] } })
+
+    const nextButton = screen.getByRole('button', { name: /下一步/i })
+    await waitFor(() => expect(nextButton).toBeEnabled())
+
+    fireEvent.click(nextButton)
+    await waitFor(() => {
+      expect(screen.getByText('进入编辑模式')).toBeInTheDocument()
+    })
+  })
+})

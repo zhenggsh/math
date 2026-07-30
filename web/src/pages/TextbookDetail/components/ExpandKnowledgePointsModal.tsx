@@ -10,6 +10,9 @@ import type {
   ExpansionDraft,
 } from '../../../types/textbook.types'
 import { ValidationRulesPanel } from './ValidationRulesPanel'
+import { FrameworkEditor } from './FrameworkEditor'
+import { MdEditor } from './MdEditor'
+import { useExpansionEditor } from '../hooks/useExpansionEditor'
 import { FrameworkPreview, MdPreview } from '../../../components/textbook-preview'
 import { ErrorTag } from './ErrorTag'
 import { ImpactPreview } from './ImpactPreview'
@@ -154,6 +157,20 @@ export const ExpandKnowledgePointsModal: React.FC<ExpandKnowledgePointsModalProp
   const [rulesDrawerOpen, setRulesDrawerOpen] = useState(false)
   const [isNarrow, setIsNarrow] = useState(() => window.innerWidth < NARROW_BREAKPOINT)
   const [resultCollapsed, setResultCollapsed] = useState(false)
+
+  const originalRows = useMemo(() => xlsxPreview ?? [], [xlsxPreview])
+  const originalMd = useMemo(() => mdPreview ?? '', [mdPreview])
+
+  const editor = useExpansionEditor({
+    textbookId,
+    originalRows,
+    originalMd,
+    originalFrameworkFile: frameworkFile,
+    originalContentFile: contentFile,
+    onValidate,
+    onResetValidation,
+  })
+  const { editMode, revalidateFiles } = editor
 
   const clearDraft = useCallback(() => {
     sessionStorage.removeItem(draftKey)
@@ -563,6 +580,18 @@ export const ExpandKnowledgePointsModal: React.FC<ExpandKnowledgePointsModalProp
     >
       <Typography.Text>左右预览已关联，点击错误标签或框架文件行可定位到对应位置。</Typography.Text>
       {renderValidationResult()}
+      <div style={{ flexShrink: 0, marginBottom: 8 }}>
+        {editMode ? (
+          <Button onClick={() => editor.exitEditMode()}>退出编辑模式</Button>
+        ) : (
+          <Button
+            onClick={() => editor.enterEditMode()}
+            disabled={!bothFilesSelected || !frameworkFile?.name.toLowerCase().endsWith('.xlsx')}
+          >
+            进入编辑模式
+          </Button>
+        )}
+      </div>
       {(xlsxPreviewError || mdPreviewError) && (
         <Alert
           message={[xlsxPreviewError, mdPreviewError].filter(Boolean).join('；')}
@@ -571,7 +600,55 @@ export const ExpandKnowledgePointsModal: React.FC<ExpandKnowledgePointsModalProp
           style={{ marginBottom: 8, flexShrink: 0 }}
         />
       )}
-      {isNarrow ? (
+      {editMode ? (
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            height: '100%',
+            gap: 8,
+            overflow: 'hidden',
+          }}
+        >
+          <Alert
+            message="编辑模式"
+            description="xlsx 修改会自动同步到 Markdown 标题；直接编辑 Markdown 正文不会反向同步到 xlsx。编辑后必须重新校验。"
+            type="info"
+            showIcon
+            style={{ flexShrink: 0 }}
+          />
+          <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+            <FrameworkEditor
+              rows={editor.frameworkRows}
+              selectedRowIds={editor.selectedRowIds}
+              onRowChange={editor.updateRow}
+              onSelectionChange={editor.toggleRowSelection}
+              onAddRow={editor.addRow}
+              onDeleteRow={editor.deleteRow}
+              onInsertAfter={editor.insertRowAfter}
+              mdSyncWarnings={editor.mdSyncWarnings}
+            />
+          </div>
+          <div
+            style={{
+              flex: 1,
+              minHeight: 0,
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            <MdEditor
+              content={editor.mdContent}
+              onChange={editor.updateMdContent}
+              fileSize={contentFile?.size ?? 0}
+              selectedRows={editor.frameworkRows.filter(r =>
+                editor.selectedRowIds.includes(r.rowId)
+              )}
+            />
+          </div>
+        </div>
+      ) : isNarrow ? (
         // 窄屏（Drawer）：垂直堆叠，每个预览固定高度内部滚动
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16, overflow: 'auto' }}>
           <div>
@@ -699,7 +776,7 @@ export const ExpandKnowledgePointsModal: React.FC<ExpandKnowledgePointsModalProp
         disabled={!bothFilesSelected || validating}
         loading={validating}
         onClick={() => {
-          void handleValidate()
+          void (editMode ? revalidateFiles() : handleValidate())
         }}
       >
         开始校验
@@ -733,6 +810,8 @@ export const ExpandKnowledgePointsModal: React.FC<ExpandKnowledgePointsModalProp
     loading,
     validating,
     validationResult,
+    editMode,
+    revalidateFiles,
     handleClose,
     handlePrev,
     handleNext,

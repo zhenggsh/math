@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useReducer, useState } from 'react'
+import { useCallback, useEffect, useMemo, useReducer, useState } from 'react'
 import type { XlsxPreviewRow } from '../../../utils/textbookFilePreview'
 import { getRecordCode, makeMdFile, makeXlsxFile } from '../../../utils/textbookFilePreview'
 import {
@@ -41,6 +41,7 @@ interface UseExpansionEditorReturn {
   saveDraft: () => void
   loadDraft: () => boolean
   clearDraft: () => void
+  mdSyncWarnings: Map<string, string>
 }
 
 const DRAFT_KEY_PREFIX = 'math-tong-expansion-editor-draft'
@@ -120,6 +121,7 @@ type Action =
       scope: 'all' | string[]
     }
   | { type: 'LOAD_DRAFT'; frameworkRows: EditorRow[]; mdContent: string }
+  | { type: 'RESET'; originalRows: XlsxPreviewRow[]; originalMd: string }
 
 function reduceDataState(state: DataState, action: Action): DataState {
   switch (action.type) {
@@ -250,6 +252,13 @@ function reduceDataState(state: DataState, action: Action): DataState {
         mdContent: action.mdContent,
       }
     }
+    case 'RESET': {
+      const frameworkRows = action.originalRows.map(row => ({ ...row, rowId: generateId() }))
+      const mdContent = action.originalMd
+      const blocks = parseKnowledgeBlocks(mdContent)
+      const blockMap = buildBlockMap(frameworkRows, blocks)
+      return { frameworkRows, blocks, blockMap, mdContent }
+    }
     default:
       return state
   }
@@ -277,6 +286,9 @@ export function useExpansionEditor(options: UseExpansionEditorOptions): UseExpan
   const [selectedRowIds, setSelectedRowIds] = useState<string[]>([])
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
 
+  useEffect(() => {
+    dispatch({ type: 'RESET', originalRows, originalMd })
+  }, [originalRows, originalMd])
   const frameworkFileName = originalFrameworkFile?.name ?? 'framework.xlsx'
   const contentFileName = originalContentFile?.name ?? 'content.md'
 
@@ -387,6 +399,19 @@ export function useExpansionEditor(options: UseExpansionEditorOptions): UseExpan
     sessionStorage.removeItem(draftKey)
   }, [draftKey])
 
+  const mdSyncWarnings = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const row of dataState.frameworkRows) {
+      const code = getRecordCode(row)
+      if (!code) continue
+      const hasBlock = dataState.blocks.some(b => b.code === code)
+      if (!hasBlock) {
+        map.set(row.rowId, '无对应 Markdown 内容块')
+      }
+    }
+    return map
+  }, [dataState.frameworkRows, dataState.blocks])
+
   return useMemo(
     () => ({
       editMode,
@@ -407,6 +432,7 @@ export function useExpansionEditor(options: UseExpansionEditorOptions): UseExpan
       saveDraft,
       loadDraft,
       clearDraft,
+      mdSyncWarnings,
     }),
     [
       editMode,
@@ -427,6 +453,7 @@ export function useExpansionEditor(options: UseExpansionEditorOptions): UseExpan
       saveDraft,
       loadDraft,
       clearDraft,
+      mdSyncWarnings,
     ]
   )
 }
