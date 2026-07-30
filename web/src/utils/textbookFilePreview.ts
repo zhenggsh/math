@@ -166,3 +166,29 @@ export async function readTextFile(file: File): Promise<string> {
     reader.readAsText(file)
   })
 }
+
+export function serializeXlsxPreview(rows: XlsxPreviewRow[], sheetName = 'Sheet1'): Blob {
+  const headers = rows.length > 0 ? Object.keys(rows[0]) : []
+  const data = rows.map(row => headers.map(header => row[header] ?? ''))
+  const worksheet = XLSX.utils.aoa_to_sheet([headers, ...data])
+  const workbook = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(workbook, worksheet, sheetName)
+  const buffer = new Uint8Array(
+    XLSX.write(workbook, { type: 'array', bookType: 'xlsx' }) as number[]
+  )
+  return new Blob([buffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  })
+}
+
+export function makeXlsxFile(rows: XlsxPreviewRow[], fileName: string): File {
+  const baseName = fileName.replace(/\.[^/.]+$/, '')
+  const blob = serializeXlsxPreview(rows, baseName)
+  return new File([blob], fileName, {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  })
+}
+
+export function makeMdFile(content: string, fileName: string): File {
+  return new File([content], fileName, { type: 'text/markdown' })
+}
