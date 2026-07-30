@@ -43,19 +43,25 @@ export const MdEditor: React.FC<MdEditorProps> = ({
       return
     }
     const lines = content.split('\n')
+    let hasChanged = false
     const nextLines = lines.map(line => {
       if (!line.startsWith(`${sourcePrefix} `)) return line
       const code = extractHeadingCode(line, sourcePrefix)
-      if (scope === 'selected' && code && !selectedCodes.includes(code)) return line
+      if (scope === 'selected' && (!code || !selectedCodes.includes(code))) return line
+      hasChanged = true
       return `${targetPrefix} ${line.slice(sourcePrefix.length + 1)}`
     })
+    if (scope === 'selected' && !hasChanged) {
+      message.warning('未选中任何行，无法应用替换')
+      return
+    }
     onChange(nextLines.join('\n'))
   }
 
   if (disabled) {
     return (
       <Alert
-        message="Markdown 文件超过 1 MB"
+        title="Markdown 文件超过 1 MB"
         description={`当前文件 ${(fileSize / 1024 / 1024).toFixed(2)} MB，已超过 1 MB 限制。请使用本地编辑器修改后重新上传。`}
         type="warning"
         showIcon
@@ -64,7 +70,7 @@ export const MdEditor: React.FC<MdEditorProps> = ({
   }
 
   return (
-    <Space direction="vertical" style={{ width: '100%' }}>
+    <Space orientation="vertical" style={{ width: '100%' }}>
       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
         <Typography.Text strong>批量替换标题层级</Typography.Text>
         <Select
@@ -97,7 +103,7 @@ export const MdEditor: React.FC<MdEditorProps> = ({
           ]}
           style={{ width: 120 }}
         />
-        <Button size="small" onClick={handleBatchReplace}>
+        <Button size="small" onClick={handleBatchReplace} disabled={sourceLevel === targetLevel}>
           替换
         </Button>
       </div>
