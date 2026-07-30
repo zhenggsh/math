@@ -1,3 +1,4 @@
+import { generateId } from './generateId'
 import type { XlsxPreviewRow } from './textbookFilePreview'
 import { getRecordCode } from './textbookFilePreview'
 
@@ -24,10 +25,6 @@ interface CurrentBlock {
 }
 
 const HEADING_PATTERN = /^(#{2,4})\s+(?:知识点\s+)?(\d+(?:\.\d+)*)(?:[：:]?\s*(.*))?$/
-
-function generateId(): string {
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`
-}
 
 function buildHeading(level: number, code: string, name: string): string {
   const prefix = '#'.repeat(level)
