@@ -380,8 +380,17 @@ describe('ExpandKnowledgePointsModal wizard', () => {
 })
 
 describe('ExpandKnowledgePointsModal edit mode', () => {
-  it('shows enter edit mode button after files are selected', async () => {
-    const { baseElement } = render(<ExpandKnowledgePointsModal {...defaultProps} />)
+  it('enters edit mode, re-validates with edited files, and submits edited files', async () => {
+    const onValidate = vi.fn().mockResolvedValue(undefined)
+    const onSubmit = vi.fn().mockResolvedValue(undefined)
+    const { baseElement } = render(
+      <ExpandKnowledgePointsModal
+        {...defaultProps}
+        validationResult={validReport}
+        onValidate={onValidate}
+        onSubmit={onSubmit}
+      />
+    )
 
     const fileInputs = getFileInputs(baseElement)
     const xlsxFile = new File(['xlsx'], 'expand.xlsx', {
@@ -394,10 +403,34 @@ describe('ExpandKnowledgePointsModal edit mode', () => {
 
     const nextButton = screen.getByRole('button', { name: /下一步/i })
     await waitFor(() => expect(nextButton).toBeEnabled())
-
     fireEvent.click(nextButton)
-    await waitFor(() => {
-      expect(screen.getByText('进入编辑模式')).toBeInTheDocument()
-    })
+    await waitFor(() => expect(screen.getByText('框架文件预览')).toBeInTheDocument())
+
+    const enterEditButton = screen.getByRole('button', { name: /进入编辑模式/i })
+    fireEvent.click(enterEditButton)
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /退出编辑模式/i })).toBeInTheDocument()
+    )
+    expect(screen.getByText(/xlsx 修改会自动同步到 Markdown 标题/)).toBeInTheDocument()
+
+    const revalidateButton = screen.getByRole('button', { name: /重新校验/i })
+    fireEvent.click(revalidateButton)
+    await waitFor(() => expect(onValidate).toHaveBeenCalledTimes(1))
+    const [validatedFrameworkFile, validatedContentFile] = onValidate.mock.calls[0] as [File, File]
+    expect(validatedFrameworkFile.name).toBe('expand.xlsx')
+    expect(validatedContentFile.name).toBe('expand.md')
+
+    const stepNextButton = screen.getByRole('button', { name: /下一步/i })
+    await waitFor(() => expect(stepNextButton).toBeEnabled())
+    fireEvent.click(stepNextButton)
+    await waitFor(() => expect(screen.getByTestId('impact-summary')).toBeInTheDocument())
+
+    const submitButton = screen.getByRole('button', { name: /确认扩充/i })
+    expect(submitButton).toBeEnabled()
+    fireEvent.click(submitButton)
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1))
+    const [submittedFrameworkFile, submittedContentFile] = onSubmit.mock.calls[0] as [File, File]
+    expect(submittedFrameworkFile.name).toBe('expand.xlsx')
+    expect(submittedContentFile.name).toBe('expand.md')
   })
 })

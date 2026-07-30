@@ -38,6 +38,8 @@ interface UseExpansionEditorReturn {
   batchReplaceHeadings: (sourceLevel: number, targetLevel: number, scope: 'all' | string[]) => void
   toggleRowSelection: (rowId: string) => void
   revalidateFiles: () => Promise<void>
+  editedFrameworkFile: File
+  editedContentFile: File
   saveDraft: () => void
   loadDraft: () => boolean
   clearDraft: () => void
@@ -98,6 +100,8 @@ interface DataState {
   blocks: KnowledgeBlock[]
   blockMap: Map<string, string>
   mdContent: string
+  selectedRowIds: string[]
+  hasUnsavedChanges: boolean
 }
 
 function initDataState(originalRows: XlsxPreviewRow[], originalMd: string): DataState {
@@ -105,7 +109,14 @@ function initDataState(originalRows: XlsxPreviewRow[], originalMd: string): Data
   const mdContent = originalMd
   const blocks = parseKnowledgeBlocks(mdContent)
   const blockMap = buildBlockMap(frameworkRows, blocks)
-  return { frameworkRows, blocks, blockMap, mdContent }
+  return {
+    frameworkRows,
+    blocks,
+    blockMap,
+    mdContent,
+    selectedRowIds: [],
+    hasUnsavedChanges: false,
+  }
 }
 
 type Action =
@@ -122,6 +133,9 @@ type Action =
     }
   | { type: 'LOAD_DRAFT'; frameworkRows: EditorRow[]; mdContent: string }
   | { type: 'RESET'; originalRows: XlsxPreviewRow[]; originalMd: string }
+  | { type: 'TOGGLE_ROW_SELECTION'; rowId: string }
+  | { type: 'CLEAR_SELECTED_ROW_IDS' }
+  | { type: 'SET_HAS_UNSAVED_CHANGES'; value: boolean }
 
 function reduceDataState(state: DataState, action: Action): DataState {
   switch (action.type) {
@@ -216,6 +230,7 @@ function reduceDataState(state: DataState, action: Action): DataState {
         blocks: nextBlocks,
         blockMap: nextMap,
         mdContent: nextMdContent,
+        selectedRowIds: state.selectedRowIds.filter(id => id !== action.rowId),
       }
     }
     case 'SET_MD_CONTENT': {
@@ -250,6 +265,7 @@ function reduceDataState(state: DataState, action: Action): DataState {
         blocks: nextBlocks,
         blockMap: nextMap,
         mdContent: action.mdContent,
+        hasUnsavedChanges: true,
       }
     }
     case 'RESET': {
@@ -257,7 +273,26 @@ function reduceDataState(state: DataState, action: Action): DataState {
       const mdContent = action.originalMd
       const blocks = parseKnowledgeBlocks(mdContent)
       const blockMap = buildBlockMap(frameworkRows, blocks)
-      return { frameworkRows, blocks, blockMap, mdContent }
+      return {
+        frameworkRows,
+        blocks,
+        blockMap,
+        mdContent,
+        selectedRowIds: [],
+        hasUnsavedChanges: false,
+      }
+    }
+    case 'TOGGLE_ROW_SELECTION': {
+      const nextIds = state.selectedRowIds.includes(action.rowId)
+        ? state.selectedRowIds.filter(id => id !== action.rowId)
+        : [...state.selectedRowIds, action.rowId]
+      return { ...state, selectedRowIds: nextIds }
+    }
+    case 'CLEAR_SELECTED_ROW_IDS': {
+      return { ...state, selectedRowIds: [] }
+    }
+    case 'SET_HAS_UNSAVED_CHANGES': {
+      return { ...state, hasUnsavedChanges: action.value }
     }
     default:
       return state
@@ -283,17 +318,16 @@ export function useExpansionEditor(options: UseExpansionEditorOptions): UseExpan
     ({ originalRows, originalMd }: { originalRows: XlsxPreviewRow[]; originalMd: string }) =>
       initDataState(originalRows, originalMd)
   )
-  const [selectedRowIds, setSelectedRowIds] = useState<string[]>([])
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
 
   useEffect(() => {
+    if (editMode) return
     dispatch({ type: 'RESET', originalRows, originalMd })
-  }, [originalRows, originalMd])
+  }, [originalRows, originalMd, editMode])
   const frameworkFileName = originalFrameworkFile?.name ?? 'framework.xlsx'
   const contentFileName = originalContentFile?.name ?? 'content.md'
 
   const markChanged = useCallback(() => {
-    setHasUnsavedChanges(true)
+    dispatch({ type: 'SET_HAS_UNSAVED_CHANGES', value: true })
     onResetValidation()
   }, [onResetValidation])
 
@@ -329,7 +363,6 @@ export function useExpansionEditor(options: UseExpansionEditorOptions): UseExpan
   const deleteRow = useCallback(
     (rowId: string) => {
       dispatch({ type: 'DELETE_ROW', rowId })
-      setSelectedRowIds(prevIds => prevIds.filter(id => id !== rowId))
       markChanged()
     },
     [markChanged]
@@ -352,16 +385,21 @@ export function useExpansionEditor(options: UseExpansionEditorOptions): UseExpan
   )
 
   const toggleRowSelection = useCallback((rowId: string) => {
-    setSelectedRowIds(prev =>
-      prev.includes(rowId) ? prev.filter(id => id !== rowId) : [...prev, rowId]
-    )
+    dispatch({ type: 'TOGGLE_ROW_SELECTION', rowId })
   }, [])
 
+  const editedFrameworkFile = useMemo(
+    () => makeXlsxFile(dataState.frameworkRows.map(toXlsxRow), frameworkFileName),
+    [dataState.frameworkRows, frameworkFileName]
+  )
+  const editedContentFile = useMemo(
+    () => makeMdFile(dataState.mdContent, contentFileName),
+    [dataState.mdContent, contentFileName]
+  )
+
   const revalidateFiles = useCallback(async () => {
-    const frameworkFile = makeXlsxFile(dataState.frameworkRows.map(toXlsxRow), frameworkFileName)
-    const contentFile = makeMdFile(dataState.mdContent, contentFileName)
-    await onValidate(frameworkFile, contentFile)
-  }, [dataState.frameworkRows, dataState.mdContent, frameworkFileName, contentFileName, onValidate])
+    await onValidate(editedFrameworkFile, editedContentFile)
+  }, [editedFrameworkFile, editedContentFile, onValidate])
 
   const saveDraft = useCallback(() => {
     const draft = {
@@ -386,7 +424,6 @@ export function useExpansionEditor(options: UseExpansionEditorOptions): UseExpan
           frameworkRows: draft.frameworkRows,
           mdContent: draft.mdContent,
         })
-        setHasUnsavedChanges(true)
         return true
       }
       return false
@@ -417,8 +454,8 @@ export function useExpansionEditor(options: UseExpansionEditorOptions): UseExpan
       editMode,
       frameworkRows: dataState.frameworkRows,
       mdContent: dataState.mdContent,
-      selectedRowIds,
-      hasUnsavedChanges,
+      selectedRowIds: dataState.selectedRowIds,
+      hasUnsavedChanges: dataState.hasUnsavedChanges,
       enterEditMode,
       exitEditMode,
       updateRow,
@@ -429,6 +466,8 @@ export function useExpansionEditor(options: UseExpansionEditorOptions): UseExpan
       batchReplaceHeadings,
       toggleRowSelection,
       revalidateFiles,
+      editedFrameworkFile,
+      editedContentFile,
       saveDraft,
       loadDraft,
       clearDraft,
@@ -438,8 +477,8 @@ export function useExpansionEditor(options: UseExpansionEditorOptions): UseExpan
       editMode,
       dataState.frameworkRows,
       dataState.mdContent,
-      selectedRowIds,
-      hasUnsavedChanges,
+      dataState.selectedRowIds,
+      dataState.hasUnsavedChanges,
       enterEditMode,
       exitEditMode,
       updateRow,
@@ -450,6 +489,8 @@ export function useExpansionEditor(options: UseExpansionEditorOptions): UseExpan
       batchReplaceHeadings,
       toggleRowSelection,
       revalidateFiles,
+      editedFrameworkFile,
+      editedContentFile,
       saveDraft,
       loadDraft,
       clearDraft,

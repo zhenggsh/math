@@ -314,10 +314,20 @@ export const ExpandKnowledgePointsModal: React.FC<ExpandKnowledgePointsModalProp
   }, [frameworkFile, contentFile, onValidate])
 
   const handleSubmit = useCallback(async () => {
-    if (!frameworkFile || !contentFile) return
-    await onSubmit(frameworkFile, contentFile)
+    const submitFrameworkFile = editMode ? editor.editedFrameworkFile : frameworkFile
+    const submitContentFile = editMode ? editor.editedContentFile : contentFile
+    if (!submitFrameworkFile || !submitContentFile) return
+    await onSubmit(submitFrameworkFile, submitContentFile)
     clearDraft()
-  }, [frameworkFile, contentFile, onSubmit, clearDraft])
+  }, [
+    editMode,
+    editor.editedFrameworkFile,
+    editor.editedContentFile,
+    frameworkFile,
+    contentFile,
+    onSubmit,
+    clearDraft,
+  ])
 
   const handleClose = useCallback(() => {
     if (!frameworkFile && !contentFile) {
@@ -745,7 +755,7 @@ export const ExpandKnowledgePointsModal: React.FC<ExpandKnowledgePointsModalProp
     <Space direction="vertical" style={{ width: '100%' }}>
       <Typography.Text>请确认以下知识点将被追加到当前教材。</Typography.Text>
       {error && <Alert message={error} type="error" showIcon />}
-      <ImpactPreview rows={xlsxPreview || []} />
+      <ImpactPreview rows={editMode ? editor.frameworkRows : xlsxPreview || []} />
     </Space>
   )
 
@@ -779,7 +789,7 @@ export const ExpandKnowledgePointsModal: React.FC<ExpandKnowledgePointsModalProp
           void (editMode ? revalidateFiles() : handleValidate())
         }}
       >
-        开始校验
+        {editMode ? '重新校验' : '开始校验'}
       </Button>
     )
     const submitButton = (
