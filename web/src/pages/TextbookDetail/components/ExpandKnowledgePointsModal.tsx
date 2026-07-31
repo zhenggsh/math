@@ -42,15 +42,6 @@ interface ExpandKnowledgePointsModalProps {
 const NARROW_BREAKPOINT = 768
 const DRAFT_KEY_PREFIX = 'math-tong-expansion-draft'
 
-function readFileAsDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(reader.result as string)
-    reader.onerror = () => reject(new Error('读取文件失败'))
-    reader.readAsDataURL(file)
-  })
-}
-
 function dataUrlToFile(dataUrl: string, fileName: string): File {
   const [header, base64] = dataUrl.split(',')
   const mimeMatch = header.match(/:(.*?);/)
@@ -173,6 +164,18 @@ export const ExpandKnowledgePointsModal: React.FC<ExpandKnowledgePointsModalProp
   })
   const { editMode, revalidateFiles } = editor
 
+  useEffect(() => {
+    if (!open) return
+    if (frameworkFile && contentFile) {
+      void editor.loadDraft(frameworkFile, contentFile).then(restored => {
+        if (restored) {
+          editor.enterEditMode()
+        }
+      })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
+
   const isCsvFramework = frameworkFile?.name.toLowerCase().endsWith('.csv') ?? false
   const isXlsxFramework = frameworkFile?.name.toLowerCase().endsWith('.xlsx') ?? false
 
@@ -217,25 +220,6 @@ export const ExpandKnowledgePointsModal: React.FC<ExpandKnowledgePointsModalProp
   const clearDraft = useCallback(() => {
     sessionStorage.removeItem(draftKey)
   }, [draftKey])
-
-  const saveDraft = useCallback(async () => {
-    if (!frameworkFile && !contentFile) {
-      clearDraft()
-      return
-    }
-    const [frameworkContent, contentContent] = await Promise.all([
-      frameworkFile ? readFileAsDataUrl(frameworkFile) : Promise.resolve(undefined),
-      contentFile ? readFileAsDataUrl(contentFile) : Promise.resolve(undefined),
-    ])
-    const draft: ExpansionDraft = {
-      textbookId,
-      frameworkFileName: frameworkFile?.name,
-      frameworkFileContent: frameworkContent,
-      contentFileName: contentFile?.name,
-      contentFileContent: contentContent,
-    }
-    sessionStorage.setItem(draftKey, JSON.stringify(draft))
-  }, [frameworkFile, contentFile, textbookId, draftKey, clearDraft])
 
   useEffect(() => {
     const handleResize = () => {
@@ -374,8 +358,25 @@ export const ExpandKnowledgePointsModal: React.FC<ExpandKnowledgePointsModalProp
   ])
 
   const handleClose = useCallback(() => {
+    if (editor.hasUnsavedChanges) {
+      Modal.confirm({
+        title: '未保存的编辑',
+        content: '当前有未保存的编辑，是否保存为草稿？',
+        okText: '保存',
+        cancelText: '不保存',
+        onOk: async () => {
+          await editor.saveDraft()
+          onCancel()
+        },
+        onCancel: () => {
+          editor.clearDraft()
+          onCancel()
+        },
+      })
+      return
+    }
     if (!frameworkFile && !contentFile) {
-      clearDraft()
+      editor.clearDraft()
       onCancel()
       return
     }
@@ -385,15 +386,15 @@ export const ExpandKnowledgePointsModal: React.FC<ExpandKnowledgePointsModalProp
       okText: '保存',
       cancelText: '不保存',
       onOk: async () => {
-        await saveDraft()
+        await editor.saveDraft()
         onCancel()
       },
       onCancel: () => {
-        clearDraft()
+        editor.clearDraft()
         onCancel()
       },
     })
-  }, [frameworkFile, contentFile, onCancel, saveDraft, clearDraft])
+  }, [frameworkFile, contentFile, onCancel, editor])
 
   // 在 md 内容中查找知识点编号对应的行号（1-based），共享实现见 utils/mdLineLocator
   const locateMdLine = useCallback(

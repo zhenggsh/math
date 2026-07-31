@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useReducer, useState } from 'react'
+import type { ExpansionDraft } from '../../../types/textbook.types'
 import type { XlsxPreviewRow } from '../../../utils/textbookFilePreview'
 import { getRecordCode, makeMdFile, makeXlsxFile } from '../../../utils/textbookFilePreview'
 import {
@@ -40,13 +41,32 @@ interface UseExpansionEditorReturn {
   revalidateFiles: () => Promise<void>
   editedFrameworkFile: File
   editedContentFile: File
-  saveDraft: () => void
-  loadDraft: () => boolean
+  saveDraft: () => Promise<void>
+  loadDraft: (frameworkFile?: File, contentFile?: File) => Promise<boolean>
   clearDraft: () => void
   mdSyncWarnings: Map<string, string>
 }
 
-const DRAFT_KEY_PREFIX = 'math-tong-expansion-editor-draft'
+const DRAFT_KEY_PREFIX = 'math-tong-expansion-draft'
+
+async function fingerprintFile(file: File): Promise<string> {
+  if (typeof crypto === 'undefined' || !crypto.subtle) {
+    return `fallback-${file.name}-${file.size}-${file.lastModified}`
+  }
+  const buffer = await file.arrayBuffer()
+  const hashBuffer = await crypto.subtle.digest('SHA-256', buffer)
+  const hashArray = Array.from(new Uint8Array(hashBuffer))
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+}
+
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result as string)
+    reader.onerror = () => reject(new Error('读取文件失败'))
+    reader.readAsDataURL(file)
+  })
+}
 
 function cloneRows(rows: EditorRow[]): EditorRow[] {
   return rows.map(row => ({ ...row }))
@@ -265,6 +285,7 @@ function reduceDataState(state: DataState, action: Action): DataState {
         blocks: nextBlocks,
         blockMap: nextMap,
         mdContent: action.mdContent,
+        selectedRowIds: [],
         hasUnsavedChanges: true,
       }
     }
@@ -318,6 +339,31 @@ export function useExpansionEditor(options: UseExpansionEditorOptions): UseExpan
     ({ originalRows, originalMd }: { originalRows: XlsxPreviewRow[]; originalMd: string }) =>
       initDataState(originalRows, originalMd)
   )
+  const [originalFrameworkFingerprint, setOriginalFrameworkFingerprint] = useState<
+    string | undefined
+  >(undefined)
+  const [originalContentFingerprint, setOriginalContentFingerprint] = useState<string | undefined>(
+    undefined
+  )
+
+  useEffect(() => {
+    let cancelled = false
+    void (async () => {
+      const frameworkFingerprint = originalFrameworkFile
+        ? await fingerprintFile(originalFrameworkFile)
+        : undefined
+      const contentFingerprint = originalContentFile
+        ? await fingerprintFile(originalContentFile)
+        : undefined
+      if (!cancelled) {
+        setOriginalFrameworkFingerprint(frameworkFingerprint)
+        setOriginalContentFingerprint(contentFingerprint)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [originalFrameworkFile, originalContentFile])
 
   useEffect(() => {
     if (editMode) return
@@ -401,36 +447,79 @@ export function useExpansionEditor(options: UseExpansionEditorOptions): UseExpan
     await onValidate(editedFrameworkFile, editedContentFile)
   }, [editedFrameworkFile, editedContentFile, onValidate])
 
-  const saveDraft = useCallback(() => {
-    const draft = {
+  const saveDraft = useCallback(async () => {
+    let frameworkFileContent: string | undefined
+    let contentFileContent: string | undefined
+    if (originalFrameworkFile) {
+      frameworkFileContent = await readFileAsDataUrl(originalFrameworkFile)
+    }
+    if (originalContentFile) {
+      contentFileContent = await readFileAsDataUrl(originalContentFile)
+    }
+    const draft: ExpansionDraft = {
       textbookId,
-      frameworkRows: dataState.frameworkRows,
-      mdContent: dataState.mdContent,
+      frameworkFileName: originalFrameworkFile?.name,
+      frameworkFileContent,
+      contentFileName: originalContentFile?.name,
+      contentFileContent,
+      editedFrameworkRows: dataState.frameworkRows,
+      editedMdContent: dataState.mdContent,
+      originalFrameworkFingerprint,
+      originalContentFingerprint,
     }
     sessionStorage.setItem(draftKey, JSON.stringify(draft))
-  }, [textbookId, dataState.frameworkRows, dataState.mdContent, draftKey])
+  }, [
+    textbookId,
+    originalFrameworkFile,
+    originalContentFile,
+    dataState.frameworkRows,
+    dataState.mdContent,
+    originalFrameworkFingerprint,
+    originalContentFingerprint,
+    draftKey,
+  ])
 
-  const loadDraft = useCallback((): boolean => {
-    const raw = sessionStorage.getItem(draftKey)
-    if (!raw) return false
-    try {
-      const draft = JSON.parse(raw) as {
-        frameworkRows?: EditorRow[]
-        mdContent?: string
+  const loadDraft = useCallback(
+    async (frameworkFile?: File, contentFile?: File): Promise<boolean> => {
+      const raw = sessionStorage.getItem(draftKey)
+      if (!raw) return false
+      try {
+        const draft = JSON.parse(raw) as ExpansionDraft
+        let currentFrameworkFingerprint: string | undefined
+        let currentContentFingerprint: string | undefined
+        if (frameworkFile || contentFile) {
+          if (frameworkFile) {
+            currentFrameworkFingerprint = await fingerprintFile(frameworkFile)
+          }
+          if (contentFile) {
+            currentContentFingerprint = await fingerprintFile(contentFile)
+          }
+        }
+        if (
+          (draft.originalFrameworkFingerprint &&
+            currentFrameworkFingerprint &&
+            draft.originalFrameworkFingerprint !== currentFrameworkFingerprint) ||
+          (draft.originalContentFingerprint &&
+            currentContentFingerprint &&
+            draft.originalContentFingerprint !== currentContentFingerprint)
+        ) {
+          return false
+        }
+        if (draft.editedFrameworkRows && draft.editedMdContent !== undefined) {
+          dispatch({
+            type: 'LOAD_DRAFT',
+            frameworkRows: draft.editedFrameworkRows,
+            mdContent: draft.editedMdContent,
+          })
+          return true
+        }
+        return false
+      } catch {
+        return false
       }
-      if (draft.frameworkRows && draft.mdContent !== undefined) {
-        dispatch({
-          type: 'LOAD_DRAFT',
-          frameworkRows: draft.frameworkRows,
-          mdContent: draft.mdContent,
-        })
-        return true
-      }
-      return false
-    } catch {
-      return false
-    }
-  }, [draftKey])
+    },
+    [draftKey]
+  )
 
   const clearDraft = useCallback(() => {
     sessionStorage.removeItem(draftKey)

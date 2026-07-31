@@ -98,6 +98,10 @@ export interface ExpansionDraft {
   frameworkFileContent?: string
   contentFileName?: string
   contentFileContent?: string
+  editedFrameworkRows?: import('../utils/knowledgeBlocks').EditorRow[]
+  editedMdContent?: string
+  originalFrameworkFingerprint?: string
+  originalContentFingerprint?: string
 }
 
 /** GET /textbooks/:id/framework-file 响应 */

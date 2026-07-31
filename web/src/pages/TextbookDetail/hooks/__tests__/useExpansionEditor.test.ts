@@ -149,7 +149,7 @@ describe('useExpansionEditor', () => {
     })
 
     act(() => {
-      result.current.saveDraft()
+      void result.current.saveDraft()
     })
 
     const { result: nextResult } = renderHook(() =>
@@ -157,7 +157,7 @@ describe('useExpansionEditor', () => {
     )
 
     act(() => {
-      nextResult.current.loadDraft()
+      void nextResult.current.loadDraft()
     })
 
     expect(nextResult.current.mdContent).toContain('#### 知识点 1.1.1：草稿名称')
