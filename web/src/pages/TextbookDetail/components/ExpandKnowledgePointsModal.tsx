@@ -206,6 +206,7 @@ export const ExpandKnowledgePointsModal: React.FC<ExpandKnowledgePointsModalProp
       }
     }
     setSheetCountLoading(true)
+    setSheetCount(null)
     reader.readAsArrayBuffer(frameworkFile)
     return () => {
       cancelled = true
@@ -449,9 +450,10 @@ export const ExpandKnowledgePointsModal: React.FC<ExpandKnowledgePointsModalProp
     (contentFile?.size ?? 0) > 1024 * 1024
   const editModeTooltip = useMemo(() => {
     if (!isXlsxFramework) return 'CSV 文件暂不支持在线编辑'
+    if (sheetCountLoading) return '正在检测工作簿 sheet 数量…'
     if ((contentFile?.size ?? 0) > 1024 * 1024) return 'Markdown 文件超过 1 MB，请本地编辑'
     return ''
-  }, [isXlsxFramework, contentFile])
+  }, [isXlsxFramework, sheetCountLoading, contentFile])
 
   const handleEnterEditMode = useCallback(() => {
     if (sheetCount && sheetCount > 1) {

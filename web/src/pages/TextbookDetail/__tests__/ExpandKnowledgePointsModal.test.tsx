@@ -532,7 +532,7 @@ describe('ExpandKnowledgePointsModal edit mode', () => {
     )
     expect(screen.getByText(/编辑模式只会读写第一个 sheet/)).toBeInTheDocument()
 
-    const confirmButton = await screen.findByRole('button', { name: '确 定' })
+    const confirmButton = await screen.findByRole('button', { name: /确\s*定/ })
     expect(confirmButton).toBeInstanceOf(HTMLButtonElement)
     fireEvent.click(confirmButton)
     await waitFor(() =>
