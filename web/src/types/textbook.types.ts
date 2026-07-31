@@ -2,6 +2,9 @@
  * 教材类型定义
  */
 
+import type { EditorRow } from '../utils/knowledgeBlocks'
+import type { XlsxPreviewRow } from '../utils/textbookFilePreview'
+
 // 教材基础信息
 export interface Textbook {
   id: string
@@ -98,7 +101,7 @@ export interface ExpansionDraft {
   frameworkFileContent?: string
   contentFileName?: string
   contentFileContent?: string
-  editedFrameworkRows?: import('../utils/knowledgeBlocks').EditorRow[]
+  editedFrameworkRows?: EditorRow[]
   editedMdContent?: string
   originalFrameworkFingerprint?: string
   originalContentFingerprint?: string
@@ -109,7 +112,7 @@ export interface FrameworkFileContent {
   fileName: string
   fileType: 'xlsx' | 'csv'
   sheetName?: string
-  rows: import('../utils/textbookFilePreview').XlsxPreviewRow[]
+  rows: XlsxPreviewRow[]
   totalRows: number
   lastModifiedAt: string
 }

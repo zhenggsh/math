@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useReducer, useState } from 'react'
+import { message } from 'antd'
 import type { ExpansionDraft } from '../../../types/textbook.types'
 import type { XlsxPreviewRow } from '../../../utils/textbookFilePreview'
 import { getRecordCode, makeMdFile, makeXlsxFile } from '../../../utils/textbookFilePreview'
@@ -41,8 +42,8 @@ interface UseExpansionEditorReturn {
   revalidateFiles: () => Promise<void>
   editedFrameworkFile: File
   editedContentFile: File
-  saveDraft: () => Promise<void>
-  loadDraft: (frameworkFile?: File, contentFile?: File) => Promise<boolean>
+  saveDraft: () => Promise<boolean>
+  loadDraft: (frameworkFile: File | null, contentFile: File | null) => Promise<boolean>
   clearDraft: () => void
   mdSyncWarnings: Map<string, string>
 }
@@ -50,9 +51,6 @@ interface UseExpansionEditorReturn {
 const DRAFT_KEY_PREFIX = 'math-tong-expansion-draft'
 
 async function fingerprintFile(file: File): Promise<string> {
-  if (typeof crypto === 'undefined' || !crypto.subtle) {
-    return `fallback-${file.name}-${file.size}-${file.lastModified}`
-  }
   const buffer = await file.arrayBuffer()
   const hashBuffer = await crypto.subtle.digest('SHA-256', buffer)
   const hashArray = Array.from(new Uint8Array(hashBuffer))
@@ -339,31 +337,6 @@ export function useExpansionEditor(options: UseExpansionEditorOptions): UseExpan
     ({ originalRows, originalMd }: { originalRows: XlsxPreviewRow[]; originalMd: string }) =>
       initDataState(originalRows, originalMd)
   )
-  const [originalFrameworkFingerprint, setOriginalFrameworkFingerprint] = useState<
-    string | undefined
-  >(undefined)
-  const [originalContentFingerprint, setOriginalContentFingerprint] = useState<string | undefined>(
-    undefined
-  )
-
-  useEffect(() => {
-    let cancelled = false
-    void (async () => {
-      const frameworkFingerprint = originalFrameworkFile
-        ? await fingerprintFile(originalFrameworkFile)
-        : undefined
-      const contentFingerprint = originalContentFile
-        ? await fingerprintFile(originalContentFile)
-        : undefined
-      if (!cancelled) {
-        setOriginalFrameworkFingerprint(frameworkFingerprint)
-        setOriginalContentFingerprint(contentFingerprint)
-      }
-    })()
-    return () => {
-      cancelled = true
-    }
-  }, [originalFrameworkFile, originalContentFile])
 
   useEffect(() => {
     if (editMode) return
@@ -447,40 +420,51 @@ export function useExpansionEditor(options: UseExpansionEditorOptions): UseExpan
     await onValidate(editedFrameworkFile, editedContentFile)
   }, [editedFrameworkFile, editedContentFile, onValidate])
 
-  const saveDraft = useCallback(async () => {
-    let frameworkFileContent: string | undefined
-    let contentFileContent: string | undefined
-    if (originalFrameworkFile) {
-      frameworkFileContent = await readFileAsDataUrl(originalFrameworkFile)
+  const saveDraft = useCallback(async (): Promise<boolean> => {
+    try {
+      const [frameworkContent, contentContent, frameworkFingerprint, contentFingerprint] =
+        await Promise.all([
+          originalFrameworkFile
+            ? readFileAsDataUrl(originalFrameworkFile)
+            : Promise.resolve(undefined),
+          originalContentFile ? readFileAsDataUrl(originalContentFile) : Promise.resolve(undefined),
+          originalFrameworkFile
+            ? fingerprintFile(originalFrameworkFile)
+            : Promise.resolve(undefined),
+          originalContentFile ? fingerprintFile(originalContentFile) : Promise.resolve(undefined),
+        ])
+      const draft: ExpansionDraft = {
+        textbookId,
+        frameworkFileName: originalFrameworkFile?.name,
+        frameworkFileContent: frameworkContent,
+        contentFileName: originalContentFile?.name,
+        contentFileContent: contentContent,
+        editedFrameworkRows: dataState.frameworkRows,
+        editedMdContent: dataState.mdContent,
+        originalFrameworkFingerprint: frameworkFingerprint,
+        originalContentFingerprint: contentFingerprint,
+      }
+      sessionStorage.setItem(draftKey, JSON.stringify(draft))
+      return true
+    } catch {
+      message.error('保存草稿失败')
+      return false
     }
-    if (originalContentFile) {
-      contentFileContent = await readFileAsDataUrl(originalContentFile)
-    }
-    const draft: ExpansionDraft = {
-      textbookId,
-      frameworkFileName: originalFrameworkFile?.name,
-      frameworkFileContent,
-      contentFileName: originalContentFile?.name,
-      contentFileContent,
-      editedFrameworkRows: dataState.frameworkRows,
-      editedMdContent: dataState.mdContent,
-      originalFrameworkFingerprint,
-      originalContentFingerprint,
-    }
-    sessionStorage.setItem(draftKey, JSON.stringify(draft))
   }, [
     textbookId,
-    originalFrameworkFile,
-    originalContentFile,
     dataState.frameworkRows,
     dataState.mdContent,
-    originalFrameworkFingerprint,
-    originalContentFingerprint,
     draftKey,
+    originalFrameworkFile,
+    originalContentFile,
   ])
 
+  const clearDraft = useCallback(() => {
+    sessionStorage.removeItem(draftKey)
+  }, [draftKey])
+
   const loadDraft = useCallback(
-    async (frameworkFile?: File, contentFile?: File): Promise<boolean> => {
+    async (frameworkFile: File | null, contentFile: File | null): Promise<boolean> => {
       const raw = sessionStorage.getItem(draftKey)
       if (!raw) return false
       try {
@@ -503,6 +487,7 @@ export function useExpansionEditor(options: UseExpansionEditorOptions): UseExpan
             currentContentFingerprint &&
             draft.originalContentFingerprint !== currentContentFingerprint)
         ) {
+          clearDraft()
           return false
         }
         if (draft.editedFrameworkRows && draft.editedMdContent !== undefined) {
@@ -518,12 +503,8 @@ export function useExpansionEditor(options: UseExpansionEditorOptions): UseExpan
         return false
       }
     },
-    [draftKey]
+    [draftKey, clearDraft]
   )
-
-  const clearDraft = useCallback(() => {
-    sessionStorage.removeItem(draftKey)
-  }, [draftKey])
 
   const mdSyncWarnings = useMemo(() => {
     const map = new Map<string, string>()

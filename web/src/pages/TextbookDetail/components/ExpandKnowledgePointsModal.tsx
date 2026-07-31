@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Modal, Drawer, Upload, Button, Space, Alert, Typography, Steps, Spin, Tooltip } from 'antd'
 import { FileExcelOutlined, FileTextOutlined, InfoCircleOutlined } from '@ant-design/icons'
 import { Allotment } from 'allotment'
@@ -162,19 +162,24 @@ export const ExpandKnowledgePointsModal: React.FC<ExpandKnowledgePointsModalProp
     onValidate,
     onResetValidation,
   })
-  const { editMode, revalidateFiles } = editor
+  const { editMode } = editor
+  const editorRef = useRef(editor)
+  editorRef.current = editor
 
   useEffect(() => {
     if (!open) return
     if (frameworkFile && contentFile) {
-      void editor.loadDraft(frameworkFile, contentFile).then(restored => {
-        if (restored) {
-          editor.enterEditMode()
+      let mounted = true
+      void editorRef.current.loadDraft(frameworkFile, contentFile).then(restored => {
+        if (mounted && restored) {
+          editorRef.current.enterEditMode()
         }
       })
+      return () => {
+        mounted = false
+      }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open])
+  }, [open, frameworkFile, contentFile])
 
   const isCsvFramework = frameworkFile?.name.toLowerCase().endsWith('.csv') ?? false
   const isXlsxFramework = frameworkFile?.name.toLowerCase().endsWith('.xlsx') ?? false
@@ -216,10 +221,6 @@ export const ExpandKnowledgePointsModal: React.FC<ExpandKnowledgePointsModalProp
       reader.abort()
     }
   }, [frameworkFile, isCsvFramework])
-
-  const clearDraft = useCallback(() => {
-    sessionStorage.removeItem(draftKey)
-  }, [draftKey])
 
   useEffect(() => {
     const handleResize = () => {
@@ -342,22 +343,16 @@ export const ExpandKnowledgePointsModal: React.FC<ExpandKnowledgePointsModalProp
   }, [frameworkFile, contentFile, onValidate])
 
   const handleSubmit = useCallback(async () => {
-    const submitFrameworkFile = editMode ? editor.editedFrameworkFile : frameworkFile
-    const submitContentFile = editMode ? editor.editedContentFile : contentFile
+    const editor = editorRef.current
+    const submitFrameworkFile = editor.editMode ? editor.editedFrameworkFile : frameworkFile
+    const submitContentFile = editor.editMode ? editor.editedContentFile : contentFile
     if (!submitFrameworkFile || !submitContentFile) return
     await onSubmit(submitFrameworkFile, submitContentFile)
-    clearDraft()
-  }, [
-    editMode,
-    editor.editedFrameworkFile,
-    editor.editedContentFile,
-    frameworkFile,
-    contentFile,
-    onSubmit,
-    clearDraft,
-  ])
+    editor.clearDraft()
+  }, [frameworkFile, contentFile, onSubmit])
 
   const handleClose = useCallback(() => {
+    const editor = editorRef.current
     if (editor.hasUnsavedChanges) {
       Modal.confirm({
         title: '未保存的编辑',
@@ -394,7 +389,7 @@ export const ExpandKnowledgePointsModal: React.FC<ExpandKnowledgePointsModalProp
         onCancel()
       },
     })
-  }, [frameworkFile, contentFile, onCancel, editor])
+  }, [frameworkFile, contentFile, onCancel])
 
   // 在 md 内容中查找知识点编号对应的行号（1-based），共享实现见 utils/mdLineLocator
   const locateMdLine = useCallback(
@@ -462,12 +457,12 @@ export const ExpandKnowledgePointsModal: React.FC<ExpandKnowledgePointsModalProp
         title: '多 sheet 工作簿警告',
         content: '编辑模式只会读写第一个 sheet，其他 sheet 将在保存后丢失。是否继续？',
         okText: '确定',
-        onOk: () => editor.enterEditMode(),
+        onOk: () => editorRef.current.enterEditMode(),
       })
     } else {
-      editor.enterEditMode()
+      editorRef.current.enterEditMode()
     }
-  }, [sheetCount, editor])
+  }, [sheetCount])
 
   const handleNext = useCallback(() => {
     if (currentStep < 2) {
@@ -861,7 +856,7 @@ export const ExpandKnowledgePointsModal: React.FC<ExpandKnowledgePointsModalProp
         disabled={!bothFilesSelected || validating}
         loading={validating}
         onClick={() => {
-          void (editMode ? revalidateFiles() : handleValidate())
+          void (editMode ? editorRef.current.revalidateFiles() : handleValidate())
         }}
       >
         {editMode ? '重新校验' : '开始校验'}
@@ -896,7 +891,6 @@ export const ExpandKnowledgePointsModal: React.FC<ExpandKnowledgePointsModalProp
     validating,
     validationResult,
     editMode,
-    revalidateFiles,
     handleClose,
     handlePrev,
     handleNext,
