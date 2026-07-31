@@ -522,6 +522,53 @@ describe('ExpandKnowledgePointsModal edit mode', () => {
     expect(submittedContentFile.name).toBe('expand.md')
   })
 
+  it('syncs xlsx row edits to the markdown editor and re-validates edited files', async () => {
+    const onValidate = vi.fn().mockResolvedValue(undefined)
+    const { baseElement } = render(
+      <ExpandKnowledgePointsModal
+        {...defaultProps}
+        validationResult={validReport}
+        onValidate={onValidate}
+      />
+    )
+
+    const fileInputs = getFileInputs(baseElement)
+    const xlsxFile = new File(['xlsx'], 'expand.xlsx', {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    })
+    const mdFile = new File(['md'], 'expand.md', { type: 'text/markdown' })
+
+    fireEvent.change(fileInputs[0], { target: { files: [xlsxFile] } })
+    fireEvent.change(fileInputs[1], { target: { files: [mdFile] } })
+
+    const nextButton = screen.getByRole('button', { name: /下一步/i })
+    await waitFor(() => expect(nextButton).toBeEnabled())
+    fireEvent.click(nextButton)
+    await waitFor(() => expect(screen.getByText('框架文件预览')).toBeInTheDocument())
+
+    fireEvent.click(screen.getByRole('button', { name: /进入编辑模式/i }))
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /退出编辑模式/i })).toBeInTheDocument()
+    )
+
+    const codeInput = screen.getByDisplayValue('1.1.1')
+    fireEvent.focus(codeInput)
+    fireEvent.change(codeInput, { target: { value: '1.1.2' } })
+    expect(codeInput).toHaveValue('1.1.2')
+    fireEvent.blur(codeInput)
+
+    await waitFor(() => {
+      const textarea = screen.getByDisplayValue(/知识点 1\.1\.2/)
+      expect(textarea).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: /重新校验/i }))
+    await waitFor(() => expect(onValidate).toHaveBeenCalledTimes(1))
+    const [validatedFrameworkFile, validatedContentFile] = onValidate.mock.calls[0] as [File, File]
+    expect(validatedFrameworkFile.name).toBe('expand.xlsx')
+    expect(validatedContentFile.name).toBe('expand.md')
+  })
+
   it('disables edit mode entry for CSV framework files', async () => {
     const { baseElement } = render(<ExpandKnowledgePointsModal {...defaultProps} />)
 
