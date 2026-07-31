@@ -4,6 +4,7 @@ import { describe, it, expect, vi, beforeEach, afterEach, beforeAll, afterAll } 
 import { ExpandKnowledgePointsModal } from '../components/ExpandKnowledgePointsModal'
 import type { ValidationReport, ExpansionDraft } from '../../../types/textbook.types'
 import { downloadErrorReport } from '../../../utils/exportErrorReport'
+import * as XLSX from 'xlsx'
 
 vi.mock('../../../utils/textbookFilePreview', async importOriginal => {
   const actual = await importOriginal<typeof import('../../../utils/textbookFilePreview')>()
@@ -25,15 +26,30 @@ vi.mock('../../../utils/exportErrorReport', () => ({
 let originalFileReader: typeof FileReader
 
 class MockFileReader {
-  onload: ((event: { target: { result: string } }) => void) | null = null
+  result: string | ArrayBuffer | null = null
+  onload: ((event: { target: { result: string | ArrayBuffer } }) => void) | null = null
   onerror: ((event: { target: { result: string } }) => void) | null = null
   readAsDataURL(file: File) {
     const content = file.name === 'expand.xlsx' ? 'eGxzeA==' : 'bWQ='
+    const result = `data:application/octet-stream;base64,${content}`
+    this.result = result
     setTimeout(() => {
       if (this.onload) {
-        this.onload({ target: { result: `data:application/octet-stream;base64,${content}` } })
+        this.onload({ target: { result } })
       }
     }, 0)
+  }
+  readAsArrayBuffer(file: File) {
+    const bytes = xlsxBytes.get(file.name)
+    if (bytes && bytes.length >= 2 && bytes[0] === 0x50 && bytes[1] === 0x4b) {
+      const result = bytes.buffer.slice(0)
+      this.result = result
+      if (this.onload) {
+        this.onload({ target: { result } })
+      }
+    } else if (this.onerror) {
+      this.onerror({ target: { result: 'Not a valid xlsx file' } })
+    }
   }
 }
 
@@ -46,8 +62,24 @@ afterAll(() => {
   global.FileReader = originalFileReader
 })
 
+const xlsxBytes = new Map<string, Uint8Array>()
+
 function getFileInputs(container: HTMLElement): HTMLInputElement[] {
   return Array.from(container.querySelectorAll('input[type="file"]'))
+}
+
+function createXlsxFile(sheetCount: number, name: string): File {
+  const workbook = XLSX.utils.book_new()
+  for (let i = 0; i < sheetCount; i++) {
+    const sheet = XLSX.utils.aoa_to_sheet([[`Sheet ${i + 1}`]])
+    XLSX.utils.book_append_sheet(workbook, sheet, `Sheet${i + 1}`)
+  }
+  const bytes = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' }) as Uint8Array
+  const copy = new Uint8Array(bytes)
+  xlsxBytes.set(name, copy)
+  return new File([copy], name, {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  })
 }
 
 const CHECK_LABELS: [string, string][] = [
@@ -112,6 +144,7 @@ const defaultProps = {
 describe('ExpandKnowledgePointsModal wizard', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    xlsxBytes.clear()
     sessionStorage.clear()
     window.innerWidth = 1024
   })
@@ -432,5 +465,75 @@ describe('ExpandKnowledgePointsModal edit mode', () => {
     const [submittedFrameworkFile, submittedContentFile] = onSubmit.mock.calls[0] as [File, File]
     expect(submittedFrameworkFile.name).toBe('expand.xlsx')
     expect(submittedContentFile.name).toBe('expand.md')
+  })
+
+  it('disables edit mode entry for CSV framework files', async () => {
+    const { baseElement } = render(<ExpandKnowledgePointsModal {...defaultProps} />)
+
+    const fileInputs = getFileInputs(baseElement)
+    const csvFile = new File(['csv'], 'expand.csv', { type: 'text/csv' })
+    const mdFile = new File(['md'], 'expand.md', { type: 'text/markdown' })
+
+    fireEvent.change(fileInputs[0], { target: { files: [csvFile] } })
+    fireEvent.change(fileInputs[1], { target: { files: [mdFile] } })
+
+    const nextButton = screen.getByRole('button', { name: /下一步/i })
+    await waitFor(() => expect(nextButton).toBeEnabled())
+    fireEvent.click(nextButton)
+    await waitFor(() => expect(screen.getByText('框架文件预览')).toBeInTheDocument())
+
+    expect(screen.getByRole('button', { name: /进入编辑模式/i })).toBeDisabled()
+  })
+
+  it('disables edit mode entry when markdown file exceeds 1 MB', async () => {
+    const { baseElement } = render(<ExpandKnowledgePointsModal {...defaultProps} />)
+
+    const fileInputs = getFileInputs(baseElement)
+    const xlsxFile = createXlsxFile(1, 'expand.xlsx')
+    const largeMdFile = new File([new Uint8Array(1024 * 1024 + 1)], 'expand.md', {
+      type: 'text/markdown',
+    })
+
+    fireEvent.change(fileInputs[0], { target: { files: [xlsxFile] } })
+    fireEvent.change(fileInputs[1], { target: { files: [largeMdFile] } })
+
+    const nextButton = screen.getByRole('button', { name: /下一步/i })
+    await waitFor(() => expect(nextButton).toBeEnabled())
+    fireEvent.click(nextButton)
+    await waitFor(() => expect(screen.getByText('框架文件预览')).toBeInTheDocument())
+
+    expect(screen.getByRole('button', { name: /进入编辑模式/i })).toBeDisabled()
+  })
+
+  it('warns before entering edit mode for multi-sheet xlsx workbooks', async () => {
+    const { baseElement } = render(<ExpandKnowledgePointsModal {...defaultProps} />)
+
+    const fileInputs = getFileInputs(baseElement)
+    const xlsxFile = createXlsxFile(2, 'expand.xlsx')
+    const mdFile = new File(['md'], 'expand.md', { type: 'text/markdown' })
+
+    fireEvent.change(fileInputs[0], { target: { files: [xlsxFile] } })
+    fireEvent.change(fileInputs[1], { target: { files: [mdFile] } })
+
+    const nextButton = screen.getByRole('button', { name: /下一步/i })
+    await waitFor(() => expect(nextButton).toBeEnabled())
+    fireEvent.click(nextButton)
+    await waitFor(() => expect(screen.getByText('框架文件预览')).toBeInTheDocument())
+
+    const enterEditButton = screen.getByRole('button', { name: /进入编辑模式/i })
+    await waitFor(() => expect(enterEditButton).toBeEnabled())
+    fireEvent.click(enterEditButton)
+
+    await waitFor(() =>
+      expect(screen.getAllByText('多 sheet 工作簿警告').length).toBeGreaterThan(0)
+    )
+    expect(screen.getByText(/编辑模式只会读写第一个 sheet/)).toBeInTheDocument()
+
+    const confirmButton = document.querySelector('.ant-modal-confirm-btns .ant-btn-primary')
+    expect(confirmButton).toBeInstanceOf(HTMLButtonElement)
+    fireEvent.click(confirmButton)
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /退出编辑模式/i })).toBeInTheDocument()
+    )
   })
 })

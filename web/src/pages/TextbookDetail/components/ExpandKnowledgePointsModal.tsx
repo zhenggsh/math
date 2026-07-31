@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
-import { Modal, Drawer, Upload, Button, Space, Alert, Typography, Steps, Spin } from 'antd'
+import { Modal, Drawer, Upload, Button, Space, Alert, Typography, Steps, Spin, Tooltip } from 'antd'
 import { FileExcelOutlined, FileTextOutlined, InfoCircleOutlined } from '@ant-design/icons'
 import { Allotment } from 'allotment'
 import 'allotment/dist/style.css'
+import * as XLSX from 'xlsx'
 import type { UploadFile, RcFile } from 'antd/es/upload'
 import type {
   ValidationIssue,
@@ -172,6 +173,48 @@ export const ExpandKnowledgePointsModal: React.FC<ExpandKnowledgePointsModalProp
   })
   const { editMode, revalidateFiles } = editor
 
+  const isCsvFramework = frameworkFile?.name.toLowerCase().endsWith('.csv') ?? false
+
+  const getSheetCount = useCallback((file: File): Promise<number> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => {
+        try {
+          const data = new Uint8Array(reader.result as ArrayBuffer)
+          const workbook = XLSX.read(data, { type: 'array' })
+          resolve(workbook.SheetNames.length)
+        } catch (err) {
+          reject(err instanceof Error ? err : new Error('读取文件失败'))
+        }
+      }
+      reader.onerror = () => reject(new Error('读取文件失败'))
+      reader.readAsArrayBuffer(file)
+    })
+  }, [])
+
+  const [sheetCount, setSheetCount] = useState<number | null>(null)
+
+  useEffect(() => {
+    if (!frameworkFile || isCsvFramework) {
+      return
+    }
+    let cancelled = false
+    getSheetCount(frameworkFile)
+      .then(count => {
+        if (!cancelled) {
+          setSheetCount(count)
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setSheetCount(null)
+        }
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [frameworkFile, isCsvFramework, getSheetCount])
+
   const clearDraft = useCallback(() => {
     sessionStorage.removeItem(draftKey)
   }, [draftKey])
@@ -264,6 +307,7 @@ export const ExpandKnowledgePointsModal: React.FC<ExpandKnowledgePointsModalProp
       setFrameworkFileList(fileList.length > 0 ? [fileList[fileList.length - 1]] : [])
       setXlsxPreview(null)
       setXlsxPreviewError(null)
+      setSheetCount(null)
       onResetValidation()
       setHighlightedFrameworkCode(undefined)
     },
@@ -290,6 +334,7 @@ export const ExpandKnowledgePointsModal: React.FC<ExpandKnowledgePointsModalProp
     setFrameworkFileList([])
     setXlsxPreview(null)
     setXlsxPreviewError(null)
+    setSheetCount(null)
     onResetValidation()
     setHighlightedFrameworkCode(undefined)
     return true
@@ -398,6 +443,26 @@ export const ExpandKnowledgePointsModal: React.FC<ExpandKnowledgePointsModalProp
 
   const bothFilesSelected = frameworkFile !== null && contentFile !== null
   const canGoNext = currentStep === 0 ? bothFilesSelected : validationResult?.valid === true
+
+  const editModeDisabled =
+    !bothFilesSelected || isCsvFramework || (contentFile?.size ?? 0) > 1024 * 1024
+  const editModeTooltip = isCsvFramework
+    ? 'CSV 文件暂不支持在线编辑'
+    : (contentFile?.size ?? 0) > 1024 * 1024
+      ? 'Markdown 文件超过 1 MB，请本地编辑'
+      : ''
+
+  const handleEnterEditMode = useCallback(() => {
+    if (sheetCount && sheetCount > 1) {
+      Modal.confirm({
+        title: '多 sheet 工作簿警告',
+        content: '编辑模式只会读写第一个 sheet，其他 sheet 将在保存后丢失。是否继续？',
+        onOk: () => editor.enterEditMode(),
+      })
+    } else {
+      editor.enterEditMode()
+    }
+  }, [sheetCount, editor])
 
   const handleNext = useCallback(() => {
     if (currentStep < 2) {
@@ -593,11 +658,16 @@ export const ExpandKnowledgePointsModal: React.FC<ExpandKnowledgePointsModalProp
       <div style={{ flexShrink: 0, marginBottom: 8 }}>
         {editMode ? (
           <Button onClick={() => editor.exitEditMode()}>退出编辑模式</Button>
+        ) : editModeTooltip ? (
+          <Tooltip title={editModeTooltip}>
+            <span style={{ display: 'inline-block' }}>
+              <Button onClick={handleEnterEditMode} disabled={editModeDisabled}>
+                进入编辑模式
+              </Button>
+            </span>
+          </Tooltip>
         ) : (
-          <Button
-            onClick={() => editor.enterEditMode()}
-            disabled={!bothFilesSelected || !frameworkFile?.name.toLowerCase().endsWith('.xlsx')}
-          >
+          <Button onClick={handleEnterEditMode} disabled={editModeDisabled}>
             进入编辑模式
           </Button>
         )}
