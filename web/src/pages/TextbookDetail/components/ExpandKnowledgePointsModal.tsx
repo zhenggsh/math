@@ -168,6 +168,7 @@ export const ExpandKnowledgePointsModal: React.FC<ExpandKnowledgePointsModalProp
 
   useEffect(() => {
     if (!open) return
+    if (xlsxPreview === null || mdPreview === null) return
     if (frameworkFile && contentFile) {
       let mounted = true
       void editorRef.current.loadDraft(frameworkFile, contentFile).then(restored => {
@@ -179,7 +180,7 @@ export const ExpandKnowledgePointsModal: React.FC<ExpandKnowledgePointsModalProp
         mounted = false
       }
     }
-  }, [open, frameworkFile, contentFile])
+  }, [open, frameworkFile, contentFile, xlsxPreview, mdPreview])
 
   const isCsvFramework = frameworkFile?.name.toLowerCase().endsWith('.csv') ?? false
   const isXlsxFramework = frameworkFile?.name.toLowerCase().endsWith('.xlsx') ?? false

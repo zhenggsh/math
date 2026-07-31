@@ -23,6 +23,32 @@ vi.mock('../../../utils/exportErrorReport', () => ({
   downloadErrorReport: vi.fn(),
 }))
 
+let originalCrypto: Crypto
+
+beforeAll(() => {
+  originalCrypto = global.crypto
+  const subtle = {
+    digest: vi.fn((_algorithm: string, buffer: ArrayBuffer): Promise<ArrayBuffer> => {
+      const bytes = new Uint8Array(buffer)
+      let hash = 0
+      for (const b of bytes) {
+        hash = (hash * 31 + b) & 0xffffffff
+      }
+      const result = new ArrayBuffer(32)
+      const view = new DataView(result)
+      for (let i = 0; i < 32; i += 4) {
+        view.setInt32(i, hash, true)
+      }
+      return Promise.resolve(result)
+    }),
+  }
+  vi.stubGlobal('crypto', { ...originalCrypto, subtle })
+})
+
+afterAll(() => {
+  vi.stubGlobal('crypto', originalCrypto)
+})
+
 let originalFileReader: typeof FileReader
 
 class MockFileReader {
@@ -400,6 +426,32 @@ describe('ExpandKnowledgePointsModal wizard', () => {
 
     await waitFor(() => expect(screen.getByText('框架文件预览')).toBeInTheDocument())
     expect(screen.getByText('内容文件预览')).toBeInTheDocument()
+  })
+
+  it('auto-restores a saved draft and enters edit mode once previews are ready', async () => {
+    const draft: ExpansionDraft = {
+      textbookId: 'tb-1',
+      frameworkFileName: 'expand.xlsx',
+      frameworkFileContent:
+        'data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,eGxzeA==',
+      contentFileName: 'expand.md',
+      contentFileContent: 'data:text/markdown;base64,bWQ=',
+      editedFrameworkRows: [
+        { rowId: 'draft-row-1', 知识点编号: '1.1.1', 知识点名称: '草稿知识点' },
+      ],
+      editedMdContent: '#### 知识点 1.1.1：草稿知识点\n\n草稿正文\n',
+    }
+    sessionStorage.setItem('math-tong-expansion-draft-tb-1', JSON.stringify(draft))
+
+    render(<ExpandKnowledgePointsModal {...defaultProps} />)
+
+    expect(screen.queryByRole('button', { name: /退出编辑模式/i })).not.toBeInTheDocument()
+    await waitFor(() => expect(screen.getByText('框架文件预览')).toBeInTheDocument())
+    await waitFor(
+      () => expect(screen.getByRole('button', { name: /退出编辑模式/i })).toBeInTheDocument(),
+      { timeout: 3000 }
+    )
+    expect(screen.getByDisplayValue('草稿知识点')).toBeInTheDocument()
   })
 
   it('uses a bottom Drawer on narrow screens', async () => {
