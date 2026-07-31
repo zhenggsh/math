@@ -42,7 +42,7 @@ class MockFileReader {
   readAsArrayBuffer(file: File) {
     const bytes = xlsxBytes.get(file.name)
     if (bytes && bytes.length >= 2 && bytes[0] === 0x50 && bytes[1] === 0x4b) {
-      const result = bytes.buffer.slice(0)
+      const result = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength)
       this.result = result
       if (this.onload) {
         this.onload({ target: { result } })
@@ -50,6 +50,9 @@ class MockFileReader {
     } else if (this.onerror) {
       this.onerror({ target: { result: 'Not a valid xlsx file' } })
     }
+  }
+  abort() {
+    // Mock reads complete synchronously; abort is a no-op.
   }
 }
 
@@ -529,7 +532,7 @@ describe('ExpandKnowledgePointsModal edit mode', () => {
     )
     expect(screen.getByText(/编辑模式只会读写第一个 sheet/)).toBeInTheDocument()
 
-    const confirmButton = document.querySelector('.ant-modal-confirm-btns .ant-btn-primary')
+    const confirmButton = await screen.findByRole('button', { name: '确 定' })
     expect(confirmButton).toBeInstanceOf(HTMLButtonElement)
     fireEvent.click(confirmButton)
     await waitFor(() =>

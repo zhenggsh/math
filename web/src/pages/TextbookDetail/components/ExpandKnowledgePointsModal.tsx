@@ -174,46 +174,44 @@ export const ExpandKnowledgePointsModal: React.FC<ExpandKnowledgePointsModalProp
   const { editMode, revalidateFiles } = editor
 
   const isCsvFramework = frameworkFile?.name.toLowerCase().endsWith('.csv') ?? false
-
-  const getSheetCount = useCallback((file: File): Promise<number> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onload = () => {
-        try {
-          const data = new Uint8Array(reader.result as ArrayBuffer)
-          const workbook = XLSX.read(data, { type: 'array' })
-          resolve(workbook.SheetNames.length)
-        } catch (err) {
-          reject(err instanceof Error ? err : new Error('读取文件失败'))
-        }
-      }
-      reader.onerror = () => reject(new Error('读取文件失败'))
-      reader.readAsArrayBuffer(file)
-    })
-  }, [])
+  const isXlsxFramework = frameworkFile?.name.toLowerCase().endsWith('.xlsx') ?? false
 
   const [sheetCount, setSheetCount] = useState<number | null>(null)
+  const [sheetCountLoading, setSheetCountLoading] = useState(false)
 
   useEffect(() => {
     if (!frameworkFile || isCsvFramework) {
+      setSheetCount(null)
+      setSheetCountLoading(false)
       return
     }
     let cancelled = false
-    getSheetCount(frameworkFile)
-      .then(count => {
-        if (!cancelled) {
-          setSheetCount(count)
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setSheetCount(null)
-        }
-      })
+    const reader = new FileReader()
+    reader.onload = () => {
+      if (cancelled) return
+      try {
+        const data = new Uint8Array(reader.result as ArrayBuffer)
+        const workbook = XLSX.read(data, { type: 'array' })
+        setSheetCount(workbook.SheetNames.length)
+      } catch {
+        setSheetCount(null)
+      } finally {
+        setSheetCountLoading(false)
+      }
+    }
+    reader.onerror = () => {
+      if (!cancelled) {
+        setSheetCount(null)
+        setSheetCountLoading(false)
+      }
+    }
+    setSheetCountLoading(true)
+    reader.readAsArrayBuffer(frameworkFile)
     return () => {
       cancelled = true
+      reader.abort()
     }
-  }, [frameworkFile, isCsvFramework, getSheetCount])
+  }, [frameworkFile, isCsvFramework])
 
   const clearDraft = useCallback(() => {
     sessionStorage.removeItem(draftKey)
@@ -445,18 +443,22 @@ export const ExpandKnowledgePointsModal: React.FC<ExpandKnowledgePointsModalProp
   const canGoNext = currentStep === 0 ? bothFilesSelected : validationResult?.valid === true
 
   const editModeDisabled =
-    !bothFilesSelected || isCsvFramework || (contentFile?.size ?? 0) > 1024 * 1024
-  const editModeTooltip = isCsvFramework
-    ? 'CSV 文件暂不支持在线编辑'
-    : (contentFile?.size ?? 0) > 1024 * 1024
-      ? 'Markdown 文件超过 1 MB，请本地编辑'
-      : ''
+    !bothFilesSelected ||
+    !isXlsxFramework ||
+    sheetCountLoading ||
+    (contentFile?.size ?? 0) > 1024 * 1024
+  const editModeTooltip = useMemo(() => {
+    if (!isXlsxFramework) return 'CSV 文件暂不支持在线编辑'
+    if ((contentFile?.size ?? 0) > 1024 * 1024) return 'Markdown 文件超过 1 MB，请本地编辑'
+    return ''
+  }, [isXlsxFramework, contentFile])
 
   const handleEnterEditMode = useCallback(() => {
     if (sheetCount && sheetCount > 1) {
       Modal.confirm({
         title: '多 sheet 工作簿警告',
         content: '编辑模式只会读写第一个 sheet，其他 sheet 将在保存后丢失。是否继续？',
+        okText: '确定',
         onOk: () => editor.enterEditMode(),
       })
     } else {
