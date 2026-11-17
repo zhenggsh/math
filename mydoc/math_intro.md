@@ -499,7 +499,7 @@ pnpm --filter server prisma generate
 
 ### 5.2 启动
 
-开两个终端，分别启动后端和前端：
+开两个终端，分别启动后端和前端(teacher@test.com/password123,qa-test@example.com/password123)：
 
 ```powershell
 pnpm dev:server
