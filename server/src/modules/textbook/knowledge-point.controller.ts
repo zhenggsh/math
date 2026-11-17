@@ -68,6 +68,8 @@ export class KnowledgePointController {
       importanceLevel: string;
       contentRef: string | null;
       textbookId: string;
+      markdownUpdated: boolean;
+      markdownMessage?: string;
     };
   }> {
     const point = await this.knowledgePointService.update(textbookId, id, dto);

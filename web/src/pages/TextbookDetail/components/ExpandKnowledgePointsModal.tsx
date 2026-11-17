@@ -698,36 +698,110 @@ export const ExpandKnowledgePointsModal: React.FC<ExpandKnowledgePointsModalProp
             showIcon
             style={{ flexShrink: 0 }}
           />
-          <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
-            <FrameworkEditor
-              rows={editor.frameworkRows}
-              selectedRowIds={editor.selectedRowIds}
-              onRowChange={editor.updateRow}
-              onSelectionChange={editor.toggleRowSelection}
-              onAddRow={editor.addRow}
-              onDeleteRow={editor.deleteRow}
-              onInsertAfter={editor.insertRowAfter}
-              mdSyncWarnings={editor.mdSyncWarnings}
-            />
-          </div>
-          <div
-            style={{
-              flex: 1,
-              minHeight: 0,
-              overflow: 'hidden',
-              display: 'flex',
-              flexDirection: 'column',
-            }}
-          >
-            <MdEditor
-              content={editor.mdContent}
-              onChange={editor.updateMdContent}
-              fileSize={contentFile?.size ?? 0}
-              selectedRows={editor.frameworkRows.filter(r =>
-                editor.selectedRowIds.includes(r.rowId)
-              )}
-            />
-          </div>
+          {isNarrow ? (
+            // 窄屏（Drawer）：编辑区上下堆叠
+            <div
+              style={{
+                flex: 1,
+                minHeight: 0,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 8,
+                overflow: 'hidden',
+              }}
+            >
+              <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+                <Typography.Text strong>框架文件编辑</Typography.Text>
+                <div style={{ marginTop: 8, height: 'calc(100% - 24px)' }}>
+                  <FrameworkEditor
+                    rows={editor.frameworkRows}
+                    selectedRowIds={editor.selectedRowIds}
+                    onRowChange={editor.updateRow}
+                    onSelectionChange={editor.toggleRowSelection}
+                    onAddRow={editor.addRow}
+                    onDeleteRow={editor.deleteRow}
+                    onInsertAfter={editor.insertRowAfter}
+                    onInsertBefore={editor.insertRowBefore}
+                    mdSyncWarnings={editor.mdSyncWarnings}
+                  />
+                </div>
+              </div>
+              <div
+                style={{
+                  flex: 1,
+                  minHeight: 0,
+                  overflow: 'hidden',
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}
+              >
+                <Typography.Text strong>内容文件编辑</Typography.Text>
+                <div style={{ marginTop: 8, flex: 1, minHeight: 0 }}>
+                  <MdEditor
+                    content={editor.mdContent}
+                    onChange={editor.updateMdContent}
+                    fileSize={contentFile?.size ?? 0}
+                    selectedRows={editor.frameworkRows.filter(r =>
+                      editor.selectedRowIds.includes(r.rowId)
+                    )}
+                  />
+                </div>
+              </div>
+            </div>
+          ) : (
+            // 桌面（Modal）：Allotment 左右分栏，可拖动分隔
+            <div style={{ flex: 1, minHeight: 0, minWidth: 0 }}>
+              <Allotment proportionalLayout={false}>
+                <Allotment.Pane minSize={280}>
+                  <div
+                    style={{
+                      height: '100%',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      paddingRight: 8,
+                    }}
+                  >
+                    <Typography.Text strong>框架文件编辑</Typography.Text>
+                    <div style={{ marginTop: 8, flex: 1, minHeight: 0, overflow: 'auto' }}>
+                      <FrameworkEditor
+                        rows={editor.frameworkRows}
+                        selectedRowIds={editor.selectedRowIds}
+                        onRowChange={editor.updateRow}
+                        onSelectionChange={editor.toggleRowSelection}
+                        onAddRow={editor.addRow}
+                        onDeleteRow={editor.deleteRow}
+                        onInsertAfter={editor.insertRowAfter}
+                        onInsertBefore={editor.insertRowBefore}
+                        mdSyncWarnings={editor.mdSyncWarnings}
+                      />
+                    </div>
+                  </div>
+                </Allotment.Pane>
+                <Allotment.Pane minSize={280}>
+                  <div
+                    style={{
+                      height: '100%',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      paddingLeft: 8,
+                    }}
+                  >
+                    <Typography.Text strong>内容文件编辑</Typography.Text>
+                    <div style={{ marginTop: 8, flex: 1, minHeight: 0, overflow: 'hidden' }}>
+                      <MdEditor
+                        content={editor.mdContent}
+                        onChange={editor.updateMdContent}
+                        fileSize={contentFile?.size ?? 0}
+                        selectedRows={editor.frameworkRows.filter(r =>
+                          editor.selectedRowIds.includes(r.rowId)
+                        )}
+                      />
+                    </div>
+                  </div>
+                </Allotment.Pane>
+              </Allotment>
+            </div>
+          )}
         </div>
       ) : isNarrow ? (
         // 窄屏（Drawer）：垂直堆叠，每个预览固定高度内部滚动
@@ -953,7 +1027,7 @@ export const ExpandKnowledgePointsModal: React.FC<ExpandKnowledgePointsModalProp
           footer={footerButtons}
           maskClosable={!loading}
           keyboard={!loading}
-          width={900}
+          width="80vw"
           style={{ top: '10vh', margin: '0 auto', maxWidth: '100vw', paddingBottom: 0 }}
           styles={{
             body: {

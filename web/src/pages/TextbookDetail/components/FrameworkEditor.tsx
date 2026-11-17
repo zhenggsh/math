@@ -1,6 +1,6 @@
 import React from 'react'
 import { Table, Button, Space, Typography, Checkbox, Tooltip, type TableProps } from 'antd'
-import { DeleteOutlined, PlusOutlined, PlusCircleOutlined } from '@ant-design/icons'
+import { DeleteOutlined, PlusOutlined, PlusCircleOutlined, UpOutlined } from '@ant-design/icons'
 import type { EditorRow } from '../../../utils/knowledgeBlocks'
 import { getRecordCode } from '../../../utils/textbookFilePreview'
 
@@ -12,6 +12,7 @@ interface FrameworkEditorProps {
   onAddRow: () => void
   onDeleteRow: (rowId: string) => void
   onInsertAfter: (rowId: string) => void
+  onInsertBefore: (rowId: string) => void
   mdSyncWarnings: Map<string, string>
 }
 
@@ -29,6 +30,7 @@ export const FrameworkEditor: React.FC<FrameworkEditorProps> = ({
   onAddRow,
   onDeleteRow,
   onInsertAfter,
+  onInsertBefore,
   mdSyncWarnings,
 }) => {
   const [editingCell, setEditingCell] = React.useState<{ rowId: string; key: string } | null>(null)
@@ -153,6 +155,15 @@ export const FrameworkEditor: React.FC<FrameworkEditorProps> = ({
       width: 160,
       render: (_value: unknown, record: EditorRow) => (
         <Space size="small">
+          <Tooltip title="上方插入一行">
+            <Button
+              type="text"
+              size="small"
+              icon={<UpOutlined />}
+              aria-label="上方插入一行"
+              onClick={() => onInsertBefore(record.rowId)}
+            />
+          </Tooltip>
           <Tooltip title="下方插入一行">
             <Button
               type="text"

@@ -1,0 +1,18 @@
+.framework-row-selected {
+  background-color: #e6f4ff;
+}
+
+.framework-row-missing-in-db {
+  border-left: 4px solid #ff4d4f;
+  background-color: rgba(255, 77, 79, 0.06);
+}
+
+.framework-row-missing-in-file {
+  border-left: 4px solid #faad14;
+  background-color: rgba(250, 173, 20, 0.06);
+}
+
+.framework-row-changed {
+  border-left: 4px solid #1677ff;
+  background-color: rgba(22, 119, 255, 0.06);
+}

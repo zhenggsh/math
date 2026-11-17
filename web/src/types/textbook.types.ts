@@ -125,3 +125,28 @@ export interface ContentFileContent {
   lastModifiedAt: string | null
   empty: boolean
 }
+
+// 分歧问题类型
+export type DivergenceIssueType = 'missing-in-db' | 'missing-in-file' | 'changed'
+
+// 单个字段变更
+export interface DivergenceFieldChange {
+  field: string
+  fileValue: string
+  dbValue: string
+}
+
+// 分歧问题（文件与数据库差异）
+export interface DivergenceIssue {
+  code: string
+  type: DivergenceIssueType
+  fileRow: Record<string, string> | null
+  dbRow: Record<string, string> | null
+  changes: DivergenceFieldChange[] | null
+}
+
+// 分歧报告
+export interface DivergenceReport {
+  diverged: boolean
+  issues: DivergenceIssue[]
+}

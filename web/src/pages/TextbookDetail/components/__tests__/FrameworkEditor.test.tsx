@@ -19,6 +19,7 @@ describe('FrameworkEditor', () => {
         onAddRow={vi.fn()}
         onDeleteRow={vi.fn()}
         onInsertAfter={vi.fn()}
+        onInsertBefore={vi.fn()}
         mdSyncWarnings={new Map()}
         {...props}
       />
@@ -131,6 +132,15 @@ describe('FrameworkEditor', () => {
     fireEvent.click(screen.getByRole('button', { name: /删除/i }))
 
     expect(onDeleteRow).toHaveBeenCalledWith('r1')
+  })
+
+  it('calls onInsertBefore when insert-above action clicked', () => {
+    const onInsertBefore = vi.fn()
+    renderEditor({ onInsertBefore })
+
+    fireEvent.click(screen.getByRole('button', { name: /上方插入一行/i }))
+
+    expect(onInsertBefore).toHaveBeenCalledWith('r1')
   })
 
   it('calls onAddRow when add row button clicked', () => {

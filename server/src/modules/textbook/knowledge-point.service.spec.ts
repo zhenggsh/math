@@ -8,6 +8,7 @@ import {
   NotFoundException,
   BadRequestException,
   ConflictException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 
 describe('KnowledgePointService', () => {
@@ -24,6 +25,8 @@ describe('KnowledgePointService', () => {
           useValue: {
             appendChildKnowledgePointBlock: jest.fn(),
             removeKnowledgePointBlock: jest.fn(),
+            readKnowledgePointContentBlock: jest.fn(),
+            updateContentInFileByCode: jest.fn(),
           },
         },
         {
@@ -227,7 +230,12 @@ describe('KnowledgePointService', () => {
   });
 
   describe('update', () => {
-    it('should update definition, characteristics, name and importance level', async () => {
+    beforeEach(() => {
+      (textbookService.readKnowledgePointContentBlock as jest.Mock).mockReset();
+      (textbookService.updateContentInFileByCode as jest.Mock).mockReset();
+    });
+
+    it('should update DB and Markdown content block when block exists', async () => {
       (prisma.knowledgePoint.findUnique as jest.Mock).mockResolvedValueOnce({
         id: 'kp-1',
         code: '1.1',
@@ -240,6 +248,10 @@ describe('KnowledgePointService', () => {
         importanceLevel: ImportanceLevel.C,
         textbookId: 'tb-1',
       });
+
+      (
+        textbookService.readKnowledgePointContentBlock as jest.Mock
+      ).mockResolvedValueOnce('old body');
 
       (prisma.knowledgePoint.update as jest.Mock).mockResolvedValue({
         id: 'kp-1',
@@ -255,6 +267,10 @@ describe('KnowledgePointService', () => {
         textbookId: 'tb-1',
       });
 
+      (
+        textbookService.updateContentInFileByCode as jest.Mock
+      ).mockResolvedValueOnce(true);
+
       const result = await service.update('tb-1', 'kp-1', {
         name: 'new name',
         definition: 'new definition',
@@ -266,9 +282,17 @@ describe('KnowledgePointService', () => {
       expect(result.definition).toBe('new definition');
       expect(result.characteristics).toBe('new characteristics');
       expect(result.importanceLevel).toBe(ImportanceLevel.A);
+      expect(result.markdownUpdated).toBe(true);
+      expect(textbookService.updateContentInFileByCode).toHaveBeenCalledWith(
+        'kp-1',
+        '1.1',
+        '集合',
+        '1.1',
+        expect.stringContaining('### 1.1 new name'),
+      );
     });
 
-    it('should update code and recompute level fields', async () => {
+    it('should update code and recompute level fields and sync markdown', async () => {
       (prisma.knowledgePoint.findUnique as jest.Mock).mockResolvedValueOnce({
         id: 'kp-1',
         code: '1.1',
@@ -285,6 +309,10 @@ describe('KnowledgePointService', () => {
         null,
       );
 
+      (
+        textbookService.readKnowledgePointContentBlock as jest.Mock
+      ).mockResolvedValueOnce('');
+
       (prisma.knowledgePoint.update as jest.Mock).mockResolvedValue({
         id: 'kp-1',
         code: '2.1.1',
@@ -299,6 +327,10 @@ describe('KnowledgePointService', () => {
         textbookId: 'tb-1',
       });
 
+      (
+        textbookService.updateContentInFileByCode as jest.Mock
+      ).mockResolvedValueOnce(true);
+
       const result = await service.update('tb-1', 'kp-1', {
         code: '2.1.1',
       });
@@ -307,6 +339,119 @@ describe('KnowledgePointService', () => {
       expect(result.level1).toBe('2');
       expect(result.level2).toBe('2.1');
       expect(result.level3).toBe('2.1.1');
+      expect(result.markdownUpdated).toBe(true);
+      expect(textbookService.updateContentInFileByCode).toHaveBeenCalledWith(
+        'kp-1',
+        '1.1',
+        '集合',
+        '1.1',
+        expect.stringContaining('#### 知识点 2.1.1：集合运算'),
+      );
+    });
+
+    it('should update DB but flag markdown as not updated when block is missing', async () => {
+      (prisma.knowledgePoint.findUnique as jest.Mock).mockResolvedValueOnce({
+        id: 'kp-1',
+        code: '1.1',
+        name: 'old name',
+        level1: '集合',
+        level2: '1.1',
+        level3: null,
+        definition: 'old definition',
+        characteristics: 'old characteristics',
+        importanceLevel: ImportanceLevel.C,
+        textbookId: 'tb-1',
+      });
+
+      (
+        textbookService.readKnowledgePointContentBlock as jest.Mock
+      ).mockResolvedValueOnce(null);
+
+      (prisma.knowledgePoint.update as jest.Mock).mockResolvedValue({
+        id: 'kp-1',
+        code: '1.1',
+        name: 'new name',
+        level1: '集合',
+        level2: '1.1',
+        level3: null,
+        definition: 'new definition',
+        characteristics: 'new characteristics',
+        importanceLevel: ImportanceLevel.A,
+        contentRef: null,
+        textbookId: 'tb-1',
+      });
+
+      const result = await service.update('tb-1', 'kp-1', {
+        name: 'new name',
+        definition: 'new definition',
+        characteristics: 'new characteristics',
+        importanceLevel: ImportanceLevel.A,
+      });
+
+      expect(result.markdownUpdated).toBe(false);
+      expect(result.markdownMessage).toContain('未找到');
+      expect(textbookService.updateContentInFileByCode).not.toHaveBeenCalled();
+    });
+
+    it('should rollback DB when markdown file write fails', async () => {
+      (prisma.knowledgePoint.findUnique as jest.Mock).mockResolvedValueOnce({
+        id: 'kp-1',
+        code: '1.1',
+        name: 'old name',
+        level1: '集合',
+        level2: '1.1',
+        level3: null,
+        definition: 'old definition',
+        characteristics: 'old characteristics',
+        importanceLevel: ImportanceLevel.C,
+        textbookId: 'tb-1',
+      });
+
+      (
+        textbookService.readKnowledgePointContentBlock as jest.Mock
+      ).mockResolvedValueOnce('old body');
+
+      (prisma.knowledgePoint.update as jest.Mock).mockResolvedValue({
+        id: 'kp-1',
+        code: '1.1',
+        name: 'new name',
+        level1: '集合',
+        level2: '1.1',
+        level3: null,
+        definition: 'new definition',
+        characteristics: 'new characteristics',
+        importanceLevel: ImportanceLevel.A,
+        contentRef: null,
+        textbookId: 'tb-1',
+      });
+
+      (
+        textbookService.updateContentInFileByCode as jest.Mock
+      ).mockRejectedValueOnce(new Error('write failed'));
+
+      await expect(
+        service.update('tb-1', 'kp-1', {
+          name: 'new name',
+          definition: 'new definition',
+          characteristics: 'new characteristics',
+          importanceLevel: ImportanceLevel.A,
+        }),
+      ).rejects.toThrow(InternalServerErrorException);
+
+      expect(prisma.knowledgePoint.update).toHaveBeenCalledTimes(2);
+      expect(prisma.knowledgePoint.update).toHaveBeenLastCalledWith({
+        where: { id: 'kp-1' },
+        data: {
+          code: '1.1',
+          name: 'old name',
+          level1: '集合',
+          level2: '1.1',
+          level3: null,
+          definition: 'old definition',
+          characteristics: 'old characteristics',
+          importanceLevel: ImportanceLevel.C,
+        },
+      });
     });
 
     it('should throw ConflictException when updating to an existing code', async () => {

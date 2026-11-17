@@ -36,6 +36,7 @@ interface UseExpansionEditorReturn {
   addRow: () => void
   deleteRow: (rowId: string) => void
   insertRowAfter: (rowId: string) => void
+  insertRowBefore: (rowId: string) => void
   updateMdContent: (content: string) => void
   batchReplaceHeadings: (sourceLevel: number, targetLevel: number, scope: 'all' | string[]) => void
   toggleRowSelection: (rowId: string) => void
@@ -141,6 +142,7 @@ type Action =
   | { type: 'UPDATE_ROW'; rowId: string; patch: Partial<XlsxPreviewRow> }
   | { type: 'ADD_ROW' }
   | { type: 'INSERT_ROW_AFTER'; rowId: string }
+  | { type: 'INSERT_ROW_BEFORE'; rowId: string }
   | { type: 'DELETE_ROW'; rowId: string }
   | { type: 'SET_MD_CONTENT'; content: string }
   | {
@@ -229,6 +231,26 @@ function reduceDataState(state: DataState, action: Action): DataState {
         frameworkRows: nextRows,
         blocks: nextBlocks,
         blockMap: nextMap,
+        mdContent: nextMdContent,
+      }
+    }
+    case 'INSERT_ROW_BEFORE': {
+      const index = state.frameworkRows.findIndex(r => r.rowId === action.rowId)
+      if (index === -1) return state
+      const newRow: EditorRow = {
+        rowId: generateId(),
+        知识点编号: '',
+        知识点名称: '',
+      }
+      const nextRows = [
+        ...state.frameworkRows.slice(0, index),
+        newRow,
+        ...state.frameworkRows.slice(index),
+      ]
+      const nextMdContent = serializeKnowledgeBlocks(state.blocks)
+      return {
+        ...state,
+        frameworkRows: nextRows,
         mdContent: nextMdContent,
       }
     }
@@ -374,6 +396,14 @@ export function useExpansionEditor(options: UseExpansionEditorOptions): UseExpan
   const insertRowAfter = useCallback(
     (rowId: string) => {
       dispatch({ type: 'INSERT_ROW_AFTER', rowId })
+      markChanged()
+    },
+    [markChanged]
+  )
+
+  const insertRowBefore = useCallback(
+    (rowId: string) => {
+      dispatch({ type: 'INSERT_ROW_BEFORE', rowId })
       markChanged()
     },
     [markChanged]
@@ -532,6 +562,7 @@ export function useExpansionEditor(options: UseExpansionEditorOptions): UseExpan
       addRow,
       deleteRow,
       insertRowAfter,
+      insertRowBefore,
       updateMdContent,
       batchReplaceHeadings,
       toggleRowSelection,
@@ -555,6 +586,7 @@ export function useExpansionEditor(options: UseExpansionEditorOptions): UseExpan
       addRow,
       deleteRow,
       insertRowAfter,
+      insertRowBefore,
       updateMdContent,
       batchReplaceHeadings,
       toggleRowSelection,

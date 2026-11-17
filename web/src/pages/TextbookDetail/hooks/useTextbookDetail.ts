@@ -6,6 +6,7 @@ import {
   validateTextbook,
   getFrameworkFile,
   getContentFile,
+  getDivergenceReport,
 } from '../../../services/textbook.service'
 import { knowledgeApi } from '../../../services/knowledgeApi'
 import type {
@@ -14,6 +15,7 @@ import type {
   ValidationReport,
   FrameworkFileContent,
   ContentFileContent,
+  DivergenceReport,
 } from '../../../types/textbook.types'
 import type { KnowledgePoint } from '../../../types/knowledge.types'
 
@@ -41,7 +43,11 @@ interface UseTextbookDetailReturn {
   contentFile: ContentFileContent | null
   filesLoading: boolean
   filesError: string | null
+  divergenceReport: DivergenceReport | null
+  divergenceLoading: boolean
+  divergenceError: string | null
   fetchFiles: () => Promise<void>
+  fetchDivergence: () => Promise<void>
   fetchTextbook: () => Promise<void>
   expand: (frameworkFile: File, contentFile: File) => Promise<ExpandResult | null>
   validate: (frameworkFile: File, contentFile: File) => Promise<ValidationReport | null>
@@ -62,6 +68,9 @@ export const useTextbookDetail = (id: string): UseTextbookDetailReturn => {
   const [contentFile, setContentFile] = useState<ContentFileContent | null>(null)
   const [filesLoading, setFilesLoading] = useState(false)
   const [filesError, setFilesError] = useState<string | null>(null)
+  const [divergenceReport, setDivergenceReport] = useState<DivergenceReport | null>(null)
+  const [divergenceLoading, setDivergenceLoading] = useState(false)
+  const [divergenceError, setDivergenceError] = useState<string | null>(null)
 
   const fetchTextbook = useCallback(async () => {
     setLoading(true)
@@ -120,6 +129,21 @@ export const useTextbookDetail = (id: string): UseTextbookDetailReturn => {
     [id]
   )
 
+  const fetchDivergence = useCallback(async () => {
+    setDivergenceLoading(true)
+    setDivergenceError(null)
+    try {
+      const report = await getDivergenceReport(id)
+      setDivergenceReport(report)
+    } catch (err) {
+      const message = extractErrorMessage(err, '加载分歧报告失败')
+      setDivergenceError(message)
+      setDivergenceReport(null)
+    } finally {
+      setDivergenceLoading(false)
+    }
+  }, [id])
+
   const fetchFiles = useCallback(async () => {
     setFilesLoading(true)
     setFilesError(null)
@@ -127,15 +151,18 @@ export const useTextbookDetail = (id: string): UseTextbookDetailReturn => {
       const [framework, content] = await Promise.all([getFrameworkFile(id), getContentFile(id)])
       setFrameworkFile(framework)
       setContentFile(content)
+      // 文件刷新后同步刷新分歧报告（缓存失效）
+      await fetchDivergence()
     } catch (err) {
       const message = extractErrorMessage(err, '加载教材文件失败')
       setFilesError(message)
       setFrameworkFile(null)
       setContentFile(null)
+      setDivergenceReport(null)
     } finally {
       setFilesLoading(false)
     }
-  }, [id])
+  }, [id, fetchDivergence])
 
   const resetValidation = useCallback(() => {
     setValidating(false)
@@ -165,7 +192,11 @@ export const useTextbookDetail = (id: string): UseTextbookDetailReturn => {
     contentFile,
     filesLoading,
     filesError,
+    divergenceReport,
+    divergenceLoading,
+    divergenceError,
     fetchFiles,
+    fetchDivergence,
     fetchTextbook,
     expand,
     validate,

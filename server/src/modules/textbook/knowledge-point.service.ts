@@ -1,8 +1,10 @@
 import {
   Injectable,
+  Logger,
   NotFoundException,
   BadRequestException,
   ConflictException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TextbookService } from './textbook.service';
@@ -11,6 +13,8 @@ import { UpdateKnowledgePointDto } from './dto/update-knowledge-point.dto';
 
 @Injectable()
 export class KnowledgePointService {
+  private readonly logger = new Logger(KnowledgePointService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly textbookService: TextbookService,
@@ -133,6 +137,8 @@ export class KnowledgePointService {
     importanceLevel: string;
     contentRef: string | null;
     textbookId: string;
+    markdownUpdated: boolean;
+    markdownMessage?: string;
   }> {
     const point = await this.prisma.knowledgePoint.findUnique({
       where: { id },
@@ -168,6 +174,23 @@ export class KnowledgePointService {
       codeParts.length > 1 ? codeParts.slice(0, 2).join('.') : null;
     const level3 = codeParts.length > 2 ? newCode : null;
 
+    const definitionProvided = dto.definition !== undefined;
+    const characteristicsProvided = dto.characteristics !== undefined;
+
+    let oldBody: string | null = null;
+    try {
+      oldBody = await this.textbookService.readKnowledgePointContentBlock(
+        id,
+        point.code,
+        point.level1,
+        point.level2,
+      );
+    } catch (err) {
+      this.logger.warn(
+        `读取知识点 ${point.code} 的旧 Markdown 内容块失败: ${(err as Error).message}`,
+      );
+    }
+
     const updated = await this.prisma.knowledgePoint.update({
       where: { id },
       data: {
@@ -189,6 +212,55 @@ export class KnowledgePointService {
       },
     });
 
+    let markdownUpdated = false;
+    let markdownMessage: string | undefined;
+
+    if (oldBody === null) {
+      markdownUpdated = false;
+      markdownMessage = `未找到编号 ${point.code} 对应的 Markdown 内容块，数据库已更新，文件未同步`;
+      this.logger.warn(markdownMessage);
+    } else {
+      const body =
+        definitionProvided || characteristicsProvided
+          ? this.buildBodyFromFields(updated)
+          : oldBody;
+      const newBlock = this.buildMarkdownBlock(updated, body);
+      try {
+        markdownUpdated = await this.textbookService.updateContentInFileByCode(
+          id,
+          point.code,
+          point.level1,
+          point.level2,
+          newBlock,
+        );
+        if (!markdownUpdated) {
+          markdownMessage = `未找到编号 ${point.code} 对应的 Markdown 内容块，数据库已更新，文件未同步`;
+          this.logger.warn(markdownMessage);
+        }
+      } catch (err) {
+        this.logger.error(
+          `更新知识点 ${point.code} 的 Markdown 内容块失败: ${(err as Error).message}`,
+        );
+        // 补偿回滚：文件写入失败时恢复数据库到更新前状态
+        await this.prisma.knowledgePoint.update({
+          where: { id },
+          data: {
+            code: point.code,
+            name: point.name,
+            level1: point.level1,
+            level2: point.level2,
+            level3: point.level3,
+            definition: point.definition,
+            characteristics: point.characteristics,
+            importanceLevel: point.importanceLevel,
+          },
+        });
+        throw new InternalServerErrorException(
+          'Markdown 文件更新失败，数据库已回滚',
+        );
+      }
+    }
+
     return {
       id: updated.id,
       code: updated.code,
@@ -201,7 +273,63 @@ export class KnowledgePointService {
       importanceLevel: updated.importanceLevel,
       contentRef: updated.contentRef,
       textbookId: updated.textbookId,
+      markdownUpdated,
+      markdownMessage,
     };
+  }
+
+  /**
+   * 根据知识点层级生成 Markdown 标题行
+   */
+  private buildMarkdownHeading(point: {
+    code: string;
+    name: string | null;
+  }): string {
+    const codeParts = point.code.split('.');
+    if (codeParts.length === 1) {
+      return `## ${point.code} ${point.name ?? ''}`.trim();
+    }
+    if (codeParts.length === 2) {
+      return `### ${point.code} ${point.name ?? ''}`.trim();
+    }
+    return `#### 知识点 ${point.code}：${point.name ?? ''}`.trim();
+  }
+
+  /**
+   * 使用知识点字段构建 Markdown 正文
+   */
+  private buildBodyFromFields(point: {
+    definition: string | null;
+    characteristics: string | null;
+  }): string {
+    const lines: string[] = [];
+    if (point.definition) {
+      lines.push(point.definition);
+    }
+    if (point.characteristics) {
+      if (lines.length > 0) {
+        lines.push('');
+      }
+      lines.push(point.characteristics);
+    }
+    return lines.join('\n');
+  }
+
+  /**
+   * 构建完整的 Markdown 内容块（标题 + 正文）
+   */
+  private buildMarkdownBlock(
+    point: {
+      code: string;
+      name: string | null;
+    },
+    body: string,
+  ): string {
+    const heading = this.buildMarkdownHeading(point);
+    if (!body) {
+      return heading;
+    }
+    return `${heading}\n\n${body}`;
   }
 
   async delete(

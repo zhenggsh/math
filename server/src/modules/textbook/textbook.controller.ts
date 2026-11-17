@@ -10,6 +10,7 @@ import {
   UploadedFiles,
   BadRequestException,
   Body,
+  StreamableFile,
 } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { TextbookService } from './textbook.service';
@@ -18,9 +19,12 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '@prisma/client';
 import { FrameworkType } from './types/textbook.types';
+import * as fs from 'fs';
+import * as path from 'path';
 import type {
   FrameworkFileContent,
   ContentFileContent,
+  DivergenceReport,
 } from './types/textbook.types';
 import { ExpandKnowledgePointsResponse } from './dto/expand-knowledge-points.dto';
 import { ValidateKnowledgePointsResponse } from './dto/validate-knowledge-points.dto';
@@ -145,6 +149,50 @@ export class TextbookController {
     @Param('id') id: string,
   ): Promise<{ success: boolean; data: ContentFileContent }> {
     const data = await this.textbookService.getContentFileContent(id);
+    return { success: true, data };
+  }
+
+  /**
+   * 下载教材框架文件（xlsx/csv）
+   */
+  @Get(':id/framework-file/download')
+  @Roles(Role.TEACHER, Role.ADMIN)
+  async downloadFrameworkFile(
+    @Param('id') id: string,
+  ): Promise<StreamableFile> {
+    const filePath = await this.textbookService.getFrameworkFileDiskPath(id);
+    const file = fs.createReadStream(filePath);
+    return new StreamableFile(file, {
+      type: 'application/octet-stream',
+      disposition: `attachment; filename="${path.basename(filePath)}"`,
+    });
+  }
+
+  /**
+   * 下载教材内容文件（md）
+   */
+  @Get(':id/content-file/download')
+  @Roles(Role.TEACHER, Role.ADMIN)
+  async downloadContentFile(
+    @Param('id') id: string,
+  ): Promise<StreamableFile> {
+    const filePath = await this.textbookService.getContentFileDiskPath(id);
+    const file = fs.createReadStream(filePath);
+    return new StreamableFile(file, {
+      type: 'text/markdown',
+      disposition: `attachment; filename="${path.basename(filePath)}"`,
+    });
+  }
+
+  /**
+   * 获取教材框架文件与数据库知识点的分歧报告
+   */
+  @Get(':id/divergence')
+  @Roles(Role.TEACHER, Role.ADMIN)
+  async getDivergenceReport(
+    @Param('id') id: string,
+  ): Promise<{ success: boolean; data: DivergenceReport }> {
+    const data = await this.textbookService.compareFrameworkWithDatabase(id);
     return { success: true, data };
   }
 

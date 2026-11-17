@@ -135,6 +135,25 @@ describe('useExpansionEditor', () => {
     expect(result.current.mdContent).toContain('#### 知识点 1.1.2')
   })
 
+  it('inserts a row before the anchor without duplicating markdown headings', () => {
+    const { result } = renderHook(() =>
+      useExpansionEditor({ textbookId, originalRows, originalMd, onValidate, onResetValidation })
+    )
+
+    act(() => {
+      result.current.enterEditMode()
+    })
+
+    act(() => {
+      result.current.insertRowBefore(result.current.frameworkRows[0].rowId)
+    })
+
+    expect(result.current.frameworkRows).toHaveLength(2)
+    expect(result.current.frameworkRows[0]['知识点编号']).toBe('')
+    expect(result.current.mdContent).toContain('#### 知识点 1.1.1')
+    expect((result.current.mdContent.match(/#### /g) ?? []).length).toBe(1)
+  })
+
   it('re-serializes files and calls onValidate when revalidate is invoked', async () => {
     const { result } = renderHook(() =>
       useExpansionEditor({ textbookId, originalRows, originalMd, onValidate, onResetValidation })

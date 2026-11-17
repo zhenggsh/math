@@ -53,6 +53,14 @@ describe('MdEditor', () => {
     ).toBeInTheDocument()
   })
 
+  it('renders line numbers for each line', () => {
+    renderWithApp(<MdEditor content="line1\nline2\nline3" onChange={vi.fn()} fileSize={100} />)
+
+    expect(screen.getByText('1')).toBeInTheDocument()
+    expect(screen.getByText('2')).toBeInTheDocument()
+    expect(screen.getByText('3')).toBeInTheDocument()
+  })
+
   it('disables replace button when source and target levels are equal', async () => {
     renderWithApp(<MdEditor content="hello" onChange={vi.fn()} fileSize={100} />)
 

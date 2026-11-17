@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { Input, Button, Space, Alert, Typography, Select, message } from 'antd'
+import React, { useRef, useState } from 'react'
+import { Button, Space, Alert, Typography, Select, message } from 'antd'
 import type { EditorRow } from '../../../utils/knowledgeBlocks'
 
 interface MdEditorProps {
@@ -9,7 +9,31 @@ interface MdEditorProps {
   selectedRows?: EditorRow[]
 }
 
+interface LineNumberedTextAreaProps {
+  value: string
+  onChange: (value: string) => void
+  rows?: number
+  disabled?: boolean
+}
+
 const MAX_MD_SIZE = 1024 * 1024
+
+const TEXT_AREA_STYLE: React.CSSProperties = {
+  width: '100%',
+  resize: 'none',
+  border: 'none',
+  outline: 'none',
+  padding: '8px 12px',
+  margin: 0,
+  fontFamily: 'monospace',
+  fontSize: 13,
+  lineHeight: '20px',
+  whiteSpace: 'pre',
+  overflowWrap: 'normal',
+  overflowX: 'auto',
+  background: 'transparent',
+  color: 'rgba(0, 0, 0, 0.88)',
+}
 
 const HEADING_CODE_PATTERN = /^\s*(?:知识点\s+)?(\d+(?:\.\d+)*)/
 
@@ -17,6 +41,75 @@ function extractHeadingCode(line: string, prefix: string): string | null {
   const rest = line.slice(prefix.length + 1)
   const match = rest.match(HEADING_CODE_PATTERN)
   return match ? match[1] : null
+}
+
+const LineNumberedTextArea: React.FC<LineNumberedTextAreaProps> = ({
+  value,
+  onChange,
+  rows = 18,
+  disabled = false,
+}) => {
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const numbersRef = useRef<HTMLDivElement>(null)
+  const lineCount = value.split('\n').length
+  const minLines = Math.max(rows, lineCount)
+  const numbers = Array.from({ length: minLines }, (_, i) => i + 1)
+
+  const handleScroll = (): void => {
+    if (textareaRef.current && numbersRef.current) {
+      numbersRef.current.scrollTop = textareaRef.current.scrollTop
+    }
+  }
+
+  return (
+    <div
+      style={{
+        display: 'flex',
+        border: '1px solid #d9d9d9',
+        borderRadius: 6,
+        overflow: 'hidden',
+        background: disabled ? '#f5f5f5' : '#fff',
+      }}
+    >
+      <div
+        ref={numbersRef}
+        style={{
+          width: 48,
+          flexShrink: 0,
+          padding: '8px 4px',
+          textAlign: 'right',
+          background: '#fafafa',
+          borderRight: '1px solid #f0f0f0',
+          overflow: 'hidden',
+          userSelect: 'none',
+        }}
+      >
+        {numbers.map(n => (
+          <div
+            key={n}
+            style={{
+              fontFamily: 'monospace',
+              fontSize: 13,
+              lineHeight: '20px',
+              color: '#8c8c8c',
+              height: 20,
+            }}
+          >
+            {n}
+          </div>
+        ))}
+      </div>
+      <textarea
+        ref={textareaRef}
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        onScroll={handleScroll}
+        disabled={disabled}
+        rows={rows}
+        style={TEXT_AREA_STYLE}
+      />
+    </div>
+  )
 }
 
 export const MdEditor: React.FC<MdEditorProps> = ({
@@ -107,12 +200,7 @@ export const MdEditor: React.FC<MdEditorProps> = ({
           替换
         </Button>
       </div>
-      <Input.TextArea
-        value={content}
-        onChange={e => onChange(e.target.value)}
-        rows={18}
-        style={{ fontFamily: 'monospace', fontSize: 13 }}
-      />
+      <LineNumberedTextArea value={content} onChange={onChange} rows={18} />
       <Typography.Text type="secondary" style={{ fontSize: 12 }}>
         提示：xlsx 编辑会自动同步 Markdown 标题；直接编辑 Markdown 正文不会反向同步到 xlsx。
       </Typography.Text>

@@ -10,6 +10,7 @@ import type {
   ValidationReport,
   FrameworkFileContent,
   ContentFileContent,
+  DivergenceReport,
 } from '../types/textbook.types'
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
@@ -143,4 +144,43 @@ export const getFrameworkFile = async (id: string): Promise<FrameworkFileContent
 export const getContentFile = async (id: string): Promise<ContentFileContent> => {
   const response = await textbookApi.get(`/${id}/content-file`)
   return response.data.data
+}
+
+/**
+ * 获取教材框架文件与数据库知识点的分歧报告
+ */
+export const getDivergenceReport = async (id: string): Promise<DivergenceReport> => {
+  const response = await textbookApi.get(`/${id}/divergence`)
+  return response.data.data
+}
+
+/**
+ * 下载教材框架文件（xlsx/csv）
+ */
+export const downloadFrameworkFile = async (id: string, fileName: string): Promise<void> => {
+  const response = await textbookApi.get(`/${id}/framework-file/download`, {
+    responseType: 'blob',
+  })
+  triggerDownload(response.data as Blob, fileName)
+}
+
+/**
+ * 下载教材内容文件（md）
+ */
+export const downloadContentFile = async (id: string, fileName: string): Promise<void> => {
+  const response = await textbookApi.get(`/${id}/content-file/download`, {
+    responseType: 'blob',
+  })
+  triggerDownload(response.data as Blob, fileName)
+}
+
+function triggerDownload(blob: Blob, fileName: string): void {
+  const url = window.URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = fileName
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  window.URL.revokeObjectURL(url)
 }

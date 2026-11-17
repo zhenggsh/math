@@ -18,6 +18,9 @@ import {
   ValidationReport,
   FrameworkFileContent,
   ContentFileContent,
+  DivergenceIssue,
+  DivergenceReport,
+  DivergenceFieldChange,
 } from './types/textbook.types';
 import type { ExpandKnowledgePointsResponse } from './dto/expand-knowledge-points.dto';
 import * as fs from 'fs';
@@ -486,6 +489,216 @@ export class TextbookService {
   }
 
   /**
+   * 比较当前框架文件（xlsx/csv）与数据库 KnowledgePoint 记录，生成分歧报告
+   * 仅比较显式文件行（explicitCodes），自动生成的一二级父节点不纳入比较
+   */
+  async compareFrameworkWithDatabase(
+    textbookId: string,
+  ): Promise<DivergenceReport> {
+    const textbook = await this.prisma.textbook.findUnique({
+      where: { id: textbookId },
+    });
+    if (!textbook) {
+      throw new NotFoundException(`教材不存在: ${textbookId}`);
+    }
+
+    const filePath = this.fileService.getFilePath(textbook.frameworkPath);
+    if (!fs.existsSync(filePath)) {
+      throw new NotFoundException(`框架文件不存在: ${textbook.frameworkPath}`);
+    }
+
+    const fileType = textbook.frameworkType as FrameworkType;
+    const parseResult = this.parserService.parseFrameworkFile(filePath, fileType);
+    if (!parseResult.success || !parseResult.data) {
+      throw new UnprocessableEntityException(
+        parseResult.error ?? '框架文件解析失败',
+      );
+    }
+
+    const explicitCodes = new Set(parseResult.explicitCodes ?? []);
+    // 使用 parser 已转换的数据（name/level1/2/3 已经解析、继承、去占位符）
+    const filePoints = parseResult.data.filter((point) =>
+      explicitCodes.has(point.code),
+    );
+
+    const dbPoints = await this.prisma.knowledgePoint.findMany({
+      where: { textbookId },
+      select: {
+        code: true,
+        name: true,
+        level1: true,
+        level2: true,
+        level3: true,
+        definition: true,
+        characteristics: true,
+        importanceLevel: true,
+      },
+    });
+
+    const fileRowMap = new Map<string, Record<string, string>>();
+    for (const point of filePoints) {
+      fileRowMap.set(point.code, this.rawKnowledgePointToRow(point));
+    }
+
+    interface DbPointRow {
+      code: string;
+      name: string;
+      level1: string;
+      level2: string;
+      level3: string;
+      definition: string;
+      characteristics: string;
+      importanceLevel: string;
+    }
+
+    const dbPointMap = new Map<string, DbPointRow>(
+      dbPoints.map((point) => [
+        point.code,
+        {
+          code: point.code,
+          name: point.name ?? '',
+          level1: point.level1,
+          level2: point.level2 ?? '',
+          level3: point.level3 ?? '',
+          definition: point.definition ?? '',
+          characteristics: point.characteristics ?? '',
+          importanceLevel: point.importanceLevel,
+        },
+      ]),
+    );
+
+    const issues: DivergenceIssue[] = [];
+
+    // 文件中有但数据库中没有
+    for (const [code, fileRow] of fileRowMap) {
+      if (!dbPointMap.has(code)) {
+        issues.push({
+          code,
+          type: 'missing-in-db',
+          fileRow,
+          dbRow: null,
+          changes: null,
+        });
+      }
+    }
+
+    // 数据库中有但文件中没有
+    for (const [code, dbRow] of dbPointMap) {
+      if (!fileRowMap.has(code)) {
+        issues.push({
+          code,
+          type: 'missing-in-file',
+          fileRow: null,
+          dbRow: {
+            code: dbRow.code,
+            name: dbRow.name,
+            level1: dbRow.level1,
+            level2: dbRow.level2,
+            level3: dbRow.level3,
+            definition: dbRow.definition,
+            characteristics: dbRow.characteristics,
+            importanceLevel: dbRow.importanceLevel,
+          },
+          changes: null,
+        });
+      }
+    }
+
+    // 两边都有但字段不一致
+    const comparableFields: Array<{
+      key: keyof DbPointRow;
+      label: string;
+    }> = [
+      { key: 'name', label: '知识点名称' },
+      { key: 'level1', label: '一级知识点' },
+      { key: 'level2', label: '二级知识点' },
+      { key: 'level3', label: '三级知识点' },
+      { key: 'definition', label: '定义' },
+      { key: 'characteristics', label: '特性/运算方式' },
+      { key: 'importanceLevel', label: '重要性级别' },
+    ];
+
+    for (const [code, dbRow] of dbPointMap) {
+      const fileRow = fileRowMap.get(code);
+      if (!fileRow) {
+        continue;
+      }
+
+      const changes: DivergenceFieldChange[] = [];
+      for (const field of comparableFields) {
+        const rawFileValue = fileRow[field.key] ?? '';
+        const normalizedFileValue = this.normalizeFieldValue(rawFileValue);
+        const normalizedDbValue = this.normalizeFieldValue(dbRow[field.key]);
+
+        if (normalizedFileValue !== normalizedDbValue) {
+          changes.push({
+            field: field.label,
+            fileValue: rawFileValue,
+            dbValue: dbRow[field.key],
+          });
+        }
+      }
+
+      if (changes.length > 0) {
+        issues.push({
+          code,
+          type: 'changed',
+          fileRow,
+          dbRow: {
+            code: dbRow.code,
+            name: dbRow.name,
+            level1: dbRow.level1,
+            level2: dbRow.level2,
+            level3: dbRow.level3,
+            definition: dbRow.definition,
+            characteristics: dbRow.characteristics,
+            importanceLevel: dbRow.importanceLevel,
+          },
+          changes,
+        });
+      }
+    }
+
+    issues.sort((a, b) => a.code.localeCompare(b.code));
+
+    return {
+      diverged: issues.length > 0,
+      issues,
+    };
+  }
+
+  /**
+   * 将解析后的 RawKnowledgePoint 转成用于比对的键值对行
+   * 键名与数据库字段名保持一致，便于 field-by-field 比较
+   */
+  private rawKnowledgePointToRow(
+    point: RawKnowledgePoint,
+  ): Record<string, string> {
+    // 与 TextbookParserService.transformToExplicitPoints 的 resolvedName 保持一致
+    const resolvedName = point.name || point.level3 || point.level2 || point.level1;
+    return {
+      code: point.code,
+      name: resolvedName || '',
+      level1: point.level1,
+      level2: point.level2 ?? '',
+      level3: point.level3 ?? '',
+      definition: point.definition ?? '',
+      characteristics: point.characteristics ?? '',
+      importanceLevel: point.importanceLevel,
+    };
+  }
+
+  /**
+   * 规范化字段值用于比较：trim，统一空字符串
+   */
+  private normalizeFieldValue(value: string | null | undefined): string {
+    if (value === null || value === undefined) {
+      return '';
+    }
+    return String(value).trim();
+  }
+
+  /**
    * 读取 iksm 磁盘上的 md 内容文件原文（文件是真相源）
    * 供教材详情页文件预览使用
    */
@@ -521,6 +734,43 @@ export class TextbookService {
       lastModifiedAt: stats.mtime,
       empty: false,
     };
+  }
+
+  /**
+   * 获取教材框架文件在磁盘上的完整路径（供下载使用）
+   */
+  async getFrameworkFileDiskPath(textbookId: string): Promise<string> {
+    const textbook = await this.prisma.textbook.findUnique({
+      where: { id: textbookId },
+    });
+    if (!textbook) {
+      throw new NotFoundException(`教材不存在: ${textbookId}`);
+    }
+    const filePath = this.fileService.getFilePath(textbook.frameworkPath);
+    if (!fs.existsSync(filePath)) {
+      throw new NotFoundException(`框架文件不存在: ${textbook.frameworkPath}`);
+    }
+    return filePath;
+  }
+
+  /**
+   * 获取教材内容文件在磁盘上的完整路径（供下载使用）
+   */
+  async getContentFileDiskPath(textbookId: string): Promise<string> {
+    const textbook = await this.prisma.textbook.findUnique({
+      where: { id: textbookId },
+    });
+    if (!textbook) {
+      throw new NotFoundException(`教材不存在: ${textbookId}`);
+    }
+    if (!textbook.contentPath) {
+      throw new NotFoundException(`教材未配置内容文件: ${textbookId}`);
+    }
+    const filePath = this.fileService.getFilePath(textbook.contentPath);
+    if (!fs.existsSync(filePath)) {
+      throw new NotFoundException(`内容文件不存在: ${textbook.contentPath}`);
+    }
+    return filePath;
   }
 
   /**
@@ -750,6 +1000,123 @@ export class TextbookService {
 
     fs.writeFileSync(filePath, newLines.join('\n'));
     this.logger.log(`已更新知识点 ${point.code} 的内容`);
+  }
+
+  /**
+   * 读取知识点在 MD 文件中的正文内容（不含标题行）
+   * @param knowledgePointId 知识点ID
+   * @param targetCode 用于定位内容块的编号
+   * @param targetLevel1 一级知识点名称，用于按名称回退定位
+   * @param targetLevel2 二级知识点名称，用于按名称回退定位
+   * @returns 内容块正文；未找到时返回 null
+   */
+  async readKnowledgePointContentBlock(
+    knowledgePointId: string,
+    targetCode: string,
+    targetLevel1: string | null,
+    targetLevel2: string | null,
+  ): Promise<string | null> {
+    const point = await this.prisma.knowledgePoint.findUnique({
+      where: { id: knowledgePointId },
+    });
+
+    if (!point) {
+      throw new NotFoundException(`知识点不存在: ${knowledgePointId}`);
+    }
+
+    const textbook = await this.prisma.textbook.findUnique({
+      where: { id: point.textbookId },
+    });
+
+    if (!textbook || !textbook.contentPath) {
+      return null;
+    }
+
+    const filePath = this.fileService.getFilePath(textbook.contentPath);
+    if (!fs.existsSync(filePath)) {
+      return null;
+    }
+
+    const fileContent = fs.readFileSync(filePath, 'utf-8');
+    const lines = fileContent.split('\n');
+
+    const range = this.findContentBlockRange(
+      lines,
+      targetCode,
+      targetLevel1,
+      targetLevel2,
+    );
+
+    if (!range) {
+      return null;
+    }
+
+    return lines
+      .slice(range.startIndex + 1, range.endIndex)
+      .join('\n')
+      .trim();
+  }
+
+  /**
+   * 按指定的旧编号定位并替换知识点内容块
+   * @param knowledgePointId 知识点ID
+   * @param targetCode 用于定位内容块的编号（更新前编号）
+   * @param targetLevel1 一级知识点名称，用于按名称回退定位
+   * @param targetLevel2 二级知识点名称，用于按名称回退定位
+   * @param newContent 新内容（包含标题行）
+   * @returns 是否成功找到并替换内容块
+   */
+  async updateContentInFileByCode(
+    knowledgePointId: string,
+    targetCode: string,
+    targetLevel1: string | null,
+    targetLevel2: string | null,
+    newContent: string,
+  ): Promise<boolean> {
+    const point = await this.prisma.knowledgePoint.findUnique({
+      where: { id: knowledgePointId },
+    });
+
+    if (!point) {
+      throw new NotFoundException(`知识点不存在: ${knowledgePointId}`);
+    }
+
+    const textbook = await this.prisma.textbook.findUnique({
+      where: { id: point.textbookId },
+    });
+
+    if (!textbook || !textbook.contentPath) {
+      throw new NotFoundException('教材内容文件不存在');
+    }
+
+    const filePath = this.fileService.getFilePath(textbook.contentPath);
+    if (!fs.existsSync(filePath)) {
+      throw new NotFoundException('内容文件不存在');
+    }
+
+    const fileContent = fs.readFileSync(filePath, 'utf-8');
+    const lines = fileContent.split('\n');
+
+    const range = this.findContentBlockRange(
+      lines,
+      targetCode,
+      targetLevel1,
+      targetLevel2,
+    );
+
+    if (!range) {
+      return false;
+    }
+
+    const newLines = [
+      ...lines.slice(0, range.startIndex),
+      newContent,
+      ...lines.slice(range.endIndex),
+    ];
+
+    fs.writeFileSync(filePath, newLines.join('\n'));
+    this.logger.log(`已更新知识点 ${targetCode} 的内容`);
+    return true;
   }
 
   async removeKnowledgePointBlock(knowledgePointId: string): Promise<void> {

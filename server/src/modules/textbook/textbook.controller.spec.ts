@@ -30,6 +30,10 @@ describe('TextbookController - expand', () => {
               valid: true,
               errors: [],
             }),
+            compareFrameworkWithDatabase: jest.fn().mockResolvedValue({
+              diverged: false,
+              issues: [],
+            }),
           },
         },
       ],
@@ -88,6 +92,14 @@ describe('TextbookController - expand', () => {
       frameworkFile,
       contentFile,
     );
+  });
+
+  it('should return divergence report', async () => {
+    const result = await controller.getDivergenceReport('tb-1');
+
+    expect(result.success).toBe(true);
+    expect(result.data.diverged).toBe(false);
+    expect(service.compareFrameworkWithDatabase).toHaveBeenCalledWith('tb-1');
   });
 
   describe('validate', () => {
@@ -263,6 +275,19 @@ describe('TextbookController - 文件预览端点权限控制', () => {
     expect(
       rolesGuard.canActivate(
         buildContext(controller.getContentFile, 'TEACHER'),
+      ),
+    ).toBe(true);
+  });
+
+  it('STUDENT 访问 divergence 被 RolesGuard 拒绝（403）', () => {
+    const context = buildContext(controller.getDivergenceReport, 'STUDENT');
+    expect(() => rolesGuard.canActivate(context)).toThrow(ForbiddenException);
+  });
+
+  it('TEACHER 可以访问 divergence 端点', () => {
+    expect(
+      rolesGuard.canActivate(
+        buildContext(controller.getDivergenceReport, 'TEACHER'),
       ),
     ).toBe(true);
   });

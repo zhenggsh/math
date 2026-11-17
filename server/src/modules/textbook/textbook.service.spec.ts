@@ -110,6 +110,14 @@ describe('TextbookService', () => {
               .mockReturnValue({ valid: true, errors: [] }),
             validateExplicitRecords: jest.fn().mockReturnValue([]),
             extractMdCodes: jest.fn().mockReturnValue([]),
+            getFieldValue: jest.fn((row: Record<string, string>, names: string[]) => {
+              for (const name of names) {
+                if (name in row && row[name] !== undefined && row[name] !== '') {
+                  return row[name].trim();
+                }
+              }
+              return '';
+            }),
           },
         },
         {
@@ -1417,6 +1425,233 @@ describe('TextbookService', () => {
     it('教材不存在抛 NotFoundException', async () => {
       jest.spyOn(prismaService.textbook, 'findUnique').mockResolvedValue(null);
       await expect(service.getContentFileContent('nope')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+
+  describe('compareFrameworkWithDatabase', () => {
+    const mockDivergenceTextbook = {
+      id: 't1',
+      frameworkPath: 'math01.xlsx',
+      frameworkType: 'xlsx',
+    };
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+      jest.spyOn(prismaService.textbook, 'findUnique').mockResolvedValue(mockDivergenceTextbook as any);
+      jest.spyOn(fileService, 'getFilePath').mockReturnValue('/iksm/math01.xlsx');
+      jest.spyOn(fs, 'existsSync').mockReturnValue(true);
+    });
+
+    it('文件与数据库一致时返回空报告', async () => {
+      jest.spyOn(parserService, 'parseFrameworkFile').mockReturnValue({
+        success: true,
+        data: [
+          {
+            code: '1.1.1',
+            name: '集合的含义',
+            level1: '集合',
+            level2: '集合的概念',
+            level3: '集合的含义',
+            definition: '总体',
+            characteristics: '确定性',
+            importanceLevel: 'A',
+          },
+        ],
+        explicitCodes: ['1.1.1'],
+      });
+      jest.spyOn(prismaService.knowledgePoint, 'findMany').mockResolvedValue([
+        {
+          code: '1.1.1',
+          name: '集合的含义',
+          level1: '集合',
+          level2: '集合的概念',
+          level3: '集合的含义',
+          definition: '总体',
+          characteristics: '确定性',
+          importanceLevel: 'A',
+        },
+      ] as any);
+
+      const report = await service.compareFrameworkWithDatabase('t1');
+
+      expect(report.diverged).toBe(false);
+      expect(report.issues).toHaveLength(0);
+    });
+
+    it('报告文件中有但数据库中缺失的行', async () => {
+      jest.spyOn(parserService, 'parseFrameworkFile').mockReturnValue({
+        success: true,
+        data: [
+          {
+            code: '1.1.1',
+            name: '集合的含义',
+            level1: '集合',
+            level2: '集合的概念',
+            level3: '集合的含义',
+            importanceLevel: 'A',
+          },
+        ],
+        explicitCodes: ['1.1.1'],
+      });
+      jest.spyOn(prismaService.knowledgePoint, 'findMany').mockResolvedValue([]);
+
+      const report = await service.compareFrameworkWithDatabase('t1');
+
+      expect(report.diverged).toBe(true);
+      expect(report.issues).toHaveLength(1);
+      expect(report.issues[0]).toMatchObject({
+        code: '1.1.1',
+        type: 'missing-in-db',
+      });
+      expect(report.issues[0].fileRow).toBeDefined();
+    });
+
+    it('报告数据库中有但文件中缺失的行', async () => {
+      jest.spyOn(parserService, 'parseFrameworkFile').mockReturnValue({
+        success: true,
+        data: [
+          {
+            code: '1.1.1',
+            name: '集合的含义',
+            level1: '集合',
+            level2: '集合的概念',
+            level3: '集合的含义',
+            importanceLevel: 'A',
+          },
+        ],
+        explicitCodes: ['1.1.1'],
+      });
+      jest.spyOn(prismaService.knowledgePoint, 'findMany').mockResolvedValue([
+        {
+          code: '1.1.1',
+          name: null,
+          level1: '集合',
+          level2: null,
+          level3: null,
+          definition: null,
+          characteristics: null,
+          importanceLevel: 'A',
+        },
+        {
+          code: '1.1.2',
+          name: null,
+          level1: '集合',
+          level2: null,
+          level3: null,
+          definition: null,
+          characteristics: null,
+          importanceLevel: 'B',
+        },
+      ] as any);
+
+      const report = await service.compareFrameworkWithDatabase('t1');
+
+      expect(report.diverged).toBe(true);
+      const issue = report.issues.find((i) => i.code === '1.1.2');
+      expect(issue).toBeDefined();
+      expect(issue?.type).toBe('missing-in-file');
+    });
+
+    it('报告字段不一致的 changed 问题', async () => {
+      jest.spyOn(parserService, 'parseFrameworkFile').mockReturnValue({
+        success: true,
+        data: [
+          {
+            code: '1.1.1',
+            name: '集合的含义（新）',
+            level1: '集合',
+            level2: '集合的概念',
+            level3: '集合的含义（新）',
+            definition: '总体',
+            characteristics: '确定性',
+            importanceLevel: 'A',
+          },
+        ],
+        explicitCodes: ['1.1.1'],
+      });
+      jest.spyOn(prismaService.knowledgePoint, 'findMany').mockResolvedValue([
+        {
+          code: '1.1.1',
+          name: '集合的含义',
+          level1: '集合',
+          level2: '集合的概念',
+          level3: '集合的含义',
+          definition: '总体',
+          characteristics: '确定性',
+          importanceLevel: 'A',
+        },
+      ] as any);
+
+      const report = await service.compareFrameworkWithDatabase('t1');
+
+      expect(report.diverged).toBe(true);
+      expect(report.issues).toHaveLength(1);
+      expect(report.issues[0]).toMatchObject({
+        code: '1.1.1',
+        type: 'changed',
+      });
+      expect(report.issues[0].changes).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ field: '知识点名称' }),
+          expect.objectContaining({ field: '三级知识点' }),
+        ]),
+      );
+    });
+
+    it('不将解析器自动生成的父节点标记为缺失', async () => {
+      jest.spyOn(parserService, 'parseFrameworkFile').mockReturnValue({
+        success: true,
+        data: [
+          { code: '1', level1: '集合', importanceLevel: 'A' },
+          { code: '1.1', level1: '集合', level2: '集合的概念', importanceLevel: 'A' },
+          { code: '1.1.1', level1: '集合', level2: '集合的概念', level3: '集合的含义', importanceLevel: 'A' },
+          { code: '1.1.2', level1: '集合', level2: '集合的概念', level3: '元素与集合', importanceLevel: 'B' },
+        ],
+        explicitCodes: ['1.1.1', '1.1.2'],
+      });
+      jest.spyOn(prismaService.knowledgePoint, 'findMany').mockResolvedValue([
+        {
+          code: '1.1.1',
+          name: '集合的含义',
+          level1: '集合',
+          level2: '集合的概念',
+          level3: '集合的含义',
+          definition: null,
+          characteristics: null,
+          importanceLevel: 'A',
+        },
+        {
+          code: '1.1.2',
+          name: '元素与集合',
+          level1: '集合',
+          level2: '集合的概念',
+          level3: '元素与集合',
+          definition: null,
+          characteristics: null,
+          importanceLevel: 'B',
+        },
+      ] as any);
+
+      const report = await service.compareFrameworkWithDatabase('t1');
+
+      expect(report.diverged).toBe(false);
+      expect(report.issues).toHaveLength(0);
+    });
+
+    it('教材不存在抛 NotFoundException', async () => {
+      jest.spyOn(prismaService.textbook, 'findUnique').mockResolvedValue(null);
+
+      await expect(service.compareFrameworkWithDatabase('nope')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('磁盘文件缺失抛 NotFoundException', async () => {
+      jest.spyOn(fs, 'existsSync').mockReturnValue(false);
+
+      await expect(service.compareFrameworkWithDatabase('t1')).rejects.toThrow(
         NotFoundException,
       );
     });
