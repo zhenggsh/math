@@ -40,7 +40,7 @@ describe('KimiClientService', () => {
         const values: Record<string, string | undefined> = {
           KIMI_BASE_URL: 'https://api.moonshot.cn/v1',
           KIMI_API_KEY: 'test-api-key',
-          KIMI_MODEL: 'kimi-k2-0711-preview',
+          KIMI_MODEL: 'kimi-k2.6',
           ...overrides,
         };
         return values[key];
@@ -81,8 +81,8 @@ describe('KimiClientService', () => {
     expect(mocked.default).toHaveBeenCalledWith({
       baseURL: 'https://api.moonshot.cn/v1',
       apiKey: 'test-api-key',
-      timeout: 30000,
-      maxRetries: 1,
+      timeout: 60000,
+      maxRetries: 0,
     });
   });
 
@@ -94,8 +94,9 @@ describe('KimiClientService', () => {
     const result = await service.chat([{ role: 'user', content: '你好' }]);
 
     expect(createMock).toHaveBeenCalledWith({
-      model: 'kimi-k2-0711-preview',
+      model: 'kimi-k2.6',
       messages: [{ role: 'user', content: '你好' }],
+      thinking: { type: 'disabled' },
     });
     expect(result.content).toBe('你好，我是小智。');
   });

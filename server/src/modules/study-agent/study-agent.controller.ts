@@ -5,6 +5,7 @@ import {
   HttpCode,
   HttpException,
   HttpStatus,
+  Logger,
   NotFoundException,
   Param,
   Post,
@@ -44,6 +45,8 @@ import { UpdateFeedbackDto } from './dto/update-feedback.dto';
 @UseGuards(JwtAuthGuard)
 @Controller('study-agent')
 export class StudyAgentController {
+  private readonly logger = new Logger(StudyAgentController.name);
+
   constructor(
     private readonly sessionService: StudySessionService,
     private readonly messageService: StudyMessageService,
@@ -327,7 +330,9 @@ export class StudyAgentController {
         contentRef: knowledgePoint.contentRef ?? undefined,
         textbookContentPath: knowledgePoint.textbook?.contentPath ?? undefined,
       });
-    } catch {
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'unknown error';
+      this.logger.error(`Study agent request failed: ${message}`);
       throw new ServiceUnavailableException('AI 助手暂时不可用，请稍后重试');
     }
   }

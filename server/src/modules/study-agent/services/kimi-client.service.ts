@@ -11,14 +11,16 @@ export class KimiClientService {
 
   constructor(private readonly configService: ConfigService) {
     this.model =
-      this.configService.get<string>('KIMI_MODEL') ?? 'kimi-k2-0711-preview';
+      this.configService.get<string>('KIMI_MODEL') ?? 'kimi-k2.6';
   }
 
   async chat(messages: ChatMessage[]): Promise<KimiClientResponse> {
     const completion = await this.getClient().chat.completions.create({
       model: this.model,
       messages,
-    });
+      // Kimi K2 默认开启思考，一次回答经常超过 30 秒。侧边栏问答关闭思考以在超时内返回。
+      thinking: { type: 'disabled' },
+    } as OpenAI.Chat.ChatCompletionCreateParamsNonStreaming);
 
     const content = completion.choices[0]?.message?.content ?? '';
 
@@ -43,8 +45,8 @@ export class KimiClientService {
     this.client = new OpenAI({
       baseURL,
       apiKey,
-      timeout: 30000,
-      maxRetries: 1,
+      timeout: 60000,
+      maxRetries: 0,
     });
 
     return this.client;
